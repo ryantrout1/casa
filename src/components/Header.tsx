@@ -15,26 +15,26 @@ export default function Header() {
             <nav>
               <ul>
                 <li>
-                  <a href="#">Menu</a>
+                  <a href="/menu">Menu</a>
                 </li>
                 <li>
-                  <a href="#">Events</a>
+                  <a href="#events">Events</a>
                 </li>
                 <li>
-                  <a href="#">Taco Tuesday</a>
+                  <a href="#specials">Taco Tuesday</a>
                 </li>
                 <li>
-                  <a href="#">Brunch</a>
+                  <a href="#specials">Brunch</a>
                 </li>
                 <li>
-                  <a href="#">Happy Hour</a>
+                  <a href="#specials">Happy Hour</a>
                 </li>
                 <li>
-                  <a href="#">Find Us</a>
+                  <a href="#find">Find Us</a>
                 </li>
               </ul>
             </nav>
-            <a className="join" href="#">
+            <a className="join" href="/rewards">
               Join Rewards
             </a>
           </div>

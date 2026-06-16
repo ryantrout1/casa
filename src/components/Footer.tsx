@@ -16,36 +16,67 @@ export default function Footer() {
         <nav>
           <ul>
             <li>
-              <a href="#">Menu</a>
+              <a href="/menu">Menu</a>
             </li>
             <li>
-              <a href="#">Events</a>
+              <a href="#events">Events</a>
             </li>
             <li>
-              <a href="#">Taco Tuesday</a>
+              <a href="#specials">Taco Tuesday</a>
             </li>
             <li>
-              <a href="#">Brunch</a>
+              <a href="#specials">Brunch</a>
             </li>
             <li>
-              <a href="#">Happy Hour</a>
+              <a href="#specials">Happy Hour</a>
             </li>
             <li>
-              <a href="#">Casa Rewards</a>
+              <a href="/rewards">Casa Rewards</a>
             </li>
             <li>
-              <a href="#">Find Us</a>
+              <a href="#find">Find Us</a>
             </li>
           </ul>
         </nav>
         <div className="soc">
-          <a href="#">f</a>
-          <a href="#">ig</a>
-          <a href="#">Y</a>
-          <a href="#">G</a>
+          <a
+            href="https://www.facebook.com/61571150047771"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Facebook"
+          >
+            f
+          </a>
+          <a
+            href="https://www.instagram.com/casadeleyva/"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Instagram"
+          >
+            ig
+          </a>
+          <a
+            href="https://www.yelp.com/biz/casa-de-leyva-buckeye"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Yelp"
+          >
+            Y
+          </a>
+          <a
+            href="https://www.google.com/maps/search/?api=1&query=Casa+de+Leyva+Buckeye+AZ"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Google"
+          >
+            G
+          </a>
         </div>
         <div className="info">
-          {"424 E Monroe Ave, Buckeye, AZ 85326 \u00A0·\u00A0 623-306-2386 \u00A0·\u00A0 www.casadeleyva.com"}
+          424 E Monroe Ave, Buckeye, AZ 85326{" \u00A0·\u00A0 "}
+          <a href="tel:6233062386">623-306-2386</a>
+          {" \u00A0·\u00A0 "}
+          <a href="/">www.casadeleyva.com</a>
         </div>
         <div className="cr">
           © 2026 Casa de Leyva · ¡Donde cada día es una fiesta!

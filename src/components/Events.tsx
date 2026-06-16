@@ -1,6 +1,6 @@
 export default function Events() {
   return (
-    <section className="events sec">
+    <section className="events sec" id="events">
       <div className="wrap">
         <div className="head">
           <div className="scr">lo que se cuece en la casa</div>
@@ -10,7 +10,14 @@ export default function Events() {
           </h2>
           <p>
             There&apos;s always something happening at Casa de Leyva. Follow{" "}
-            <strong>@casadeleyva</strong> so you never miss a fiesta.
+            <a
+              href="https://www.instagram.com/casadeleyva/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <strong>@casadeleyva</strong>
+            </a>{" "}
+            so you never miss a fiesta.
           </p>
         </div>
         <div className="gallery">
@@ -40,7 +47,7 @@ export default function Events() {
           </div>
         </div>
         <div className="more">
-          <a className="btn btn-p" href="#">
+          <a className="btn btn-p" href="/events">
             See All Events &amp; Book a Table
           </a>
         </div>

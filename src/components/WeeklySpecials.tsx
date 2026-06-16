@@ -1,6 +1,6 @@
 export default function WeeklySpecials() {
   return (
-    <section className="week sec">
+    <section className="week sec" id="specials">
       <div className="wrap">
         <div className="lead">
           <div className="pop">

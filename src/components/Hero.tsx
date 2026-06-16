@@ -23,13 +23,13 @@ export default function Hero() {
               <span className="c">GOOD VIBES</span>
             </div>
             <div className="ctas">
-              <a className="btn btn-p" href="#">
+              <a className="btn btn-p" href="/menu">
                 See the Menu
               </a>
-              <a className="btn btn-t" href="#">
+              <a className="btn btn-t" href="#events">
                 Upcoming Events
               </a>
-              <a className="btn btn-o" href="#">
+              <a className="btn btn-o" href="/rewards">
                 Join Rewards
               </a>
             </div>

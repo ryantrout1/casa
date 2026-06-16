@@ -1,6 +1,6 @@
 export default function FindUs() {
   return (
-    <section className="find sec">
+    <section className="find sec" id="find">
       <div className="wrap">
         <div className="grid">
           <div>
@@ -13,10 +13,15 @@ export default function FindUs() {
             <p>Entrance on E Butler Ave, between 4th and 5th Street.</p>
             <div className="addr">424 E Monroe Ave, Buckeye, AZ 85326</div>
             <div className="ctas">
-              <a className="btn btn-p" href="#">
+              <a
+                className="btn btn-p"
+                href="https://www.google.com/maps/dir/?api=1&destination=424+E+Monroe+Ave%2C+Buckeye%2C+AZ+85326"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 Get Directions
               </a>
-              <a className="btn btn-t" href="#">
+              <a className="btn btn-t" href="tel:6233062386">
                 Call 623-306-2386
               </a>
             </div>
