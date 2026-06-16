@@ -18,22 +18,22 @@ export default function Header() {
                   <a href="/menu">Menu</a>
                 </li>
                 <li>
-                  <a href="#fiestas">Fiestas</a>
+                  <a href="/#fiestas">Fiestas</a>
                 </li>
                 <li>
                   <a href="/catering">Events &amp; Catering</a>
                 </li>
                 <li>
-                  <a href="#specials">Taco Tuesday</a>
+                  <a href="/#specials">Taco Tuesday</a>
                 </li>
                 <li>
-                  <a href="#specials">Brunch</a>
+                  <a href="/#specials">Brunch</a>
                 </li>
                 <li>
-                  <a href="#specials">Happy Hour</a>
+                  <a href="/#specials">Happy Hour</a>
                 </li>
                 <li>
-                  <a href="#find">Find Us</a>
+                  <a href="/#find">Find Us</a>
                 </li>
               </ul>
             </nav>

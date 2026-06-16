@@ -361,3 +361,74 @@ a{text-decoration:none;color:inherit}ul{list-style:none}
 .v8 .v6src .rgrid{grid-template-columns:1fr!important}
 .v8 .v6src .favwall{grid-template-columns:repeat(2,1fr)}
 }
+
+/* ============================================================
+   Events & Catering page (/catering) — Casa Viva+ design
+   Built from the existing .v8 tokens for visual consistency.
+   ============================================================ */
+.v8 .cat-hero{padding:44px 0 54px;text-align:center}
+.v8 .cat-hero .scr{color:var(--mag);font-size:clamp(24px,3.2vw,38px);transform:rotate(-3deg);margin-bottom:2px}
+.v8 .cat-hero h1{font-family:'Bangers',cursive;font-weight:400;letter-spacing:.02em;line-height:.96;font-size:clamp(44px,7vw,88px);text-shadow:2px 2px 0 rgba(31,58,99,.12);margin-bottom:16px}
+.v8 .cat-hero .tagblk{display:inline-block;background:var(--teal);color:#fff;font-family:'Fredoka',sans-serif;font-weight:600;padding:8px 18px;border-radius:8px;transform:rotate(-1.5deg);margin-bottom:18px}
+.v8 .cat-hero .lede{max-width:760px;margin:0 auto 18px;font-size:18px;color:#42546e}
+.v8 .cat-hero .beat{margin:6px 0 24px}
+.v8 .cat-hero .ctas{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+
+/* private event collections */
+.v8 .cat-coll{padding:56px 0;background:var(--cream2)}
+.v8 .cat-coll .head{text-align:center;margin-bottom:36px}
+.v8 .cat-coll .head .scr{color:var(--teal);font-size:30px;transform:rotate(-2deg)}
+.v8 .cat-coll .head h2{font-family:'Bangers',cursive;font-size:clamp(32px,4.8vw,56px);color:var(--navy);line-height:1}
+.v8 .cat-coll .head h2 .a{color:var(--mag)}
+.v8 .cat-coll .head h2 .b{color:var(--orng)}
+.v8 .cat-coll .head p{font-family:'Fredoka',sans-serif;color:#5a6b82;margin-top:8px;font-size:16px}
+.v8 .tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;align-items:start}
+.v8 .tier{background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 20px 40px -26px rgba(31,58,99,.5);display:flex;flex-direction:column;position:relative}
+.v8 .tier.feat{transform:translateY(-10px);box-shadow:0 28px 52px -24px rgba(31,58,99,.55)}
+.v8 .tier .cap{padding:26px 22px 20px;color:#fff;text-align:center}
+.v8 .tier:nth-child(1) .cap{background:var(--teal)}
+.v8 .tier:nth-child(2) .cap{background:var(--mag)}
+.v8 .tier:nth-child(3) .cap{background:var(--purp)}
+.v8 .tier .name{font-family:'Bangers',cursive;font-size:26px;letter-spacing:.02em;line-height:1}
+.v8 .tier .price{font-family:'Bangers',cursive;font-size:46px;line-height:1;margin-top:6px}
+.v8 .tier .guests{font-family:'Fredoka',sans-serif;font-weight:500;font-size:12.5px;text-transform:uppercase;letter-spacing:.07em;opacity:.95;margin-top:4px}
+.v8 .tier .body{padding:22px 24px 28px}
+.v8 .tier .tagline{font-family:'Fredoka',sans-serif;font-weight:600;color:var(--navy);text-align:center;margin-bottom:16px;padding-bottom:14px;border-bottom:2px dashed #e3d4b5}
+.v8 .tier ul{display:flex;flex-direction:column;gap:11px}
+.v8 .tier li{position:relative;padding-left:26px;font-size:14.5px;color:#42546e;line-height:1.5}
+.v8 .tier li::before{content:"✦";position:absolute;left:2px;top:0;color:var(--orng)}
+.v8 .tier li b{color:var(--navy)}
+.v8 .tier .pop-badge{position:absolute;top:14px;right:14px;z-index:2;background:var(--yel);color:var(--navy);font-family:'Fredoka',sans-serif;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.06em;padding:6px 12px;border-radius:999px;transform:rotate(4deg);box-shadow:0 6px 14px -6px rgba(0,0,0,.4)}
+
+/* CTA bands */
+.v8 .cat-cta{padding:50px 0;text-align:center;color:#fff}
+.v8 .cat-cta.orange{background:var(--orng)}
+.v8 .cat-cta.mag{background:var(--mag)}
+.v8 .cat-cta h2{font-family:'Bangers',cursive;font-size:clamp(30px,4.4vw,50px);margin-bottom:8px;letter-spacing:.02em}
+.v8 .cat-cta p{font-family:'Fredoka',sans-serif;font-weight:500;margin-bottom:20px;font-size:17px;opacity:.96}
+
+/* in-house taco catering */
+.v8 .cat-taco{padding:56px 0;background:var(--yel)}
+.v8 .cat-taco .head{text-align:center;margin-bottom:30px}
+.v8 .cat-taco .head .scr{color:var(--mag);font-size:30px;transform:rotate(-2deg)}
+.v8 .cat-taco .head h2{font-family:'Bangers',cursive;font-size:clamp(30px,4.6vw,52px);color:var(--navy);line-height:1}
+.v8 .cat-taco .head p{font-family:'Fredoka',sans-serif;color:#7a651c;margin-top:8px;font-size:16px}
+.v8 .taco-card{background:#fff;border-radius:20px;padding:34px;max-width:940px;margin:0 auto;box-shadow:0 24px 48px -28px rgba(31,58,99,.5)}
+.v8 .taco-card .top{text-align:center;margin-bottom:6px}
+.v8 .taco-card .pkg{font-family:'Bangers',cursive;font-size:30px;color:var(--navy)}
+.v8 .taco-card .price{font-family:'Bangers',cursive;font-size:42px;color:var(--mag);line-height:1}
+.v8 .taco-card .price span{font-family:'Fredoka',sans-serif;font-size:16px;color:#5a6b82}
+.v8 .taco-card .sub{font-family:'Fredoka',sans-serif;color:#5a6b82;font-size:14.5px;margin-top:4px}
+.v8 .taco-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:22px}
+.v8 .tbox{background:var(--cream);border-radius:14px;padding:18px 20px}
+.v8 .tbox h4{font-family:'Fredoka',sans-serif;font-weight:600;color:var(--navy);font-size:14px;text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px}
+.v8 .tbox p{font-size:14.5px;color:#42546e;line-height:1.7}
+.v8 .tbox b{color:var(--navy)}
+.v8 .tbox.bar{grid-column:1/-1;background:#fff7ea;border:2px solid var(--orng)}
+.v8 .taco-note{margin-top:18px;text-align:center;font-size:13px;color:#7a651c}
+
+@media(max-width:900px){
+  .v8 .tiers{grid-template-columns:1fr}
+  .v8 .tier.feat{transform:none}
+  .v8 .taco-grid{grid-template-columns:1fr}
+}
