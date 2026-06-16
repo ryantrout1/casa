@@ -549,3 +549,63 @@ a{text-decoration:none;color:inherit}ul{list-style:none}
 
 @media(max-width:900px){.v8 .fz-grid{grid-template-columns:1fr 1fr}}
 @media(max-width:560px){.v8 .fz-grid{grid-template-columns:1fr}}
+
+/* ============================================================
+   Menu page (/menu) — Casa Viva+ design
+   ============================================================ */
+.v8 .mn-hero{padding:42px 0 20px;text-align:center}
+.v8 .mn-hero .scr{color:var(--mag);font-size:clamp(22px,3vw,36px);transform:rotate(-3deg)}
+.v8 .mn-hero h1{font-family:'Bangers',cursive;font-weight:400;letter-spacing:.02em;line-height:.96;font-size:clamp(46px,7.5vw,90px);text-shadow:2px 2px 0 rgba(31,58,99,.12)}
+.v8 .mn-hero h1 .a{color:var(--mag)}
+.v8 .mn-hero h1 .b{color:var(--teal)}
+.v8 .mn-hero .note{display:inline-block;margin-top:10px;background:var(--teal);color:#fff;font-family:'Fredoka',sans-serif;font-weight:600;padding:7px 16px;border-radius:8px;transform:rotate(-1deg);font-size:14px}
+
+.v8 .mn-nav{position:sticky;top:0;z-index:30;background:rgba(253,244,227,.96);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);border-top:1px solid #efe0c4;border-bottom:2px solid #efe0c4;padding:11px 0;margin-top:16px}
+.v8 .mn-nav .row{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.v8 .mn-nav a{font-family:'Fredoka',sans-serif;font-weight:600;font-size:13px;color:var(--navy);padding:7px 14px;border-radius:999px;background:#fff;border:2px solid #efe0c4;transition:.16s}
+.v8 .mn-nav a:hover{background:var(--teal);color:#fff;border-color:var(--teal)}
+
+.v8 .mn-sec{padding:44px 0 4px;scroll-margin-top:74px}
+.v8 .mn-sec .h{text-align:center;margin-bottom:6px}
+.v8 .mn-sec .h .scr{display:block;font-family:'Pacifico',cursive;color:var(--orng);font-size:23px;transform:rotate(-2deg);margin-bottom:-2px}
+.v8 .mn-sec h2{font-family:'Bangers',cursive;font-size:clamp(30px,4.4vw,48px);color:var(--navy);line-height:1}
+.v8 .mn-sec .sub{font-family:'Fredoka',sans-serif;color:#5a6b82;font-size:14px;margin-top:4px}
+.v8 .mn-subh{text-align:center;font-family:'Bangers',cursive;font-size:clamp(24px,3.4vw,34px);color:var(--orng);margin:36px 0 0;line-height:1}
+.v8 .mn-subh .note{display:block;font-family:'Fredoka',sans-serif;font-weight:600;font-size:13px;color:#5a6b82;margin-top:3px}
+
+.v8 .mn-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 48px;max-width:1000px;margin:16px auto 0}
+.v8 .mitem{padding:13px 2px;border-bottom:2px dotted #f3cbe0}
+.v8 .mitem .top{display:flex;justify-content:space-between;align-items:baseline;gap:14px}
+.v8 .mitem .nm{font-family:'Fredoka',sans-serif;font-weight:600;font-size:15.5px;letter-spacing:.02em;text-transform:uppercase;color:var(--navy)}
+.v8 .mitem .pr{font-family:'Bangers',cursive;font-size:23px;color:var(--mag);white-space:nowrap}
+.v8 .mitem .ds{font-size:14px;color:#5a6b82;margin-top:4px;line-height:1.5}
+.v8 .mitem .ds b{color:var(--navy)}
+
+.v8 .mn-block{max-width:1000px;margin:18px auto 0;background:#fff;border-radius:16px;padding:24px 26px;box-shadow:0 16px 34px -26px rgba(31,58,99,.5)}
+.v8 .mn-block h3{font-family:'Bangers',cursive;color:var(--navy);font-size:24px;text-align:center}
+.v8 .mn-block .lead{text-align:center;font-family:'Fredoka',sans-serif;font-weight:600;color:var(--navy);margin:4px 0 8px}
+.v8 .mn-block p{font-size:14px;color:#5a6b82;text-align:center;line-height:1.6}
+.v8 .mn-block .prices{display:flex;gap:14px;justify-content:center;margin-top:14px;flex-wrap:wrap}
+.v8 .mn-block .pill{font-family:'Fredoka',sans-serif;font-weight:700;color:#fff;background:var(--mag);padding:8px 16px;border-radius:999px;font-size:14px}
+.v8 .mn-block .pill.b{background:var(--teal)}
+.v8 .mn-extras{display:flex;gap:22px;justify-content:center;flex-wrap:wrap;margin-top:14px}
+.v8 .mn-extras .x{font-size:14px;color:#42546e}
+.v8 .mn-extras .x b{color:var(--navy)}
+
+.v8 .beer-cols{display:grid;grid-template-columns:repeat(3,1fr);gap:14px 30px;max-width:1000px;margin:16px auto 0}
+.v8 .beer-col h4{font-family:'Bangers',cursive;color:var(--navy);font-size:22px;margin-bottom:6px;border-bottom:2px dotted #f3cbe0;padding-bottom:6px}
+.v8 .beer-col h4 span{font-family:'Fredoka',sans-serif;font-weight:700;font-size:14px;color:var(--mag);margin-left:6px}
+.v8 .beer-col li{display:flex;justify-content:space-between;font-size:14.5px;color:#42546e;padding:4px 0}
+.v8 .beer-col li .p{font-family:'Fredoka',sans-serif;font-weight:600;color:var(--navy)}
+.v8 .beer-note{text-align:center;max-width:1000px;margin:14px auto 0;font-family:'Fredoka',sans-serif;font-weight:600;color:var(--navy);font-size:14px}
+
+.v8 .mn-advisory{max-width:980px;margin:34px auto 0;text-align:center;font-size:11.5px;color:#9a8a66;text-transform:uppercase;letter-spacing:.04em;line-height:1.6;padding:0 20px}
+.v8 .mn-closing{padding:48px 0;text-align:center;color:#fff;background:var(--purp);margin-top:30px}
+.v8 .mn-closing h2{font-family:'Bangers',cursive;font-size:clamp(28px,4vw,46px);margin-bottom:8px;letter-spacing:.02em}
+.v8 .mn-closing p{font-family:'Fredoka',sans-serif;font-weight:500;margin-bottom:20px;font-size:17px;opacity:.96}
+.v8 .mn-closing .ctas{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+
+@media(max-width:780px){
+  .v8 .mn-grid{grid-template-columns:1fr}
+  .v8 .beer-cols{grid-template-columns:1fr}
+}
