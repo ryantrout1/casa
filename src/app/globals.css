@@ -432,3 +432,87 @@ a{text-decoration:none;color:inherit}ul{list-style:none}
   .v8 .tier.feat{transform:none}
   .v8 .taco-grid{grid-template-columns:1fr}
 }
+
+/* ============================================================
+   Casa Rewards page (/rewards) — Casa Viva+ design
+   ============================================================ */
+.v8 .rw-hero{padding:44px 0 48px;text-align:center}
+.v8 .rw-hero .scr{color:var(--mag);font-size:clamp(24px,3.2vw,38px);transform:rotate(-3deg)}
+.v8 .rw-hero h1{font-family:'Bangers',cursive;font-weight:400;letter-spacing:.02em;line-height:.96;font-size:clamp(46px,7.5vw,92px);text-shadow:2px 2px 0 rgba(31,58,99,.12);margin-bottom:14px}
+.v8 .rw-hero .tagblk{display:inline-block;background:var(--teal);color:#fff;font-family:'Fredoka',sans-serif;font-weight:600;padding:8px 18px;border-radius:8px;transform:rotate(-1.5deg);margin-bottom:16px}
+.v8 .rw-hero .lede{max-width:680px;margin:0 auto 16px;font-size:18px;color:#42546e}
+.v8 .rw-hero .beat{margin:6px 0 24px}
+.v8 .rw-hero .ctas{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+
+/* the punch card */
+.v8 .rw-card{padding:54px 0;background:var(--cream2)}
+.v8 .rw-card .head{text-align:center;margin-bottom:30px}
+.v8 .rw-card .head .scr{color:var(--teal);font-size:30px;transform:rotate(-2deg)}
+.v8 .rw-card .head h2{font-family:'Bangers',cursive;font-size:clamp(32px,4.8vw,54px);color:var(--navy);line-height:1}
+.v8 .rw-card .head h2 .a{color:var(--mag)}
+.v8 .rw-card .head h2 .b{color:var(--orng)}
+.v8 .punchcard{background:#fff;border-radius:22px;padding:34px 30px;max-width:880px;margin:0 auto 22px;box-shadow:0 22px 46px -28px rgba(31,58,99,.5);border:3px dashed var(--teal)}
+.v8 .punchrow{display:flex;flex-wrap:wrap;gap:14px 16px;justify-content:center;align-items:flex-start}
+.v8 .punch{width:62px;display:flex;flex-direction:column;align-items:center;gap:7px}
+.v8 .punch .dot{width:46px;height:46px;border-radius:50%;border:2px dashed #cdbd97;display:grid;place-items:center;font-family:'Bangers',cursive;font-size:20px;color:#bdab84}
+.v8 .punch .lbl{font-family:'Fredoka',sans-serif;font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.03em;color:#9a8a66;text-align:center;line-height:1.2;min-height:24px}
+.v8 .punch.reward .dot{border-style:solid;width:54px;height:54px;font-size:15px;color:#fff;border-color:var(--mag);background:var(--mag);box-shadow:0 9px 20px -9px rgba(224,33,138,.65)}
+.v8 .punch.reward.gold .dot{border-color:var(--orng);background:var(--orng);box-shadow:0 9px 20px -9px rgba(244,123,32,.65)}
+.v8 .punch.reward .lbl{color:var(--navy)}
+.v8 .punchcard .signup-note{text-align:center;margin-top:22px;font-family:'Fredoka',sans-serif;font-weight:600;color:var(--navy);font-size:15px}
+.v8 .punchcard .signup-note b{color:var(--mag)}
+.v8 .punchcard .fineprint{text-align:center;margin-top:8px;font-size:12px;color:#9a8a66}
+
+/* perks */
+.v8 .rw-perks{padding:56px 0}
+.v8 .rw-perks .head{text-align:center;margin-bottom:30px}
+.v8 .rw-perks .head .scr{color:var(--mag);font-size:30px;transform:rotate(-2deg)}
+.v8 .rw-perks .head h2{font-family:'Bangers',cursive;font-size:clamp(30px,4.4vw,50px);color:var(--navy)}
+.v8 .perkgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+.v8 .perk{background:#fff;border-radius:16px;padding:26px 20px;text-align:center;box-shadow:0 16px 34px -24px rgba(31,58,99,.5);border-bottom:5px solid var(--teal)}
+.v8 .perk:nth-child(2){border-bottom-color:var(--mag)}
+.v8 .perk:nth-child(3){border-bottom-color:var(--orng)}
+.v8 .perk:nth-child(4){border-bottom-color:var(--purp)}
+.v8 .perk .ic{font-size:32px;line-height:1}
+.v8 .perk h3{font-family:'Fredoka',sans-serif;font-weight:600;color:var(--navy);margin:10px 0 6px;font-size:17px}
+.v8 .perk p{font-size:13.5px;color:#5a6b82;line-height:1.5}
+
+/* how it works */
+.v8 .rw-how{padding:54px 0;background:var(--navy);color:#fff}
+.v8 .rw-how .head{text-align:center}
+.v8 .rw-how .head .scr{color:var(--yel);font-size:28px;transform:rotate(-2deg)}
+.v8 .rw-how .head h2{font-family:'Bangers',cursive;font-size:clamp(30px,4.4vw,50px);color:#fff}
+.v8 .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;max-width:900px;margin:28px auto 0}
+.v8 .step{text-align:center}
+.v8 .step .n{font-family:'Bangers',cursive;font-size:46px;color:var(--yel);line-height:1}
+.v8 .step h3{font-family:'Fredoka',sans-serif;font-weight:600;font-size:18px;margin:6px 0 6px}
+.v8 .step p{font-size:14px;color:#cdd8e6;line-height:1.55}
+
+/* join form */
+.v8 .rw-join{padding:56px 0;background:var(--cream2)}
+.v8 .rw-join .head{text-align:center;margin-bottom:26px}
+.v8 .rw-join .head .scr{color:var(--teal);font-size:30px;transform:rotate(-2deg)}
+.v8 .rw-join .head h2{font-family:'Bangers',cursive;font-size:clamp(30px,4.4vw,50px);color:var(--navy)}
+.v8 .rw-join .head p{font-family:'Fredoka',sans-serif;color:#5a6b82;margin-top:6px}
+.v8 .joincard{background:#fff;border-radius:20px;padding:32px;max-width:560px;margin:0 auto;box-shadow:0 22px 46px -28px rgba(31,58,99,.5);border-top:6px solid var(--mag)}
+.v8 .joincard .field{margin-bottom:16px}
+.v8 .joincard .row{display:flex;gap:14px}
+.v8 .joincard .row .field{flex:1}
+.v8 .joincard label{display:block;font-family:'Fredoka',sans-serif;font-weight:600;font-size:13px;color:var(--navy);margin-bottom:6px}
+.v8 .joincard input{width:100%;padding:12px 14px;border:2px solid #e3d4b5;border-radius:10px;font-family:'Mulish',sans-serif;font-size:15px;color:var(--navy);background:var(--cream)}
+.v8 .joincard input:focus{outline:none;border-color:var(--teal);background:#fff}
+.v8 .joincard button{width:100%;margin-top:6px;cursor:pointer;font-family:'Fredoka',sans-serif;font-weight:600;font-size:17px;background:var(--mag);color:#fff;border:none;padding:15px;border-radius:999px;transition:.2s}
+.v8 .joincard button:hover{background:#c1167a}
+.v8 .joincard .fine{font-size:12px;color:#8a7a58;text-align:center;margin-top:14px;line-height:1.5}
+.v8 .joincard .ok{text-align:center;padding:14px 6px}
+.v8 .joincard .ok .big{font-family:'Bangers',cursive;font-size:34px;color:var(--teal);line-height:1;margin-bottom:8px}
+.v8 .joincard .ok p{color:#42546e}
+
+@media(max-width:900px){
+  .v8 .perkgrid{grid-template-columns:1fr 1fr}
+  .v8 .steps{grid-template-columns:1fr;gap:18px}
+}
+@media(max-width:560px){
+  .v8 .perkgrid{grid-template-columns:1fr}
+  .v8 .joincard .row{flex-direction:column;gap:0}
+}
