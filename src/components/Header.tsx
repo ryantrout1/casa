@@ -18,7 +18,10 @@ export default function Header() {
                   <a href="/menu">Menu</a>
                 </li>
                 <li>
-                  <a href="#events">Events</a>
+                  <a href="#fiestas">Fiestas</a>
+                </li>
+                <li>
+                  <a href="/catering">Events &amp; Catering</a>
                 </li>
                 <li>
                   <a href="#specials">Taco Tuesday</a>

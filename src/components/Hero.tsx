@@ -26,8 +26,8 @@ export default function Hero() {
               <a className="btn btn-p" href="/menu">
                 See the Menu
               </a>
-              <a className="btn btn-t" href="#events">
-                Upcoming Events
+              <a className="btn btn-t" href="#fiestas">
+                Upcoming Fiestas
               </a>
               <a className="btn btn-o" href="/rewards">
                 Join Rewards
