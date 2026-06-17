@@ -744,3 +744,15 @@ a{text-decoration:none;color:inherit}ul{list-style:none}
   .v8 .tt-ticket .div{display:none}
   .v8 .tt-hero h1{font-size:clamp(46px,15vw,74px)}
 }
+
+/* ============================================================
+   BRUNCH page (v8) — route: /brunch
+   ============================================================ */
+.v8 .br-hook{max-width:620px;margin:14px auto 0;font-family:'Fredoka',sans-serif;font-size:17px;color:#42546e}
+.v8 .tt-purple{background:var(--purp);color:#fff}
+.v8 .tt-purple .head .scr{color:#fff}
+.v8 .tt-magenta{background:var(--mag);color:#fff}
+.v8 .tt-magenta .head .scr{color:#fff}
+.v8 .br-bar{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
+.v8 .br-bar .tt-chip{background:rgba(255,255,255,.16);border:2px solid rgba(255,255,255,.5);font-size:15px;padding:10px 18px}
+.v8 .tt-close.br-purp{background:var(--purp)}

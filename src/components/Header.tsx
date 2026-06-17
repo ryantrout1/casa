@@ -41,7 +41,7 @@ export default function Header() {
                   <a href="/taco-tuesday">Taco Tuesday</a>
                 </li>
                 <li>
-                  <a href="/#specials">Brunch</a>
+                  <a href="/brunch">Brunch</a>
                 </li>
                 <li>
                   <a href="/#specials">Happy Hour</a>
