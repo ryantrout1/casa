@@ -38,7 +38,7 @@ export default function Header() {
                   <a href="/catering">Events &amp; Catering</a>
                 </li>
                 <li>
-                  <a href="/#specials">Taco Tuesday</a>
+                  <a href="/taco-tuesday">Taco Tuesday</a>
                 </li>
                 <li>
                   <a href="/#specials">Brunch</a>

@@ -655,3 +655,92 @@ a{text-decoration:none;color:inherit}ul{list-style:none}
 .v8 footer .legal-links{margin-top:12px;font-size:13px}
 .v8 footer .legal-links a{color:#fff;opacity:.8;text-decoration:underline;margin:0 9px}
 .v8 footer .legal-links a:hover{opacity:1}
+
+/* ============================================================
+   TACO TUESDAY page (v8) — route: /taco-tuesday
+   ============================================================ */
+.v8 .tt-hero{padding:46px 0 10px;text-align:center}
+.v8 .tt-hero .scr{color:var(--mag);font-size:clamp(24px,3.2vw,40px);transform:rotate(-3deg);margin-bottom:2px}
+.v8 .tt-hero h1{font-family:'Bangers',cursive;font-weight:400;letter-spacing:.02em;line-height:.9;font-size:clamp(54px,10vw,120px);text-shadow:3px 4px 0 rgba(31,58,99,.14);margin:4px 0 14px}
+.v8 .tt-hero h1 .w1{color:var(--navy)}
+.v8 .tt-hero h1 .w2{color:var(--orng)}
+.v8 .tt-hero .tagblk{display:inline-block;background:var(--mag);color:#fff;font-family:'Fredoka',sans-serif;font-weight:600;padding:8px 18px;border-radius:8px;transform:rotate(-1.5deg);margin-bottom:18px}
+.v8 .tt-hero .lede{max-width:660px;margin:0 auto 24px;font-size:18px;color:#42546e}
+.v8 .tt-hero .ctas{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:26px}
+
+/* deal ticket */
+.v8 .tt-ticket{display:flex;align-items:center;justify-content:center;gap:30px;flex-wrap:wrap;background:#fff;max-width:600px;margin:0 auto;border-radius:22px;padding:26px 34px;box-shadow:0 22px 44px -26px rgba(31,58,99,.5);border:3px dashed var(--yel)}
+.v8 .tt-ticket .lab{font-family:'Bangers',cursive;color:var(--mag);font-size:16px;letter-spacing:.05em;line-height:1}
+.v8 .tt-ticket .amt{font-family:'Bangers',cursive;color:var(--purp);font-size:clamp(48px,9vw,74px);line-height:.8}
+.v8 .tt-ticket .amt sup{font-size:.42em;vertical-align:super}
+.v8 .tt-ticket .div{width:2px;align-self:stretch;background:repeating-linear-gradient(to bottom,#e3d4b5 0 7px,transparent 7px 14px)}
+.v8 .tt-ticket .when{text-align:left}
+.v8 .tt-ticket .when .k{font-family:'Bangers',cursive;color:var(--teal);font-size:18px;letter-spacing:.04em;line-height:1}
+.v8 .tt-ticket .when .v{font-family:'Bangers',cursive;font-size:34px;color:var(--navy);line-height:1.05}
+.v8 .tt-ticket .when .d{font-family:'Fredoka',sans-serif;font-weight:500;color:#5a6b82;font-size:13px}
+
+/* colored bands */
+.v8 .tt-band{padding:62px 0}
+.v8 .tt-band .head{text-align:center;max-width:680px;margin:0 auto 34px}
+.v8 .tt-band .head .scr{font-size:30px;transform:rotate(-2deg);display:inline-block;margin-bottom:2px}
+.v8 .tt-band .head h2{font-family:'Bangers',cursive;font-size:clamp(34px,5.4vw,58px);line-height:.96;letter-spacing:.02em}
+.v8 .tt-band .head p{font-family:'Fredoka',sans-serif;margin-top:8px;font-size:16px;opacity:.95}
+.v8 .tt-teal{background:var(--teal);color:#fff}
+.v8 .tt-teal .head .scr{color:#fff}
+.v8 .tt-orange{background:var(--orng);color:#fff}
+.v8 .tt-orange .head .scr{color:#fff}
+.v8 .tt-yellow{background:var(--yel);color:var(--navy)}
+.v8 .tt-yellow .head .scr{color:var(--mag)}
+
+/* build steps */
+.v8 .tt-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+.v8 .tt-step{background:rgba(255,255,255,.15);border:2px solid rgba(255,255,255,.45);border-radius:18px;padding:24px 22px}
+.v8 .tt-step .n{font-family:'Bangers',cursive;font-size:40px;line-height:.8;opacity:.92;display:block;margin-bottom:8px}
+.v8 .tt-step h3{font-family:'Bangers',cursive;font-size:24px;letter-spacing:.03em;margin-bottom:4px}
+.v8 .tt-step p{font-family:'Fredoka',sans-serif;font-size:15px;opacity:.95;line-height:1.55}
+
+/* drink deals */
+.v8 .tt-duo{display:grid;grid-template-columns:1fr 1fr;gap:24px;max-width:720px;margin:0 auto}
+.v8 .tt-deal{background:#fff;border-radius:20px;text-align:center;padding:34px 24px;box-shadow:0 20px 40px -26px rgba(31,58,99,.5)}
+.v8 .tt-deal .big{font-family:'Bangers',cursive;font-size:clamp(48px,9vw,76px);line-height:.8}
+.v8 .tt-deal.m .big{color:var(--mag)}
+.v8 .tt-deal.o .big{color:var(--orng)}
+.v8 .tt-deal h3{font-family:'Bangers',cursive;font-size:26px;letter-spacing:.03em;color:var(--purp);margin-top:4px}
+
+/* salsa bar */
+.v8 .tt-salsa{display:flex;align-items:center;gap:36px;flex-wrap:wrap;justify-content:center}
+.v8 .tt-salsa .copy{flex:1;min-width:280px;max-width:540px}
+.v8 .tt-salsa .scr{color:var(--mag);font-size:28px;transform:rotate(-2deg);display:inline-block}
+.v8 .tt-salsa h2{font-family:'Bangers',cursive;font-size:clamp(34px,5.4vw,58px);line-height:.96;letter-spacing:.02em;margin-bottom:8px}
+.v8 .tt-salsa p{font-family:'Fredoka',sans-serif;font-size:17px;margin-bottom:14px}
+.v8 .tt-chips{display:flex;flex-wrap:wrap;gap:10px}
+.v8 .tt-chip{background:var(--navy);color:#fff;font-family:'Fredoka',sans-serif;font-weight:600;font-size:13px;padding:8px 15px;border-radius:999px}
+.v8 .tt-pots{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;flex:0 0 auto}
+.v8 .tt-pot{width:56px;height:56px;border-radius:50%;border:4px solid rgba(0,0,0,.16);box-shadow:inset 0 -6px 10px rgba(0,0,0,.22)}
+
+/* rules */
+.v8 .tt-rules{text-align:center;padding:52px 0}
+.v8 .tt-rules .beat{font-size:clamp(20px,4vw,34px)}
+.v8 .tt-rules .beat .d{color:var(--purp)}
+.v8 .tt-fine{margin-top:16px;display:inline-flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.v8 .tt-fine span{background:#fff;border:2px solid var(--cream2);color:#5a6b82;font-family:'Fredoka',sans-serif;font-weight:600;font-size:13px;padding:7px 14px;border-radius:999px}
+
+/* closing cta */
+.v8 .tt-close{background:var(--mag);color:#fff;text-align:center;padding:64px 0}
+.v8 .tt-close h2{font-family:'Bangers',cursive;font-size:clamp(38px,6.4vw,68px);letter-spacing:.02em;line-height:.96}
+.v8 .tt-close p{font-family:'Fredoka',sans-serif;font-size:17px;margin:10px auto 24px;max-width:560px}
+.v8 .tt-close .ctas{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+.v8 .tt-close .btn-o{border-color:#fff}
+.v8 .tt-close .btn-ghost{background:transparent;color:#fff;border:3px solid rgba(255,255,255,.85)}
+.v8 .tt-close .btn-ghost:hover{background:rgba(255,255,255,.14)}
+
+/* responsive */
+@media(max-width:900px){
+  .v8 .tt-steps{grid-template-columns:1fr}
+  .v8 .tt-duo{grid-template-columns:1fr}
+}
+@media(max-width:560px){
+  .v8 .tt-ticket{gap:16px;padding:22px}
+  .v8 .tt-ticket .div{display:none}
+  .v8 .tt-hero h1{font-size:clamp(46px,15vw,74px)}
+}
