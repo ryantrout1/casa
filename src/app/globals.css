@@ -534,12 +534,12 @@ a{text-decoration:none;color:inherit}ul{list-style:none}
 .v8 .fzcard .frame{width:100%;border:6px solid #fff;border-bottom-width:8px;border-radius:16px;overflow:hidden;background:#fff;box-shadow:0 18px 38px -22px rgba(31,58,99,.55);transition:.25s}
 .v8 .fzcard:hover .frame{transform:translateY(-6px) rotate(-1deg);box-shadow:0 28px 50px -22px rgba(31,58,99,.6)}
 .v8 .fzcard img{width:100%;height:auto;display:block}
-.v8 .fzcard:nth-child(1) .frame{border-bottom-color:var(--mag)}
-.v8 .fzcard:nth-child(2) .frame{border-bottom-color:var(--teal)}
-.v8 .fzcard:nth-child(3) .frame{border-bottom-color:var(--orng)}
-.v8 .fzcard:nth-child(4) .frame{border-bottom-color:var(--purp)}
-.v8 .fzcard:nth-child(5) .frame{border-bottom-color:var(--lime)}
-.v8 .fzcard:nth-child(6) .frame{border-bottom-color:var(--yel)}
+.v8 .fzcard:nth-child(6n+1) .frame{border-bottom-color:var(--mag)}
+.v8 .fzcard:nth-child(6n+2) .frame{border-bottom-color:var(--teal)}
+.v8 .fzcard:nth-child(6n+3) .frame{border-bottom-color:var(--orng)}
+.v8 .fzcard:nth-child(6n+4) .frame{border-bottom-color:var(--purp)}
+.v8 .fzcard:nth-child(6n+5) .frame{border-bottom-color:var(--lime)}
+.v8 .fzcard:nth-child(6n) .frame{border-bottom-color:var(--yel)}
 .v8 .fzcard .cap{margin-top:14px;font-family:'Fredoka',sans-serif;font-weight:600;color:var(--navy);font-size:17px;text-align:center}
 
 .v8 .fz-cta{padding:52px 0;text-align:center;color:#fff;background:var(--purp)}

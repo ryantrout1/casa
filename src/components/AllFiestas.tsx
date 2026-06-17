@@ -1,4 +1,5 @@
 const FIESTAS = [
+  { img: "FLY_MXKOREA", cap: "México vs South Korea · June 18" },
   { img: "FLY_FIFA", cap: "FIFA Watch Parties" },
   { img: "FLY_LOTERIA", cap: "Lotería Night" },
   { img: "FLY_TACOTUE", cap: "Taco Tuesdays" },

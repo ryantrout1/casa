@@ -24,6 +24,12 @@ export default function Fiestas() {
         <div className="gallery">
           <div className="gcard">
             <img
+              src="/images/FLY_MXKOREA.jpg"
+              alt="México vs South Korea watch party — Thursday June 18, $2 beer when Mexico scores"
+            />
+          </div>
+          <div className="gcard">
+            <img
               src="/images/FLY_FIFA.jpg"
               alt="FIFA is Coming — watch every match with us"
             />
@@ -42,9 +48,6 @@ export default function Fiestas() {
               src="/images/FLY_MENU3.jpg"
               alt="3-Course Private Dining Menus"
             />
-          </div>
-          <div className="gcard">
-            <img src="/images/FLY_FAJITAWED.jpg" alt="Fajita Wednesdays" />
           </div>
         </div>
         <div className="more">
