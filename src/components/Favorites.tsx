@@ -10,24 +10,24 @@ export default function Favorites() {
           <div className="favwall">
             <div className="fcard">
               <div className="ph">
-                <img src="/images/HERO_FAJITA.jpg" alt="" />
+                <img src="/images/FAV_BIRRIA.jpg" alt="Birria tacos" />
               </div>
-              <h3>Sizzling Fajitas</h3>
-              <p>Steak, chicken or shrimp</p>
+              <h3>Birria Tacos</h3>
+              <p>Crispy, cheesy &amp; dipped in consommé</p>
             </div>
             <div className="fcard">
               <div className="ph">
-                <img src="/images/MOLC.jpg" alt="" />
+                <img src="/images/FAV_MOLCAJETE.jpg" alt="The Molcajete" />
               </div>
               <h3>The Molcajete</h3>
               <p>Made to share</p>
             </div>
             <div className="fcard">
               <div className="ph">
-                <img src="/images/TACOS.jpg" alt="" />
+                <img src="/images/FAV_CORNRIBS.jpg" alt="Corn ribs" />
               </div>
-              <h3>Street Tacos</h3>
-              <p>Fresh off the comal</p>
+              <h3>Corn Ribs</h3>
+              <p>Cotija, chipotle aioli &amp; lime</p>
             </div>
             <div className="fcard">
               <div className="ph">
@@ -38,7 +38,7 @@ export default function Favorites() {
             </div>
             <div className="fcard">
               <div className="ph">
-                <img src="/images/BRUNCH.jpg" alt="" />
+                <img src="/images/FAV_BRUNCH.jpg" alt="Weekend brunch" />
               </div>
               <h3>Weekend Brunch</h3>
               <p>Sat &amp; Sun</p>
