@@ -25,13 +25,10 @@ export default function Footer() {
               <a href="/catering">Events &amp; Catering</a>
             </li>
             <li>
-              <a href="/#specials">Taco Tuesday</a>
+              <a href="/taco-tuesday">Taco Tuesday</a>
             </li>
             <li>
-              <a href="/#specials">Brunch</a>
-            </li>
-            <li>
-              <a href="/#specials">Happy Hour</a>
+              <a href="/brunch">Brunch</a>
             </li>
             <li>
               <a href="/rewards">Casa Rewards</a>

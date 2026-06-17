@@ -44,9 +44,6 @@ export default function Header() {
                   <a href="/brunch">Brunch</a>
                 </li>
                 <li>
-                  <a href="/#specials">Happy Hour</a>
-                </li>
-                <li>
                   <a href="/#find">Find Us</a>
                 </li>
               </ul>
