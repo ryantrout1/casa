@@ -766,3 +766,38 @@ a{text-decoration:none;color:inherit}ul{list-style:none}
   .v8 .v6src header nav{flex:1 1 auto;min-width:0}
   .v8 .v6src header nav ul{justify-content:center}
 }
+
+/* ============================================================
+   BOOKING FORMS (v8) — /catering/<offering>
+   ============================================================ */
+.v8 .bk-hero{background:var(--yel);color:var(--navy);text-align:center;padding:44px 0 40px}
+.v8 .bk-hero .scr{color:var(--mag);font-size:clamp(24px,3.2vw,38px);transform:rotate(-3deg);display:inline-block;margin-bottom:2px}
+.v8 .bk-hero h1{font-family:'Bangers',cursive;font-weight:400;letter-spacing:.02em;line-height:.96;font-size:clamp(40px,7vw,82px);text-shadow:2px 3px 0 rgba(31,58,99,.14);margin:2px 0 14px}
+.v8 .bk-hero p{font-family:'Fredoka',sans-serif;font-weight:500;max-width:640px;margin:0 auto;font-size:17px;color:#3a3450}
+.v8 .bk-formwrap{background:var(--cream);padding:48px 0 72px}
+
+/* form internals (build on .joincard) */
+.v8 .joincard textarea{width:100%;padding:12px 14px;border:2px solid #e3d4b5;border-radius:10px;font-family:'Mulish',sans-serif;font-size:15px;color:var(--navy);background:var(--cream);resize:vertical}
+.v8 .joincard textarea:focus{outline:none;border-color:var(--teal);background:#fff}
+.v8 .bk-sec{font-family:'Bangers',cursive;letter-spacing:.03em;font-size:22px;color:var(--purp);margin:22px 0 12px;padding-bottom:6px;border-bottom:2px dashed #e3d4b5}
+.v8 .bk-sec:first-child{margin-top:0}
+.v8 .bk-pills{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px}
+.v8 .bk-pill{display:inline-flex;align-items:center;gap:7px;font-family:'Mulish',sans-serif;font-size:14px;color:var(--navy);background:var(--cream);border:2px solid #e3d4b5;border-radius:999px;padding:8px 14px;cursor:pointer}
+.v8 .bk-pill.on{border-color:var(--teal);background:#E1F5EE}
+.v8 .bk-pill input{width:auto;height:auto;flex:none;padding:0;margin:0;border:0;border-radius:0;background:none;accent-color:var(--teal)}
+.v8 .bk-radios{display:flex;flex-wrap:wrap;gap:16px;margin:0 0 14px;font-family:'Mulish',sans-serif;font-size:15px;color:var(--navy)}
+.v8 .bk-radios.col{flex-direction:column;gap:9px;align-items:flex-start}
+.v8 .bk-radios.col label{align-self:flex-start}
+.v8 .bk-radios label{display:inline-flex;align-items:center;gap:7px;cursor:pointer;font-weight:400;font-family:'Mulish',sans-serif;font-size:15px;color:var(--navy);margin:0}
+.v8 .bk-radios input{width:auto;height:auto;flex:none;padding:0;margin:0;border:0;border-radius:0;background:none;accent-color:var(--mag)}
+.v8 .bk-info{background:#E1F5EE;color:#085041;border-radius:10px;padding:11px 13px;margin:0 0 14px;font-size:13.5px;line-height:1.6}
+.v8 .bk-finehint{font-size:12px;color:#8a7a58;margin:2px 0 4px;line-height:1.5}
+.v8 .bk-policy{background:var(--cream);border:2px solid #e3d4b5;border-radius:10px;padding:12px 14px;margin:0 0 14px;font-size:13px;color:#5a6b82;line-height:1.7}
+.v8 .bk-est{display:flex;justify-content:space-between;align-items:baseline;gap:12px;background:#FAEEDA;border-radius:10px;padding:12px 14px;margin:0 0 16px}
+.v8 .bk-est span{font-size:13px;color:#854F0B}
+.v8 .bk-est em{font-style:normal;color:#BA7517}
+.v8 .bk-est b{font-family:'Bangers',cursive;font-size:26px;color:#633806;line-height:1}
+.v8 .bk-ack{display:flex;gap:9px;align-items:flex-start;margin:0 0 16px;font-family:'Mulish',sans-serif;font-weight:400;font-size:13.5px;color:#42546e;cursor:pointer}
+.v8 .bk-ack input{width:18px;height:18px;margin-top:2px;flex:none;accent-color:var(--mag)}
+.v8 .bk-err{background:#FCEBEB;color:#A32D2D;border-radius:10px;padding:10px 13px;margin:0 0 12px;font-size:13.5px;font-weight:700}
+.v8 .cat-taco .taco-cta{text-align:center;margin-top:26px}

@@ -1,5 +1,5 @@
-const PHONE = "623-386-4632";
-const TEL = "tel:6233864632";
+const PHONE = "623-306-2386";
+const TEL = "tel:6233062386";
 
 export default function Catering() {
   return (
@@ -224,6 +224,11 @@ export default function Catering() {
               3-hour time slot in our dedicated catering area · $150
               privacy/setup fee · 20% service &amp; production fee added to all
               packages
+            </div>
+            <div className="taco-cta">
+              <a className="btn btn-p" href="/catering/taco">
+                Start your booking
+              </a>
             </div>
           </div>
         </div>
