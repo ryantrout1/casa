@@ -1,10 +1,19 @@
+"use client";
+
+import { usePathname } from "next/navigation";
+
 export default function Header() {
+  const pathname = usePathname();
+  const isHome = pathname === "/";
+
   return (
     <div className="v6src">
       <header>
         <div className="wrap">
           <div className="bar">
-            <img src="/images/LOGO.png" alt="Casa de Leyva" />
+            <a href="/" aria-label="Casa de Leyva home">
+              <img src="/images/LOGO.png" alt="Casa de Leyva" />
+            </a>
             <input
               className="navtog"
               type="checkbox"
@@ -14,6 +23,11 @@ export default function Header() {
             <label className="hamb" htmlFor="ht-v8" aria-label="Menu"></label>
             <nav>
               <ul>
+                {!isHome && (
+                  <li>
+                    <a href="/">Home</a>
+                  </li>
+                )}
                 <li>
                   <a href="/menu">Menu</a>
                 </li>
