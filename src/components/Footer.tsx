@@ -81,6 +81,10 @@ export default function Footer() {
           {" \u00A0·\u00A0 "}
           <a href="/">www.casadeleyva.com</a>
         </div>
+        <div className="legal-links">
+          <a href="/privacy">Privacy Policy</a>
+          <a href="/terms">Terms &amp; Conditions</a>
+        </div>
         <div className="cr">
           © 2026 Casa de Leyva · ¡Donde cada día es una fiesta!
         </div>

@@ -2,7 +2,13 @@
 
 import { useState } from "react";
 
-type Form = { name: string; email: string; phone: string; birthday: string };
+type Form = {
+  name: string;
+  email: string;
+  phone: string;
+  birthday: string;
+  smsConsent: boolean;
+};
 
 export default function RewardsForm() {
   const [done, setDone] = useState(false);
@@ -11,18 +17,22 @@ export default function RewardsForm() {
     email: "",
     phone: "",
     birthday: "",
+    smsConsent: false,
   });
 
   function update(e: React.ChangeEvent<HTMLInputElement>) {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value, type, checked } = e.target;
+    setForm({ ...form, [name]: type === "checkbox" ? checked : value });
   }
 
   function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    // TODO: connect to CRM. The sign-up payload (name/email/phone/birthday)
-    // should be posted to whichever platform is live at launch
-    // (GoHighLevel now, HubSpot later). No backend is wired yet, so this
-    // currently just confirms on the client.
+    // TODO: connect to CRM. Post name/email/phone/birthday + smsConsent to
+    // whichever platform is live at launch (GoHighLevel now, HubSpot later).
+    // IMPORTANT for A2P/Twilio compliance: when smsConsent is true, also record
+    // proof of consent — a timestamp and the exact opt-in wording shown below —
+    // and store it with the contact. No backend is wired yet, so this currently
+    // just confirms on the client.
     setDone(true);
   }
 
@@ -68,7 +78,9 @@ export default function RewardsForm() {
       </div>
       <div className="row">
         <div className="field">
-          <label htmlFor="rw-phone">Phone</label>
+          <label htmlFor="rw-phone">
+            Mobile phone{form.smsConsent ? "" : " (optional)"}
+          </label>
           <input
             id="rw-phone"
             name="phone"
@@ -76,6 +88,7 @@ export default function RewardsForm() {
             value={form.phone}
             onChange={update}
             autoComplete="tel"
+            required={form.smsConsent}
           />
         </div>
         <div className="field">
@@ -90,6 +103,33 @@ export default function RewardsForm() {
           />
         </div>
       </div>
+
+      <label className="rw-consent" htmlFor="rw-sms">
+        <input
+          id="rw-sms"
+          name="smsConsent"
+          type="checkbox"
+          checked={form.smsConsent}
+          onChange={update}
+        />
+        <span>Yes! Text me Casa Rewards offers and updates.</span>
+      </label>
+      <p className="consent-fine">
+        By checking this box, you agree to receive recurring automated marketing
+        and informational text messages (e.g. offers, events, and rewards) from
+        Casa de Leyva at the mobile number provided. Consent is not a condition
+        of any purchase. Message frequency varies. Msg &amp; data rates may
+        apply. Reply HELP for help, STOP to cancel. See our{" "}
+        <a href="/privacy" target="_blank" rel="noopener noreferrer">
+          Privacy Policy
+        </a>{" "}
+        and{" "}
+        <a href="/terms#sms" target="_blank" rel="noopener noreferrer">
+          SMS Terms
+        </a>
+        .
+      </p>
+
       <button type="submit">Join Casa Rewards</button>
       <div className="fine">
         Free to join. We&apos;ll use your email for rewards and the occasional
