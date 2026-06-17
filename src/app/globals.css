@@ -233,7 +233,7 @@ a{text-decoration:none;color:inherit}ul{list-style:none}
 .v8 .v6src header nav ul{display:flex;gap:4px;flex-wrap:wrap;align-items:center}
 .v8 .v6src header nav a{font-family:'Nunito';font-weight:700;font-size:14.5px;color:var(--navy);padding:8px 13px;border-radius:8px;transition:.16s}
 .v8 .v6src header nav a:hover{background:var(--yel)}
-.v8 .v6src header .join{font-family:'Nunito';font-weight:800;text-transform:uppercase;font-size:13px;letter-spacing:.03em;background:var(--mag);color:#fff;padding:12px 20px;border-radius:10px;margin-left:auto}
+.v8 .v6src header .join{font-family:'Nunito';font-weight:800;text-transform:uppercase;font-size:13px;letter-spacing:.03em;background:var(--mag);color:#fff;padding:12px 20px;border-radius:10px}
 .v8 .v6src header .rule{height:7px;background:linear-gradient(90deg,var(--mag) 0 20%,var(--orng) 20% 40%,var(--yel) 40% 60%,var(--teal) 60% 80%,var(--purp) 80% 100%)}
 /* hero — teal block + photo collage */
   .v8 .v6src .hero{background:var(--purp);color:#fff;padding:58px 0 66px;overflow:hidden}
@@ -756,3 +756,13 @@ a{text-decoration:none;color:inherit}ul{list-style:none}
 .v8 .br-bar{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
 .v8 .br-bar .tt-chip{background:rgba(255,255,255,.16);border:2px solid rgba(255,255,255,.5);font-size:15px;padding:10px 18px}
 .v8 .tt-close.br-purp{background:var(--purp)}
+
+/* ============================================================
+   Header nav: keep nav centered between logo and Join Rewards
+   (desktop only; mobile <=880px still collapses to the hamburger)
+   ============================================================ */
+@media(min-width:881px){
+  .v8 .v6src header .bar{flex-wrap:nowrap}
+  .v8 .v6src header nav{flex:1 1 auto;min-width:0}
+  .v8 .v6src header nav ul{justify-content:center}
+}
