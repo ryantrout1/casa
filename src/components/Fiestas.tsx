@@ -1,3 +1,14 @@
+import FiestaGallery, { FlyerItem } from "@/components/FiestaGallery";
+
+const HOMEPAGE_FLYERS: FlyerItem[] = [
+  { img: "FLY_MXKOREA", alt: "México vs South Korea watch party — Thursday June 18", cap: "México vs South Korea" },
+  { img: "FLY_FIFA", alt: "FIFA is Coming — watch every match with us", cap: "FIFA Watch Parties" },
+  { img: "FLY_LOTERIA", alt: "Lotería Night", cap: "Lotería Night" },
+  { img: "FLY_TACOTUE", alt: "Taco Tuesdays", cap: "Taco Tuesdays" },
+  { img: "FLY_CINCO", alt: "Cinco de Mayo", cap: "Cinco de Mayo" },
+  { img: "FLY_MENU3", alt: "3-Course Private Dining Menus", cap: "Private Dining Menus" },
+];
+
 export default function Fiestas() {
   return (
     <section className="events sec" id="fiestas">
@@ -21,35 +32,7 @@ export default function Fiestas() {
             so you never miss one.
           </p>
         </div>
-        <div className="gallery">
-          <div className="gcard">
-            <img
-              src="/images/FLY_MXKOREA.jpg"
-              alt="México vs South Korea watch party — Thursday June 18, $2 beer when Mexico scores"
-            />
-          </div>
-          <div className="gcard">
-            <img
-              src="/images/FLY_FIFA.jpg"
-              alt="FIFA is Coming — watch every match with us"
-            />
-          </div>
-          <div className="gcard">
-            <img src="/images/FLY_LOTERIA.jpg" alt="Lotería Night" />
-          </div>
-          <div className="gcard">
-            <img src="/images/FLY_TACOTUE.jpg" alt="Taco Tuesdays" />
-          </div>
-          <div className="gcard">
-            <img src="/images/FLY_CINCO.jpg" alt="Cinco de Mayo" />
-          </div>
-          <div className="gcard">
-            <img
-              src="/images/FLY_MENU3.jpg"
-              alt="3-Course Private Dining Menus"
-            />
-          </div>
-        </div>
+        <FiestaGallery variant="gallery" items={HOMEPAGE_FLYERS} />
         <div className="more">
           <a className="btn btn-p" href="/fiestas">
             See All Fiestas

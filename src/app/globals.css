@@ -609,3 +609,14 @@ a{text-decoration:none;color:inherit}ul{list-style:none}
   .v8 .mn-grid{grid-template-columns:1fr}
   .v8 .beer-cols{grid-template-columns:1fr}
 }
+
+/* ============================================================
+   Flyer lightbox (fiesta gallery + fiestas page)
+   ============================================================ */
+.v8 .flyer-zoom{cursor:zoom-in}
+.v8 .flyer-zoom:focus-visible{outline:3px solid var(--teal);outline-offset:3px}
+.v8 .fl-overlay{position:fixed;inset:0;z-index:1000;background:rgba(15,20,30,.86);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:24px;cursor:zoom-out;animation:flFade .16s ease-out}
+.v8 .fl-overlay img{max-width:92vw;max-height:92vh;width:auto;height:auto;border-radius:10px;box-shadow:0 30px 80px rgba(0,0,0,.6);cursor:default}
+.v8 .fl-close{position:fixed;top:16px;right:20px;z-index:1001;width:46px;height:46px;border-radius:50%;border:none;background:rgba(255,255,255,.16);color:#fff;font-size:28px;line-height:1;cursor:pointer;display:grid;place-items:center;transition:.16s;-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
+.v8 .fl-close:hover{background:rgba(255,255,255,.32)}
+@keyframes flFade{from{opacity:0}to{opacity:1}}
