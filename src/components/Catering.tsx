@@ -82,6 +82,9 @@ export default function Catering() {
                     cake cutting
                   </li>
                 </ul>
+                <a className="btn btn-p tier-cta" href="/catering/social">
+                  Start your booking
+                </a>
               </div>
             </div>
 
@@ -115,6 +118,9 @@ export default function Catering() {
                     servers, cake cutting
                   </li>
                 </ul>
+                <a className="btn btn-p tier-cta" href="/catering/tradicion">
+                  Start your booking
+                </a>
               </div>
             </div>
 
@@ -152,6 +158,9 @@ export default function Catering() {
                   <li>Top-tier DJ/MC &amp; custom photo booth</li>
                   <li>Day-of coordinator, 2 security guards, 3 event servers</li>
                 </ul>
+                <a className="btn btn-p tier-cta" href="/catering/leyva-grand">
+                  Start your booking
+                </a>
               </div>
             </div>
           </div>

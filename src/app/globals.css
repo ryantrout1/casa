@@ -807,3 +807,21 @@ a{text-decoration:none;color:inherit}ul{list-style:none}
 /* override .joincard label{display:block} so flex layouts (gap) apply */
 .v8 .joincard .bk-pill{display:inline-flex}
 .v8 .joincard .bk-ack{display:flex}
+
+/* tier hero color variants (match the tier card colors) */
+.v8 .bk-hero.t-teal{background:var(--teal);color:#fff}
+.v8 .bk-hero.t-mag{background:var(--mag);color:#fff}
+.v8 .bk-hero.t-purp{background:var(--purp);color:#fff}
+.v8 .bk-hero.t-teal .scr,.v8 .bk-hero.t-mag .scr,.v8 .bk-hero.t-purp .scr{color:var(--yel)}
+.v8 .bk-hero.t-teal h1,.v8 .bk-hero.t-mag h1,.v8 .bk-hero.t-purp h1{color:#fff;text-shadow:2px 3px 0 rgba(0,0,0,.18)}
+.v8 .bk-hero.t-teal p,.v8 .bk-hero.t-mag p,.v8 .bk-hero.t-purp p{color:#fff;opacity:.96}
+
+/* package "what's included" summary box */
+.v8 .joincard .bk-summary{background:var(--cream);border:2px solid #e3d4b5;border-radius:12px;padding:16px 18px;margin-bottom:20px}
+.v8 .bk-summary .bk-sumhead{font-family:'Bangers',cursive;letter-spacing:.03em;font-size:19px;color:var(--purp);margin-bottom:8px}
+.v8 .bk-summary ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:7px}
+.v8 .bk-summary li{position:relative;padding-left:22px;font-family:'Mulish',sans-serif;font-size:13.5px;color:#42546e;line-height:1.5}
+.v8 .bk-summary li::before{content:"✦";position:absolute;left:2px;top:0;color:var(--orng)}
+
+/* tier card CTA */
+.v8 .cat-coll .tier .tier-cta{display:block;width:100%;text-align:center;margin-top:20px}
