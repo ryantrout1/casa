@@ -12,6 +12,8 @@ type Form = {
 
 export default function RewardsForm() {
   const [done, setDone] = useState(false);
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState<Form>({
     name: "",
     email: "",
@@ -25,15 +27,27 @@ export default function RewardsForm() {
     setForm({ ...form, [name]: type === "checkbox" ? checked : value });
   }
 
-  function submit(e: React.FormEvent<HTMLFormElement>) {
+  async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    // TODO: connect to CRM. Post name/email/phone/birthday + smsConsent to
-    // whichever platform is live at launch (GoHighLevel now, HubSpot later).
-    // IMPORTANT for A2P/Twilio compliance: when smsConsent is true, also record
-    // proof of consent — a timestamp and the exact opt-in wording shown below —
-    // and store it with the contact. No backend is wired yet, so this currently
-    // just confirms on the client.
-    setDone(true);
+    setError("");
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data?.error ?? "Something went wrong. Please try again.");
+        return;
+      }
+      setDone(true);
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   if (done) {
@@ -130,7 +144,12 @@ export default function RewardsForm() {
         .
       </p>
 
-      <button type="submit">Join Casa Rewards</button>
+      {error ? (
+        <p style={{ color: "#c0392b", margin: "8px 0 0" }}>{error}</p>
+      ) : null}
+      <button type="submit" disabled={submitting}>
+        {submitting ? "Joining…" : "Join Casa Rewards"}
+      </button>
       <div className="fine">
         Free to join. We&apos;ll use your email for rewards and the occasional
         members-only special — no spam, unsubscribe anytime.
