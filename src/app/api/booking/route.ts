@@ -46,7 +46,7 @@ export async function POST(req: Request) {
     const id = rows[0].id;
 
     // Notify the restaurant. An email failure must NEVER lose the saved lead.
-    const to = process.env.BOOKINGS_TO || "info@casadeleyva.net";
+    const to = process.env.BOOKINGS_TO || "ryan@casadeleyva.com";
     const apiKey = process.env.RESEND_API_KEY;
     if (apiKey) {
       try {
