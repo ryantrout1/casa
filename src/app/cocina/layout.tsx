@@ -16,7 +16,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <nav>
           <Link href="/cocina">Dashboard</Link>
           <Link href="/cocina/members">Members</Link>
-          <span className="soon">Campaigns (soon)</span>
+          <Link href="/cocina/campaigns">Campaigns</Link>
         </nav>
       </div>
       {children}
