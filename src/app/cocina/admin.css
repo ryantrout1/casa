@@ -1,10 +1,17 @@
 /* ===== Admin app shell (standalone: sidebar + content) ===== */
 .cq {
+  --navy: #3B628D; --orange: #EF7126; --purple: #775AA9; --teal: #55B1AD; --magenta: #DB53A9;
   position: fixed; inset: 0; z-index: 100;
   display: flex;
-  background: #f7f8fa;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  color: #1f2430;
+  background: #faf6ee;
+  font-family: "Nunito", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: #2a2f3a;
+}
+.cq::before {
+  content: ""; position: absolute; top: 0; left: 0; right: 0; height: 3px; z-index: 200;
+  background: linear-gradient(90deg,
+    var(--navy) 0 20%, var(--orange) 20% 40%, var(--purple) 40% 60%,
+    var(--teal) 60% 80%, var(--magenta) 80% 100%);
 }
 .cq, .cq * { box-sizing: border-box; }
 
@@ -15,9 +22,9 @@
   display: flex; flex-direction: column; overflow-y: auto;
 }
 .cq-brand { display: flex; align-items: center; gap: 10px; padding: 16px 18px; border-bottom: 1px solid #f0f1f4; }
-.cq-brand .mark { width: 30px; height: 30px; border-radius: 8px; flex: none; background: #3B628D; color: #fff; font-weight: 800; display: flex; align-items: center; justify-content: center; font-size: 0.95rem; }
-.cq-brand .name { font-weight: 700; color: #1f2430; font-size: 0.98rem; line-height: 1.15; }
-.cq-brand .name small { display: block; font-weight: 500; color: #9aa0ad; font-size: 0.7rem; }
+.cq-brand .mark { width: 32px; height: 32px; border-radius: 9px; flex: none; background: var(--navy); color: #fff; font-family: "Bangers", system-ui, sans-serif; letter-spacing: 1px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; padding-top: 3px; }
+.cq-brand .name { font-family: "Bangers", system-ui, sans-serif; letter-spacing: 0.5px; color: var(--navy); font-size: 1.3rem; line-height: 1; }
+.cq-brand .name small { display: block; font-family: "Nunito", sans-serif; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: #b0a999; font-size: 0.62rem; margin-top: 3px; }
 
 .cq-nav { padding: 10px 10px 24px; flex: 1; }
 .cq-group { margin-top: 14px; }
@@ -25,7 +32,7 @@
 .cq-group-label { font-size: 0.66rem; letter-spacing: 0.08em; text-transform: uppercase; color: #9aa0ad; font-weight: 700; padding: 0 10px; margin-bottom: 4px; }
 .cq-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; margin-bottom: 2px; color: #3a4150; text-decoration: none; font-size: 0.9rem; line-height: 1.2; }
 .cq-item:hover { background: #f1f3f7; }
-.cq-item.active { background: #eef2fb; color: #3B628D; font-weight: 600; }
+.cq-item.active { background: #eef2fb; color: var(--navy); font-weight: 700; box-shadow: inset 3px 0 0 var(--orange); }
 .cq-item .ico { width: 18px; height: 18px; flex: none; opacity: 0.85; }
 .cq-item.soon { color: #b7bcc6; cursor: default; }
 .cq-item.soon:hover { background: transparent; }
@@ -39,7 +46,7 @@
 .cq-inner { padding: 28px; max-width: 1080px; width: 100%; }
 
 /* ===== Content (shared) ===== */
-.cq-inner h1 { font-size: 1.4rem; margin: 0 0 4px; }
+.cq-inner h1 { font-size: 1.5rem; font-weight: 800; color: var(--navy); margin: 0 0 4px; }
 .cq-inner .lede { color: #6b7280; margin: 0 0 24px; font-size: 0.92rem; }
 
 .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; margin-bottom: 32px; }
