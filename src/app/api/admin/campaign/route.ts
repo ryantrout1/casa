@@ -71,7 +71,7 @@ export async function POST(req: Request) {
       if (!testEmail) {
         return NextResponse.json({ error: "A test email address is required." }, { status: 400 });
       }
-      const emailHtml = renderEmail(html, `${origin}/api/unsubscribe?m=test`);
+      const emailHtml = renderEmail(html, `${origin}/api/unsubscribe?m=test`, `${origin}/email/logo.jpg`);
       await sendBatch([{ to: testEmail, subject, html: emailHtml }]);
       return NextResponse.json({ ok: true, sent: 1, test: true });
     }
@@ -89,7 +89,7 @@ export async function POST(req: Request) {
       const emails = members.map((m) => ({
         to: m.email,
         subject,
-        html: renderEmail(html, `${origin}/api/unsubscribe?m=${m.id}`),
+        html: renderEmail(html, `${origin}/api/unsubscribe?m=${m.id}`, `${origin}/email/logo.jpg`),
       }));
 
       let sent = 0;
