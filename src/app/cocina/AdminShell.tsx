@@ -7,7 +7,13 @@ type Item = { label: string; href?: string; icon: string; soon?: boolean };
 type Group = { group: string; items: Item[] };
 
 const NAV: Group[] = [
-  { group: "Overview", items: [{ label: "Dashboard", href: "/cocina", icon: "dashboard" }] },
+  {
+    group: "Overview",
+    items: [
+      { label: "Dashboard", href: "/cocina", icon: "dashboard" },
+      { label: "Bookings", href: "/cocina/bookings", icon: "calendar" },
+    ],
+  },
   {
     group: "Members",
     items: [
@@ -66,6 +72,13 @@ function Icon({ name }: { name: string }) {
       </>
     ),
     bolt: <path d="M13 2 4 14h7l-1 8 9-12h-7z" />,
+    calendar: (
+      <>
+        <rect x="3" y="4.5" width="18" height="16" rx="2" />
+        <path d="M3 9.5h18" />
+        <path d="M8 3v3M16 3v3" />
+      </>
+    ),
     sms: <path d="M21 11.5a7.5 7.5 0 0 1-10.8 6.7L4 20l1.8-5.2A7.5 7.5 0 1 1 21 11.5z" />,
     chart: (
       <>
