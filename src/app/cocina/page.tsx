@@ -13,6 +13,7 @@ type Stats = {
   near_reward: number;
   outstanding: number;
   visits: number;
+  new_signups: number;
 };
 
 type NearRow = {
@@ -34,7 +35,8 @@ export default async function Dashboard() {
       (select count(*) from members where last_visit_at < now() - interval '60 days')::int as lapsed60,
       (select count(*) from members where punch_progress in (4, 9))::int as near_reward,
       (select count(*) from rewards where status = 'earned')::int as outstanding,
-      (select count(*) from visits)::int as visits
+      (select count(*) from visits)::int as visits,
+      (select count(*) from members where source = 'rewards_signup' and created_at > now() - interval '30 days')::int as new_signups
   `) as Stats[];
   const s = statsRows[0];
 
@@ -60,6 +62,7 @@ export default async function Dashboard() {
 
       <div className="stat-grid">
         {stat(s.members, "Members")}
+        {stat(s.new_signups, "New signups (30d)")}
         {stat(s.active30, "Visited in last 30 days")}
         {stat(s.lapsed60, "Lapsed (60+ days)")}
         {stat(s.near_reward, "One visit from a reward")}

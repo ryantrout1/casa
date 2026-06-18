@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { track } from "@vercel/analytics";
 
 type Form = {
   name: string;
@@ -43,6 +44,7 @@ export default function RewardsForm() {
         return;
       }
       setDone(true);
+      track("rewards_signup");
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {
