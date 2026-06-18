@@ -28,6 +28,7 @@ export async function POST(req: Request) {
     const sql = db();
     const body = await req.json();
     const phone = normPhone(body.phone);
+    const phone10 = phone ? phone.slice(-10) : null;
     const email = String(body.email ?? "").trim().toLowerCase() || null;
 
     if (!phone && !email) {
@@ -40,7 +41,9 @@ export async function POST(req: Request) {
     const found = (await sql`
       select id, name, punch_progress
       from members
-      where phone = ${phone} or email = ${email}
+      where (${phone10}::text is not null
+              and right(regexp_replace(coalesce(phone, ''), '[^0-9]', '', 'g'), 10) = ${phone10})
+         or (${email}::text is not null and email = ${email})
       limit 1
     `) as Member[];
 

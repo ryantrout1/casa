@@ -49,6 +49,19 @@ export async function POST(req: Request) {
     }
     const [bm, bd] = parseBirthday(body.birthday);
 
+    // Recognize an existing member regardless of stored phone format
+    // (migrated numbers carry a leading country-code "1").
+    const phone10 = phone.slice(-10);
+    const existing = (await sql`
+      select id from members
+      where (${email}::text is not null and email = ${email})
+         or right(regexp_replace(coalesce(phone, ''), '[^0-9]', '', 'g'), 10) = ${phone10}
+      limit 1
+    `) as { id: string }[];
+    if (existing.length > 0) {
+      return NextResponse.json({ ok: true, alreadyMember: true });
+    }
+
     let memberId: string;
     try {
       const rows = (await sql`
