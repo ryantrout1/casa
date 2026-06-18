@@ -111,7 +111,8 @@ table.t a:hover { text-decoration: underline; }
 .compose .img-preview img { max-width: 220px; max-height: 220px; border-radius: 8px; border: 1px solid #e6e8ec; display: block; }
 
 /* Rich text editor */
-.rte { border: 1px solid #cfd3da; border-radius: 8px; overflow: hidden; background: #fff; }
+.rte { border: 1px solid #cfd3da; border-radius: 8px; overflow: hidden; background: #fff; max-width: 640px; }
+.rte-imgbar .imgbar-hint { color: #c79a6a; font-size: 0.78rem; margin-left: 4px; }
 .rte-toolbar { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; padding: 8px 10px; border-bottom: 1px solid #e6e8ec; background: #fafbfc; }
 .rte-toolbar button { background: #fff; border: 1px solid #d7dbe2; border-radius: 6px; min-width: 32px; height: 30px; padding: 0 9px; font-size: 0.85rem; cursor: pointer; color: #3a4150; }
 .rte-toolbar button:hover { background: #eef2fb; border-color: #3B628D; }

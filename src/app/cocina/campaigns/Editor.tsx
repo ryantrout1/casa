@@ -12,14 +12,15 @@ const Editor = forwardRef<EditorHandle, { onUploadingChange?: (b: boolean) => vo
   function Editor({ onUploadingChange }, ref) {
     const elRef = useRef<HTMLDivElement>(null);
     const fileRef = useRef<HTMLInputElement>(null);
-    const [selectedImg, setSelectedImg] = useState<HTMLImageElement | null>(null);
+    const [hasImage, setHasImage] = useState(false);
     const [uploading, setUploading] = useState(false);
     const [note, setNote] = useState("");
 
     useImperativeHandle(ref, () => ({
       getHTML: () => {
-        // strip the selection outline class before exporting
-        elRef.current?.querySelectorAll("img.img-sel").forEach((i) => i.classList.remove("img-sel"));
+        elRef.current
+          ?.querySelectorAll("img.img-sel")
+          .forEach((i) => i.classList.remove("img-sel"));
         return elRef.current?.innerHTML ?? "";
       },
       isEmpty: () => {
@@ -38,6 +39,23 @@ const Editor = forwardRef<EditorHandle, { onUploadingChange?: (b: boolean) => vo
     function addLink() {
       const url = window.prompt("Link URL (https://…)");
       if (url) exec("createLink", url);
+    }
+
+    function selectImg(img: HTMLImageElement | null) {
+      elRef.current
+        ?.querySelectorAll("img.img-sel")
+        .forEach((i) => i.classList.remove("img-sel"));
+      if (img) img.classList.add("img-sel");
+    }
+
+    // The image the size controls act on: the one clicked (img-sel), else the last image.
+    function currentImg(): HTMLImageElement | null {
+      const el = elRef.current;
+      if (!el) return null;
+      const sel = el.querySelector("img.img-sel") as HTMLImageElement | null;
+      if (sel) return sel;
+      const imgs = el.querySelectorAll("img");
+      return imgs.length ? (imgs[imgs.length - 1] as HTMLImageElement) : null;
     }
 
     async function uploadFile(file: File): Promise<string | null> {
@@ -73,9 +91,19 @@ const Editor = forwardRef<EditorHandle, { onUploadingChange?: (b: boolean) => vo
     }
 
     function insertImage(url: string) {
-      elRef.current?.focus();
-      const html = `<img src="${url}" alt="" style="width:100%;max-width:100%;height:auto;display:block;border-radius:8px;margin:10px 0;" /><p><br></p>`;
-      document.execCommand("insertHTML", false, html);
+      const el = elRef.current;
+      if (!el) return;
+      el.focus();
+      document.execCommand(
+        "insertHTML",
+        false,
+        `<img src="${url}" alt="" style="width:100%;max-width:100%;height:auto;display:block;border-radius:8px;margin:10px 0;" /><p><br></p>`,
+      );
+      const imgs = el.querySelectorAll("img");
+      const last = imgs.length ? (imgs[imgs.length - 1] as HTMLImageElement) : null;
+      selectImg(last);
+      setHasImage(true);
+      setNote('Image added — use "Image size" below to shrink it.');
     }
 
     async function onPickFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -99,29 +127,30 @@ const Editor = forwardRef<EditorHandle, { onUploadingChange?: (b: boolean) => vo
           return;
         }
       }
-      // Paste as plain text to keep the email HTML clean.
       e.preventDefault();
-      const text = e.clipboardData.getData("text/plain");
-      document.execCommand("insertText", false, text);
+      document.execCommand("insertText", false, e.clipboardData.getData("text/plain"));
     }
 
     function onClickEditor(e: React.MouseEvent) {
       const t = e.target as HTMLElement;
-      if (selectedImg) selectedImg.classList.remove("img-sel");
       if (t.tagName === "IMG") {
-        const img = t as HTMLImageElement;
-        img.classList.add("img-sel");
-        setSelectedImg(img);
+        selectImg(t as HTMLImageElement);
+        setHasImage(true);
       } else {
-        setSelectedImg(null);
+        selectImg(null);
       }
     }
 
     function sizeImg(w: string) {
-      if (!selectedImg) return;
-      selectedImg.style.width = w;
-      selectedImg.style.maxWidth = "100%";
-      selectedImg.style.height = "auto";
+      const img = currentImg();
+      if (!img) {
+        setNote("Add an image first, then set its size.");
+        return;
+      }
+      img.style.width = w;
+      img.style.maxWidth = "100%";
+      img.style.height = "auto";
+      selectImg(img);
     }
 
     return (
@@ -141,15 +170,15 @@ const Editor = forwardRef<EditorHandle, { onUploadingChange?: (b: boolean) => vo
           <input ref={fileRef} type="file" accept="image/*" hidden onChange={onPickFile} />
         </div>
 
-        {selectedImg ? (
-          <div className="rte-imgbar">
-            <span>Selected image:</span>
-            <button type="button" onMouseDown={preventDefault} onClick={() => sizeImg("25%")}>25%</button>
-            <button type="button" onMouseDown={preventDefault} onClick={() => sizeImg("50%")}>50%</button>
-            <button type="button" onMouseDown={preventDefault} onClick={() => sizeImg("75%")}>75%</button>
-            <button type="button" onMouseDown={preventDefault} onClick={() => sizeImg("100%")}>Full</button>
-          </div>
-        ) : null}
+        <div className="rte-imgbar">
+          <span>Image size:</span>
+          <button type="button" onMouseDown={preventDefault} onClick={() => sizeImg("25%")}>25%</button>
+          <button type="button" onMouseDown={preventDefault} onClick={() => sizeImg("40%")}>40%</button>
+          <button type="button" onMouseDown={preventDefault} onClick={() => sizeImg("60%")}>60%</button>
+          <button type="button" onMouseDown={preventDefault} onClick={() => sizeImg("80%")}>80%</button>
+          <button type="button" onMouseDown={preventDefault} onClick={() => sizeImg("100%")}>Full</button>
+          <span className="imgbar-hint">{hasImage ? "click an image to pick which one" : "add an image first"}</span>
+        </div>
 
         <div
           ref={elRef}
@@ -158,7 +187,7 @@ const Editor = forwardRef<EditorHandle, { onUploadingChange?: (b: boolean) => vo
           suppressContentEditableWarning
           onPaste={onPaste}
           onClick={onClickEditor}
-          data-placeholder="Write your message… format with the toolbar, add or paste an image anywhere, then click the image to resize it."
+          data-placeholder="Write your message… format with the toolbar, add or paste an image anywhere, then use Image size to shrink it."
         />
         {note ? <p className="rte-note">{note}</p> : null}
       </div>
