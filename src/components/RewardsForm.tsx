@@ -92,17 +92,16 @@ export default function RewardsForm() {
       </div>
       <div className="row">
         <div className="field">
-          <label htmlFor="rw-phone">
-            Mobile phone{form.smsConsent ? "" : " (optional)"}
-          </label>
+          <label htmlFor="rw-phone">Mobile phone</label>
           <input
             id="rw-phone"
             name="phone"
             type="tel"
+            inputMode="tel"
             value={form.phone}
             onChange={update}
             autoComplete="tel"
-            required={form.smsConsent}
+            required
           />
         </div>
         <div className="field">
@@ -151,8 +150,9 @@ export default function RewardsForm() {
         {submitting ? "Joining…" : "Join Casa Rewards"}
       </button>
       <div className="fine">
-        Free to join. We&apos;ll use your email for rewards and the occasional
-        members-only special — no spam, unsubscribe anytime.
+        Free to join. We use your phone to pull up your rewards at the table,
+        and your email for the occasional members-only special — no spam,
+        unsubscribe anytime.
       </div>
     </form>
   );

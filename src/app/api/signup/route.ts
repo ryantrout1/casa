@@ -35,9 +35,15 @@ export async function POST(req: Request) {
     const phone = normPhone(body.phone);
     const smsConsent = Boolean(body.smsConsent);
 
-    if (!email && !phone) {
+    if (!email) {
       return NextResponse.json(
-        { error: "Email or phone is required." },
+        { error: "Email is required." },
+        { status: 400 },
+      );
+    }
+    if (!phone || phone.length < 10) {
+      return NextResponse.json(
+        { error: "A valid mobile phone number is required." },
         { status: 400 },
       );
     }
