@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import Editor, { type EditorHandle } from "./Editor";
 
 export default function Compose({
   subscriberCount,
@@ -10,53 +11,16 @@ export default function Compose({
   defaultTestEmail: string;
 }) {
   const [subject, setSubject] = useState("");
-  const [body, setBody] = useState("");
   const [testEmail, setTestEmail] = useState(defaultTestEmail);
-  const [imageUrl, setImageUrl] = useState("");
-  const [uploading, setUploading] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
-
-  async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 4_000_000) {
-      setErr(true);
-      setMsg("That image is over ~4MB — try a smaller/compressed version.");
-      if (fileRef.current) fileRef.current.value = "";
-      return;
-    }
-    setUploading(true);
-    setErr(false);
-    setMsg("");
-    try {
-      const fd = new FormData();
-      fd.append("file", file);
-      const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
-      const data = await res.json();
-      if (!res.ok) {
-        setErr(true);
-        setMsg(data?.error ?? "Upload failed.");
-        return;
-      }
-      setImageUrl(data.url);
-    } catch {
-      setErr(true);
-      setMsg("Upload failed.");
-    } finally {
-      setUploading(false);
-    }
-  }
-
-  function removeImage() {
-    setImageUrl("");
-    if (fileRef.current) fileRef.current.value = "";
-  }
+  const editorRef = useRef<EditorHandle>(null);
 
   async function run(action: "test" | "send") {
-    if (!subject.trim() || !body.trim()) {
+    const html = editorRef.current?.getHTML() ?? "";
+    if (!subject.trim() || editorRef.current?.isEmpty()) {
       setErr(true);
       setMsg("Add a subject and a message first.");
       return;
@@ -74,7 +38,7 @@ export default function Compose({
       const res = await fetch("/api/admin/campaign", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action, subject, body, testEmail, imageUrl }),
+        body: JSON.stringify({ action, subject, html, testEmail }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -110,30 +74,8 @@ export default function Compose({
 
       <div className="field-c">
         <label>Message</label>
-        <textarea
-          rows={9}
-          value={body}
-          onChange={(e) => setBody(e.target.value)}
-          placeholder={"Hola!\n\nWrite your message here. Leave a blank line between paragraphs.\n\n— The Casa de Leyva family"}
-        />
-        <p className="hint">Plain text. Blank line = new paragraph. Casa header, footer, and unsubscribe link are added automatically.</p>
-      </div>
-
-      <div className="field-c">
-        <label>Flyer image (optional)</label>
-        {imageUrl ? (
-          <div className="img-preview">
-            <img src={imageUrl} alt="flyer preview" />
-            <button type="button" className="ghost" onClick={removeImage}>
-              Remove
-            </button>
-          </div>
-        ) : (
-          <input ref={fileRef} type="file" accept="image/*" onChange={onFile} disabled={uploading} />
-        )}
-        <p className="hint">
-          {uploading ? "Uploading…" : "Appears below your text, like your flyer emails. Max ~4MB."}
-        </p>
+        <Editor ref={editorRef} onUploadingChange={setUploading} />
+        <p className="hint">Casa header, footer, and an unsubscribe link are added around this automatically. Use “Send test” to see exactly how it lands.</p>
       </div>
 
       <div className="field-c test-row">

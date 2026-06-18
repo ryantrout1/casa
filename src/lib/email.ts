@@ -1,31 +1,7 @@
 const FROM = "Casa de Leyva <rewards@updates.casadeleyva.com>";
 const ADDRESS = "424 E Monroe Ave, Buckeye, AZ 85326";
 
-export function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-}
-
-// Plain text → simple HTML: blank lines become paragraphs, single newlines <br>.
-export function textToHtml(text: string): string {
-  const esc = escapeHtml(text).trim();
-  return esc
-    .split(/\n{2,}/)
-    .map((p) => `<p style="margin:0 0 16px;">${p.replace(/\n/g, "<br>")}</p>`)
-    .join("");
-}
-
-export function renderEmail(
-  bodyHtml: string,
-  unsubscribeUrl: string,
-  imageUrl?: string,
-): string {
-  const imageRow = imageUrl
-    ? `<tr><td style="padding:0 28px 28px;"><img src="${imageUrl}" alt="" width="544" style="width:100%;max-width:544px;height:auto;border-radius:8px;display:block;border:0;"></td></tr>`
-    : "";
-
+export function renderEmail(bodyHtml: string, unsubscribeUrl: string): string {
   return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0;background:#f5f5f5;">
   <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#f5f5f5;padding:24px 0;">
@@ -33,7 +9,6 @@ export function renderEmail(
       <table width="600" cellpadding="0" cellspacing="0" role="presentation" style="max-width:600px;width:100%;background:#ffffff;border-radius:12px;overflow:hidden;font-family:Helvetica,Arial,sans-serif;color:#222222;">
         <tr><td style="background:#3B628D;padding:20px 28px;color:#ffffff;font-size:20px;font-weight:bold;">Casa de Leyva</td></tr>
         <tr><td style="padding:28px;font-size:16px;line-height:1.6;color:#222222;">${bodyHtml}</td></tr>
-        ${imageRow}
         <tr><td style="padding:20px 28px;border-top:1px solid #eeeeee;font-size:12px;color:#888888;line-height:1.6;">
           You're receiving this as a Casa Rewards member.<br>
           ${ADDRESS}<br>
