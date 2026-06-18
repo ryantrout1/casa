@@ -12,7 +12,7 @@ const NAV: Group[] = [
     group: "Members",
     items: [
       { label: "All Members", href: "/cocina/members", icon: "members" },
-      { label: "Rewards & Punch Card", icon: "gift", soon: true },
+      { label: "Rewards", href: "/cocina/rewards", icon: "gift" },
     ],
   },
   {
