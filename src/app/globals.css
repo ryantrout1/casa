@@ -827,11 +827,8 @@ a{text-decoration:none;color:inherit}ul{list-style:none}
 .v8 .cat-coll .tier .tier-cta{display:block;width:100%;text-align:center;margin-top:20px}
 
 /* ===== /hola — scan-to-check-in page (mobile-first) ===== */
-.hola{min-height:100vh;background:var(--cream);display:flex;flex-direction:column;align-items:center;
-  padding:0;font-family:'Mulish',system-ui,sans-serif;color:var(--navy)}
-.hola-picado{width:100%;height:14px;flex:none;
-  background:linear-gradient(90deg,var(--mag) 0 20%,var(--orng) 20% 40%,var(--yel) 40% 60%,var(--teal) 60% 80%,var(--purp) 80% 100%)}
-.hola-center{flex:1;display:flex;align-items:center;justify-content:center;width:100%;padding:28px 16px}
+.hola{background:var(--cream);display:flex;align-items:center;justify-content:center;min-height:58vh;
+  padding:44px 16px 60px;font-family:'Mulish',system-ui,sans-serif;color:var(--navy)}
 .hola-card{background:#fff;border-radius:20px;box-shadow:0 10px 30px rgba(31,58,99,.12);
   width:100%;max-width:420px;padding:26px 22px 28px}
 .hola-brand{text-align:center;margin-bottom:18px}

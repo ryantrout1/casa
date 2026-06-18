@@ -176,8 +176,6 @@ export default function Hola() {
 
   return (
     <main className="hola">
-      <div className="hola-picado" />
-      <div className="hola-center">
       <div className="hola-card">
         <div className="hola-brand">
           <span className="scr">porque eres de la familia</span>
@@ -308,7 +306,6 @@ export default function Hola() {
             <button className="hola-link" onClick={reset}>Done</button>
           </div>
         )}
-      </div>
       </div>
     </main>
   );

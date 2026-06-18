@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 import Hola from "@/components/Hola";
 
 export const metadata: Metadata = {
@@ -10,7 +12,9 @@ export const metadata: Metadata = {
 export default function HolaPage() {
   return (
     <div className="v8">
+      <Header />
       <Hola />
+      <Footer />
     </div>
   );
 }
