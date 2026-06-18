@@ -62,3 +62,28 @@ export function bookingEmailHtml(b: BookingInput): string {
   <table style="border-collapse:collapse;font-size:15px">${rows}</table>
 </div>`;
 }
+
+export function bookingAckSubject(): string {
+  return "We got your event request — Casa de Leyva";
+}
+
+export function bookingAckHtml(b: BookingInput): string {
+  const first = (b.contactName ?? "").trim().split(/\s+/)[0] || "there";
+  const pkg = b.packageName || b.package;
+  const dateBit =
+    b.eventDate && b.eventDate.trim() ? ` for ${esc(b.eventDate)}` : "";
+  return `<div style="font-family:Helvetica,Arial,sans-serif;max-width:520px;margin:0 auto;color:#111">
+  <div style="height:6px;background:linear-gradient(90deg,#DB53A9,#EF7126,#FFBF1F,#55B1AD,#775AA9);border-radius:3px;margin-bottom:22px"></div>
+  <h2 style="color:#3B628D;margin:0 0 12px">¡Gracias, ${esc(first)}!</h2>
+  <p style="font-size:16px;line-height:1.6;margin:0 0 14px">
+    Just letting you know we received your request for the <strong>${esc(pkg)}</strong>${dateBit}. This isn&rsquo;t a confirmation yet — someone from our team will reach out soon to go over the details and next steps.
+  </p>
+  <p style="font-size:16px;line-height:1.6;margin:0 0 14px">
+    Need us sooner? Give us a call at <a href="tel:623-306-2386" style="color:#EF7126;font-weight:600">623-306-2386</a>.
+  </p>
+  <p style="font-size:16px;line-height:1.6;margin:0 0 18px">¡Nos vemos pronto!</p>
+  <p style="font-size:14px;color:#6b7280;margin:0">
+    Casa de Leyva · Mexican Restaurant &amp; Cantina<br>424 E Monroe Ave, Buckeye, AZ
+  </p>
+</div>`;
+}

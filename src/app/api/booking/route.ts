@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { bookingSubject, bookingEmailHtml } from "@/lib/bookingEmail";
+import { bookingSubject, bookingEmailHtml, bookingAckSubject, bookingAckHtml } from "@/lib/bookingEmail";
 
 export const dynamic = "force-dynamic";
 
@@ -78,6 +78,29 @@ export async function POST(req: Request) {
         }
       } catch {
         // Swallow: the lead is already saved; emailed stays false as the signal.
+      }
+
+      // Send the guest a friendly acknowledgement (not a confirmation).
+      // Replies route to the restaurant inbox. Failure here is non-fatal.
+      if (email) {
+        try {
+          await fetch(RESEND_URL, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${apiKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              from: FROM,
+              to: [email],
+              reply_to: to,
+              subject: bookingAckSubject(),
+              html: bookingAckHtml({ ...b, package: pkg, contactName }),
+            }),
+          });
+        } catch {
+          // Non-fatal: the guest just won't get the acknowledgement.
+        }
       }
     }
 
