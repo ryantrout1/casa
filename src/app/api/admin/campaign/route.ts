@@ -3,13 +3,14 @@ import sanitizeHtml from "sanitize-html";
 import { db } from "@/lib/db";
 import { renderEmail, sendBatch } from "@/lib/email";
 
+export const dynamic = "force-dynamic";
+
 function chunk<T>(arr: T[], size: number): T[][] {
   const out: T[][] = [];
   for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
   return out;
 }
 
-// Keep only email-safe tags/attributes from the editor output.
 function clean(html: string): string {
   return sanitizeHtml(html, {
     allowedTags: [
@@ -19,11 +20,7 @@ function clean(html: string): string {
     allowedAttributes: {
       a: ["href", "target", "rel"],
       img: ["src", "alt", "style", "width"],
-      p: ["style"],
-      div: ["style"],
-      span: ["style"],
-      h2: ["style"],
-      h3: ["style"],
+      p: ["style"], div: ["style"], span: ["style"], h2: ["style"], h3: ["style"],
     },
     allowedStyles: {
       "*": {
@@ -47,6 +44,8 @@ function clean(html: string): string {
   });
 }
 
+type BatchResult = { data?: { id: string }[] };
+
 export async function POST(req: Request) {
   try {
     const sql = db();
@@ -56,8 +55,7 @@ export async function POST(req: Request) {
     const html = clean(String(body.html ?? ""));
 
     const textOnly = html.replace(/<[^>]+>/g, "").trim();
-    const hasContent = textOnly.length > 0 || html.includes("<img");
-    if (!subject || !hasContent) {
+    if (!subject || (textOnly.length === 0 && !html.includes("<img"))) {
       return NextResponse.json(
         { error: "Subject and a message are both required." },
         { status: 400 },
@@ -65,14 +63,21 @@ export async function POST(req: Request) {
     }
 
     const origin = new URL(req.url).origin;
+    const logoUrl = `${origin}/email/logo.jpg`;
 
     if (action === "test") {
       const testEmail = String(body.testEmail ?? "").trim();
       if (!testEmail) {
         return NextResponse.json({ error: "A test email address is required." }, { status: 400 });
       }
-      const emailHtml = renderEmail(html, `${origin}/api/unsubscribe?m=test`, `${origin}/email/logo.jpg`);
-      await sendBatch([{ to: testEmail, subject, html: emailHtml }]);
+      const emailHtml = renderEmail(html, `${origin}/api/unsubscribe?m=test`, logoUrl);
+      const result = (await sendBatch([{ to: testEmail, subject, html: emailHtml }])) as BatchResult;
+      const resendId = result?.data?.[0]?.id ?? null;
+      // record the test send (no campaign) so the webhook can attach its events
+      await sql`
+        insert into email_sends (campaign_id, member_id, email, resend_id)
+        values (null, null, ${testEmail}, ${resendId})
+      `;
       return NextResponse.json({ ok: true, sent: 1, test: true });
     }
 
@@ -86,21 +91,44 @@ export async function POST(req: Request) {
         return NextResponse.json({ ok: true, sent: 0 });
       }
 
-      const emails = members.map((m) => ({
-        to: m.email,
-        subject,
-        html: renderEmail(html, `${origin}/api/unsubscribe?m=${m.id}`, `${origin}/email/logo.jpg`),
+      // Create the campaign first so unsubscribe links can carry its id.
+      const campaignRows = (await sql`
+        insert into campaigns (subject, body, audience_count, sent_count, status)
+        values (${subject}, ${html}, ${members.length}, 0, 'sending')
+        returning id
+      `) as { id: string }[];
+      const campaignId = campaignRows[0].id;
+
+      const recipients = members.map((m) => ({
+        m: m.id,
+        e: m.email,
+        html: renderEmail(
+          html,
+          `${origin}/api/unsubscribe?m=${m.id}&c=${campaignId}`,
+          logoUrl,
+        ),
       }));
 
+      const sends: { m: string; e: string; r: string | null }[] = [];
       let sent = 0;
-      for (const group of chunk(emails, 100)) {
-        await sendBatch(group);
+      for (const group of chunk(recipients, 100)) {
+        const result = (await sendBatch(
+          group.map((r) => ({ to: r.e, subject, html: r.html })),
+        )) as BatchResult;
+        const ids = Array.isArray(result?.data) ? result.data : [];
+        group.forEach((r, i) => sends.push({ m: r.m, e: r.e, r: ids[i]?.id ?? null }));
         sent += group.length;
       }
 
+      // bulk-insert one email_sends row per recipient
       await sql`
-        insert into campaigns (subject, body, audience_count, sent_count, status)
-        values (${subject}, ${html}, ${members.length}, ${sent}, 'sent')
+        insert into email_sends (campaign_id, member_id, email, resend_id)
+        select ${campaignId}::uuid, (x->>'m')::uuid, x->>'e', x->>'r'
+        from json_array_elements(${JSON.stringify(sends)}::json) as x
+      `;
+
+      await sql`
+        update campaigns set sent_count = ${sent}, status = 'sent' where id = ${campaignId}
       `;
 
       return NextResponse.json({ ok: true, sent });

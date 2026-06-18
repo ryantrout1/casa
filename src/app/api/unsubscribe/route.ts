@@ -1,8 +1,11 @@
 import { db } from "@/lib/db";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const m = (url.searchParams.get("m") ?? "").trim();
+  const c = (url.searchParams.get("c") ?? "").trim();
 
   let message: string;
   if (m === "test") {
@@ -13,6 +16,10 @@ export async function GET(req: Request) {
     try {
       const sql = db();
       await sql`update members set email_subscribed = false where id = ${m}`;
+      await sql`
+        insert into unsubscribes (member_id, campaign_id)
+        values (${m}, ${c ? c : null})
+      `;
       message =
         "You've been unsubscribed. You won't receive any more Casa Rewards emails.";
     } catch {
