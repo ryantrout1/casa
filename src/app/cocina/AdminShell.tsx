@@ -139,6 +139,18 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
             </div>
           ))}
         </nav>
+        <div className="cq-foot">
+          <button
+            type="button"
+            className="cq-lock"
+            onClick={async () => {
+              await fetch("/api/logout", { method: "POST" });
+              window.location.href = "/cocina-login";
+            }}
+          >
+            Lock admin
+          </button>
+        </div>
       </aside>
       <div className="cq-main">
         <div className="cq-topbar">
