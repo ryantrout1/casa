@@ -104,3 +104,8 @@ table.t a:hover { text-decoration: underline; }
   .cq-brand .name, .cq-item span:not(.tag), .cq-item .tag, .cq-group-label { display: none; }
   .cq-item { justify-content: center; }
 }
+
+/* Campaign flyer upload */
+.compose input[type="file"] { padding: 8px; border: 1px dashed #cfd3da; background: #fbfbfc; }
+.compose .img-preview { display: flex; align-items: flex-start; gap: 14px; }
+.compose .img-preview img { max-width: 220px; max-height: 220px; border-radius: 8px; border: 1px solid #e6e8ec; display: block; }
