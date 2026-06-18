@@ -24,6 +24,7 @@ const BEERS = ["Pacifico", "Michelob Ultra", "Dos XX", "Coors", "Modelo"];
 export default function TacoCateringForm() {
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState<Form>({
     contactName: "",
     email: "",
@@ -61,7 +62,7 @@ export default function TacoCateringForm() {
   const estimate =
     guests && guests > 0 ? Math.round((guests * 18 + 150) * 1.2) : null;
 
-  function submit(e: React.FormEvent<HTMLFormElement>) {
+  async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (form.proteins.length < 2) {
       setError("Please pick at least 2 proteins.");
@@ -72,12 +73,30 @@ export default function TacoCateringForm() {
       return;
     }
     setError("");
-    // TODO: connect to CRM. POST this payload to whichever platform is live
-    // at launch (Neon-backed booking table planned). No backend wired yet,
-    // so this currently just confirms on the client.
-    const payload = { package: "taco-catering", estimate, ...form };
-    console.log("Taco catering booking request:", payload);
-    setDone(true);
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/booking", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          package: "taco-catering",
+          packageName: "Taco Catering Package",
+          estimate,
+          ...form,
+          notes: form.foodNotes,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.error ?? "Something went wrong — please call us at 623-306-2386.");
+        return;
+      }
+      setDone(true);
+    } catch {
+      setError("Something went wrong — please call us at 623-306-2386.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   if (done) {
@@ -306,7 +325,9 @@ export default function TacoCateringForm() {
       </label>
 
       {error ? <div className="bk-err">{error}</div> : null}
-      <button type="submit">Request my date</button>
+      <button type="submit" disabled={submitting}>
+        {submitting ? "Sending…" : "Request my date"}
+      </button>
       <div className="fine">
         We&apos;ll follow up by phone to confirm your date, menu, and deposit.
       </div>

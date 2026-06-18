@@ -90,6 +90,7 @@ export default function EventTierForm({ tier }: { tier: string }) {
   const cfg = TIERS[tier];
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState<Form>({
     contactName: "",
     email: "",
@@ -126,7 +127,7 @@ export default function EventTierForm({ tier }: { tier: string }) {
     });
   }
 
-  function submit(e: React.FormEvent<HTMLFormElement>) {
+  async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (cfg.menu !== "grazing" && form.proteins.length !== 2) {
       setError("Please choose exactly 2 proteins for the buffet.");
@@ -137,17 +138,30 @@ export default function EventTierForm({ tier }: { tier: string }) {
       return;
     }
     setError("");
-    // TODO: connect to CRM. POST this payload to the planned Neon booking
-    // table. No backend wired yet, so this currently just confirms client-side.
-    const payload = {
-      package: tier,
-      packageName: cfg.name,
-      packagePrice: cfg.price,
-      estimate,
-      ...form,
-    };
-    console.log("Event booking request:", payload);
-    setDone(true);
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/booking", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          package: tier,
+          packageName: cfg.name,
+          price: cfg.price,
+          estimate,
+          ...form,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.error ?? "Something went wrong — please call us at 623-306-2386.");
+        return;
+      }
+      setDone(true);
+    } catch {
+      setError("Something went wrong — please call us at 623-306-2386.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   if (done) {
@@ -441,7 +455,9 @@ export default function EventTierForm({ tier }: { tier: string }) {
             </label>
 
             {error ? <div className="bk-err">{error}</div> : null}
-            <button type="submit">Request my date</button>
+            <button type="submit" disabled={submitting}>
+              {submitting ? "Sending…" : "Request my date"}
+            </button>
             <div className="fine">
               We&apos;ll follow up by phone to confirm your date, finalize the
               details, and arrange the deposit.
