@@ -16,6 +16,7 @@ export default function Compose({
   const [uploading, setUploading] = useState(false);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState(false);
+  const [confirmAll, setConfirmAll] = useState(false);
   const editorRef = useRef<EditorHandle>(null);
 
   async function run(action: "test" | "send") {
@@ -91,8 +92,19 @@ export default function Compose({
         </button>
       </div>
 
+      <div className="confirm-row">
+        <label>
+          <input
+            type="checkbox"
+            checked={confirmAll}
+            onChange={(e) => setConfirmAll(e.target.checked)}
+          />
+          Yes — I want to send this to all {subscriberCount} subscribers.
+        </label>
+      </div>
+
       <div className="send-row">
-        <button disabled={busy || uploading} onClick={() => run("send")}>
+        <button disabled={busy || uploading || !confirmAll} onClick={() => run("send")}>
           {busy ? "Sending…" : `Send to all ${subscriberCount} subscribers`}
         </button>
         {msg ? <span className={err ? "send-msg err" : "send-msg ok"}>{msg}</span> : null}

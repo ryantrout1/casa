@@ -108,11 +108,9 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
     <div className="cq">
       <aside className="cq-sidebar">
         <div className="cq-brand">
-          <div className="mark">C</div>
-          <div className="name">
-            Casa Rewards
-            <small>Admin</small>
-          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/email/logo.jpg" alt="Casa de Leyva" className="cq-logo" />
+          <div className="cq-brand-tag">Rewards Admin</div>
         </div>
         <nav className="cq-nav">
           {NAV.map((g) => (
