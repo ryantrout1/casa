@@ -34,16 +34,15 @@ export type Booking = {
   follow_up_date: string | null;
 };
 
-const STATUSES: { value: string; label: string }[] = [
-  { value: "new", label: "New" },
-  { value: "contacted", label: "Contacted" },
-  { value: "quoted", label: "Quoted" },
-  { value: "confirmed", label: "Confirmed" },
-  { value: "completed", label: "Completed" },
-  { value: "cancelled", label: "Cancelled" },
+const STATUSES: { value: string; label: string; accent: string }[] = [
+  { value: "new", label: "New", accent: "#E0A100" },
+  { value: "contacted", label: "Contacted", accent: "#3B7DC4" },
+  { value: "quoted", label: "Quoted", accent: "#8246AF" },
+  { value: "confirmed", label: "Confirmed", accent: "#16A89E" },
+  { value: "completed", label: "Completed", accent: "#8A93A3" },
+  { value: "cancelled", label: "Cancelled", accent: "#C0392B" },
 ];
-const statusLabel = (s: string) =>
-  STATUSES.find((x) => x.value === s)?.label ?? s;
+const meta = (s: string) => STATUSES.find((x) => x.value === s) ?? STATUSES[0];
 
 function fmt(d: string): string {
   return new Date(d).toLocaleString("en-US", {
@@ -54,14 +53,28 @@ function fmt(d: string): string {
     minute: "2-digit",
   });
 }
-function money(n: number | null): string {
-  return typeof n === "number" ? `$${n.toLocaleString("en-US")}` : "—";
-}
 function dash(s: string | null): string {
   return s && s.trim() ? s : "—";
 }
 function list(a: string[] | null): string {
   return a && a.length ? a.join(", ") : "—";
+}
+
+function KV({
+  label,
+  children,
+  wide,
+}: {
+  label: string;
+  children: React.ReactNode;
+  wide?: boolean;
+}) {
+  return (
+    <div className={`kv${wide ? " kv-wide" : ""}`}>
+      <div className="l">{label}</div>
+      <div className="v">{children}</div>
+    </div>
+  );
 }
 
 export default function BookingManager({ booking }: { booking: Booking }) {
@@ -93,6 +106,17 @@ export default function BookingManager({ booking }: { booking: Booking }) {
 
   const set = (k: keyof typeof f, v: string | boolean) =>
     setF((prev) => ({ ...prev, [k]: v }));
+
+  const m = meta(f.status);
+  const pkgName = dash(booking.package_name ?? booking.package);
+  const estDisplay = f.estimate
+    ? `$${Number(f.estimate).toLocaleString("en-US")}`
+    : "—";
+  const depositDisplay = f.depositPaid
+    ? `Paid${f.depositAmount.trim() ? ` · ${f.depositAmount}` : ""}`
+    : f.depositAmount.trim()
+      ? `${f.depositAmount} due`
+      : "—";
 
   async function save() {
     setSaving(true);
@@ -138,11 +162,7 @@ export default function BookingManager({ booking }: { booking: Booking }) {
   }
 
   async function del() {
-    if (
-      !window.confirm(
-        "Delete this booking permanently? This can't be undone.",
-      )
-    )
+    if (!window.confirm("Delete this booking permanently? This can't be undone."))
       return;
     setDeleting(true);
     setError("");
@@ -168,295 +188,272 @@ export default function BookingManager({ booking }: { booking: Booking }) {
       <p className="muted">
         <Link href="/cocina/bookings">← All bookings</Link>
       </p>
-      <h1>{f.contactName || "Booking"}</h1>
-      <p className="lede">
-        {dash(booking.package_name ?? booking.package)} · requested{" "}
-        {fmt(booking.created_at)} ·{" "}
-        <span className={`bk-pill bk-st-${f.status}`}>
-          {statusLabel(f.status)}
-        </span>
-      </p>
 
-      {/* Manage — Stephanie's workspace */}
-      <div className="panel compose">
-        <h2>Manage</h2>
-        <div className="bk-grid">
-          <div className="field-c">
-            <label>Status</label>
-            <select
-              value={f.status}
-              onChange={(e) => set("status", e.target.value)}
-            >
-              {STATUSES.map((s) => (
-                <option key={s.value} value={s.value}>
-                  {s.label}
-                </option>
-              ))}
-            </select>
+      {/* Summary header */}
+      <div className="bk-summary" style={{ borderLeftColor: m.accent }}>
+        <div className="bk-summary-top">
+          <div>
+            <h1 className="bk-name">{f.contactName || "Booking"}</h1>
+            <p className="bk-sub">
+              {pkgName} · requested {fmt(booking.created_at)}
+            </p>
+            <span className={`bk-pill bk-st-${f.status} bk-pill-lg`}>
+              {m.label}
+            </span>
           </div>
-          <div className="field-c">
-            <label>Follow up by</label>
-            <input
-              type="date"
-              value={f.followUpDate}
-              onChange={(e) => set("followUpDate", e.target.value)}
-            />
-          </div>
-          <div className="field-c">
-            <label>Deposit amount</label>
-            <input
-              type="text"
-              placeholder="e.g. $500"
-              value={f.depositAmount}
-              onChange={(e) => set("depositAmount", e.target.value)}
-            />
-          </div>
-          <div className="field-c">
-            <label>Deposit</label>
-            <label className="bk-checkrow">
-              <input
-                type="checkbox"
-                checked={f.depositPaid}
-                onChange={(e) => set("depositPaid", e.target.checked)}
-              />
-              Deposit paid
-            </label>
+          <div className="bk-quick">
+            {f.email ? <a href={`mailto:${f.email}`}>✉︎ Email</a> : null}
+            {f.phone ? <a href={`tel:${f.phone}`}>📞 Call</a> : null}
           </div>
         </div>
-        <div className="field-c">
-          <label>Internal notes — staff only, never shown to the guest</label>
-          <textarea
-            rows={3}
-            placeholder="Call notes, what was promised, special requests, who's handling it…"
-            value={f.internalNotes}
-            onChange={(e) => set("internalNotes", e.target.value)}
-          />
-        </div>
-        <div className="bk-actions">
-          <button onClick={save} disabled={saving}>
-            {saving ? "Saving…" : "Save changes"}
-          </button>
-          {saved ? <span className="bk-saved">Saved ✓</span> : null}
-          {error ? <span className="bk-err">{error}</span> : null}
+        <div className="bk-facts">
+          <div className="bk-fact">
+            <div className="l">Event date</div>
+            <div className="v">{dash(f.eventDate)}</div>
+          </div>
+          <div className="bk-fact">
+            <div className="l">Guests</div>
+            <div className="v">{dash(f.guestCount)}</div>
+          </div>
+          <div className="bk-fact">
+            <div className="l">Start time</div>
+            <div className="v">{dash(f.startTime)}</div>
+          </div>
+          <div className="bk-fact">
+            <div className="l">Estimate</div>
+            <div className="v">{estDisplay}</div>
+          </div>
+          <div className="bk-fact">
+            <div className="l">Deposit</div>
+            <div className="v">{depositDisplay}</div>
+          </div>
         </div>
       </div>
 
-      {/* Guest details — editable */}
-      <div className="panel compose">
-        <div className="bk-head">
-          <h2>Guest details</h2>
-          {!editDetails ? (
-            <button className="ghost" onClick={() => setEditDetails(true)}>
-              Edit details
-            </button>
-          ) : (
-            <span className="bk-headbtns">
-              <button onClick={save} disabled={saving}>
-                {saving ? "Saving…" : "Save"}
-              </button>
-              <button className="ghost" onClick={cancelEdit}>
-                Cancel
-              </button>
-            </span>
-          )}
-        </div>
-
-        {editDetails ? (
-          <>
+      <div className="bk-layout">
+        {/* LEFT — workspace */}
+        <div className="bk-main">
+          <div className="panel compose">
+            <h2>Manage</h2>
             <div className="bk-grid">
               <div className="field-c">
-                <label>Name</label>
-                <input
-                  value={f.contactName}
-                  onChange={(e) => set("contactName", e.target.value)}
-                />
+                <label>Status</label>
+                <select
+                  value={f.status}
+                  onChange={(e) => set("status", e.target.value)}
+                >
+                  {STATUSES.map((s) => (
+                    <option key={s.value} value={s.value}>
+                      {s.label}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className="field-c">
-                <label>Email</label>
-                <input
-                  value={f.email}
-                  onChange={(e) => set("email", e.target.value)}
-                />
-              </div>
-              <div className="field-c">
-                <label>Phone</label>
-                <input
-                  value={f.phone}
-                  onChange={(e) => set("phone", e.target.value)}
-                />
-              </div>
-              <div className="field-c">
-                <label>Event date</label>
+                <label>Follow up by</label>
                 <input
                   type="date"
-                  value={f.eventDate}
-                  onChange={(e) => set("eventDate", e.target.value)}
+                  value={f.followUpDate}
+                  onChange={(e) => set("followUpDate", e.target.value)}
                 />
               </div>
               <div className="field-c">
-                <label>Event type</label>
+                <label>Deposit amount</label>
                 <input
-                  value={f.eventType}
-                  onChange={(e) => set("eventType", e.target.value)}
+                  type="text"
+                  placeholder="e.g. $500"
+                  value={f.depositAmount}
+                  onChange={(e) => set("depositAmount", e.target.value)}
                 />
               </div>
               <div className="field-c">
-                <label>Guests</label>
-                <input
-                  value={f.guestCount}
-                  onChange={(e) => set("guestCount", e.target.value)}
-                />
-              </div>
-              <div className="field-c">
-                <label>Start time</label>
-                <input
-                  value={f.startTime}
-                  onChange={(e) => set("startTime", e.target.value)}
-                />
-              </div>
-              <div className="field-c">
-                <label>Estimate ($)</label>
-                <input
-                  type="number"
-                  value={f.estimate}
-                  onChange={(e) => set("estimate", e.target.value)}
-                />
+                <label>Deposit status</label>
+                <label className={`bk-toggle${f.depositPaid ? " on" : ""}`}>
+                  <input
+                    type="checkbox"
+                    checked={f.depositPaid}
+                    onChange={(e) => set("depositPaid", e.target.checked)}
+                  />
+                  {f.depositPaid ? "Paid" : "Not paid"}
+                </label>
               </div>
             </div>
             <div className="field-c">
-              <label>Guest notes</label>
+              <label>Internal notes — staff only, never shown to the guest</label>
               <textarea
-                rows={2}
-                value={f.notes}
-                onChange={(e) => set("notes", e.target.value)}
+                rows={4}
+                placeholder="Call notes, what was promised, special requests, who's handling it…"
+                value={f.internalNotes}
+                onChange={(e) => set("internalNotes", e.target.value)}
               />
             </div>
-          </>
-        ) : (
-          <table className="t">
-            <tbody>
-              <tr>
-                <td>Email</td>
-                <td>
-                  {f.email ? (
-                    <a href={`mailto:${f.email}`}>{f.email}</a>
-                  ) : (
-                    "—"
-                  )}
-                </td>
-              </tr>
-              <tr>
-                <td>Phone</td>
-                <td>
+            <div className="bk-actions">
+              <button onClick={save} disabled={saving}>
+                {saving ? "Saving…" : "Save changes"}
+              </button>
+              {saved ? <span className="bk-saved">Saved ✓</span> : null}
+              {error ? <span className="bk-err">{error}</span> : null}
+            </div>
+          </div>
+
+          <div className="panel compose">
+            <div className="bk-head">
+              <h2>Guest details</h2>
+              {!editDetails ? (
+                <button className="ghost" onClick={() => setEditDetails(true)}>
+                  Edit details
+                </button>
+              ) : (
+                <span className="bk-headbtns">
+                  <button onClick={save} disabled={saving}>
+                    {saving ? "Saving…" : "Save"}
+                  </button>
+                  <button className="ghost" onClick={cancelEdit}>
+                    Cancel
+                  </button>
+                </span>
+              )}
+            </div>
+
+            {editDetails ? (
+              <>
+                <div className="bk-grid">
+                  <div className="field-c">
+                    <label>Name</label>
+                    <input
+                      value={f.contactName}
+                      onChange={(e) => set("contactName", e.target.value)}
+                    />
+                  </div>
+                  <div className="field-c">
+                    <label>Email</label>
+                    <input
+                      value={f.email}
+                      onChange={(e) => set("email", e.target.value)}
+                    />
+                  </div>
+                  <div className="field-c">
+                    <label>Phone</label>
+                    <input
+                      value={f.phone}
+                      onChange={(e) => set("phone", e.target.value)}
+                    />
+                  </div>
+                  <div className="field-c">
+                    <label>Event date</label>
+                    <input
+                      type="date"
+                      value={f.eventDate}
+                      onChange={(e) => set("eventDate", e.target.value)}
+                    />
+                  </div>
+                  <div className="field-c">
+                    <label>Event type</label>
+                    <input
+                      value={f.eventType}
+                      onChange={(e) => set("eventType", e.target.value)}
+                    />
+                  </div>
+                  <div className="field-c">
+                    <label>Guests</label>
+                    <input
+                      value={f.guestCount}
+                      onChange={(e) => set("guestCount", e.target.value)}
+                    />
+                  </div>
+                  <div className="field-c">
+                    <label>Start time</label>
+                    <input
+                      value={f.startTime}
+                      onChange={(e) => set("startTime", e.target.value)}
+                    />
+                  </div>
+                  <div className="field-c">
+                    <label>Estimate ($)</label>
+                    <input
+                      type="number"
+                      value={f.estimate}
+                      onChange={(e) => set("estimate", e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="field-c">
+                  <label>Guest notes</label>
+                  <textarea
+                    rows={2}
+                    value={f.notes}
+                    onChange={(e) => set("notes", e.target.value)}
+                  />
+                </div>
+              </>
+            ) : (
+              <div className="kv-grid">
+                <KV label="Email">
+                  {f.email ? <a href={`mailto:${f.email}`}>{f.email}</a> : "—"}
+                </KV>
+                <KV label="Phone">
                   {f.phone ? <a href={`tel:${f.phone}`}>{f.phone}</a> : "—"}
-                </td>
-              </tr>
-              <tr>
-                <td>Event date</td>
-                <td>{dash(f.eventDate)}</td>
-              </tr>
-              <tr>
-                <td>Event type</td>
-                <td>{dash(f.eventType)}</td>
-              </tr>
-              <tr>
-                <td>Guests</td>
-                <td>{dash(f.guestCount)}</td>
-              </tr>
-              <tr>
-                <td>Start time</td>
-                <td>{dash(f.startTime)}</td>
-              </tr>
-              <tr>
-                <td>Estimate</td>
-                <td>
-                  {f.estimate ? `$${Number(f.estimate).toLocaleString("en-US")}` : "—"}
-                </td>
-              </tr>
-              <tr>
-                <td>Guest notes</td>
-                <td>{dash(f.notes)}</td>
-              </tr>
-            </tbody>
-          </table>
-        )}
-      </div>
+                </KV>
+                <KV label="Event date">{dash(f.eventDate)}</KV>
+                <KV label="Event type">{dash(f.eventType)}</KV>
+                <KV label="Guests">{dash(f.guestCount)}</KV>
+                <KV label="Start time">{dash(f.startTime)}</KV>
+                <KV label="Estimate">{estDisplay}</KV>
+                <KV label="Guest notes" wide>
+                  {dash(f.notes)}
+                </KV>
+              </div>
+            )}
+          </div>
+        </div>
 
-      {/* Menu & selections — read-only (guest's choices) */}
-      <div className="panel">
-        <h2>Menu &amp; selections</h2>
-        <table className="t">
-          <tbody>
-            <tr>
-              <td>Package</td>
-              <td>{dash(booking.package_name ?? booking.package)}</td>
-            </tr>
-            <tr>
-              <td>List price</td>
-              <td>{dash(booking.price)}</td>
-            </tr>
-            <tr>
-              <td>Service style</td>
-              <td>{dash(booking.service_style)}</td>
-            </tr>
-            <tr>
-              <td>Bar</td>
-              <td>{dash(booking.bar_type)}</td>
-            </tr>
-            <tr>
-              <td>Proteins</td>
-              <td>{list(booking.proteins)}</td>
-            </tr>
-            <tr>
-              <td>Beers</td>
-              <td>{list(booking.beers)}</td>
-            </tr>
-            <tr>
-              <td>Tortillas</td>
-              <td>{dash(booking.tortillas)}</td>
-            </tr>
-            <tr>
-              <td>Agreed to deposit &amp; policies</td>
-              <td>{booking.policy_ack ? "Yes" : "No"}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+        {/* RIGHT — reference + danger */}
+        <div className="bk-side">
+          <div className="panel">
+            <h2>Menu &amp; selections</h2>
+            <div className="kv-grid">
+              <KV label="Package" wide>
+                {pkgName}
+              </KV>
+              <KV label="List price">{dash(booking.price)}</KV>
+              <KV label="Service style">{dash(booking.service_style)}</KV>
+              <KV label="Bar">{dash(booking.bar_type)}</KV>
+              <KV label="Tortillas">{dash(booking.tortillas)}</KV>
+              <KV label="Proteins" wide>
+                {list(booking.proteins)}
+              </KV>
+              <KV label="Beers" wide>
+                {list(booking.beers)}
+              </KV>
+              <KV label="Agreed to deposit & policies" wide>
+                {booking.policy_ack ? "Yes" : "No"}
+              </KV>
+            </div>
+          </div>
 
-      {/* Record — read-only */}
-      <div className="panel">
-        <h2>Record</h2>
-        <table className="t">
-          <tbody>
-            <tr>
-              <td>Source</td>
-              <td>{booking.source}</td>
-            </tr>
-            <tr>
-              <td>Notification email</td>
-              <td>
-                {booking.emailed
-                  ? "Sent to the restaurant"
-                  : "Not sent (lead still saved)"}
-              </td>
-            </tr>
-            <tr>
-              <td>Received</td>
-              <td>{fmt(booking.created_at)}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+          <div className="panel">
+            <h2>Record</h2>
+            <div className="kv-grid">
+              <KV label="Source">{booking.source}</KV>
+              <KV label="Notification email">
+                {booking.emailed ? "Sent to the restaurant" : "Not sent"}
+              </KV>
+              <KV label="Received" wide>
+                {fmt(booking.created_at)}
+              </KV>
+            </div>
+          </div>
 
-      {/* Danger zone */}
-      <div className="panel bk-danger-panel">
-        <h2>Delete</h2>
-        <p className="muted">
-          Removes this request permanently. This can&apos;t be undone.
-        </p>
-        <button className="bk-danger" onClick={del} disabled={deleting}>
-          {deleting ? "Deleting…" : "Delete booking"}
-        </button>
+          <div className="panel bk-danger-panel">
+            <h2>Delete</h2>
+            <p className="muted">
+              Removes this request permanently. This can&apos;t be undone.
+            </p>
+            <button className="bk-danger" onClick={del} disabled={deleting}>
+              {deleting ? "Deleting…" : "Delete booking"}
+            </button>
+          </div>
+        </div>
       </div>
     </>
   );
