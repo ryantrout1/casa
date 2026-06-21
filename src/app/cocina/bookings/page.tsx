@@ -31,6 +31,18 @@ function money(n: number | null): string {
 function dash(s: string | null): string {
   return s && s.trim() ? s : "—";
 }
+function fmtDate(s: string | null): string {
+  if (!s || !s.trim()) return "—";
+  const m = s.trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return s;
+  const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  if (isNaN(d.getTime())) return s;
+  return d.toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
 
 export default async function BookingsPage() {
   const sql = db();
@@ -85,7 +97,7 @@ export default async function BookingsPage() {
                   received={fmtDateTime(r.created_at)}
                   pkg={dash(r.package_name ?? r.package)}
                   name={dash(r.contact_name)}
-                  eventDate={dash(r.event_date)}
+                  eventDate={fmtDate(r.event_date)}
                   guests={dash(r.guest_count)}
                   est={money(r.estimate)}
                   status={r.status}

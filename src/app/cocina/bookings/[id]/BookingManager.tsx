@@ -56,6 +56,18 @@ function fmt(d: string): string {
 function dash(s: string | null): string {
   return s && s.trim() ? s : "—";
 }
+function fmtDate(s: string | null): string {
+  if (!s || !s.trim()) return "—";
+  const m = s.trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return s;
+  const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  if (isNaN(d.getTime())) return s;
+  return d.toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
 function list(a: string[] | null): string {
   return a && a.length ? a.join(", ") : "—";
 }
@@ -209,7 +221,7 @@ export default function BookingManager({ booking }: { booking: Booking }) {
         <div className="bk-facts">
           <div className="bk-fact">
             <div className="l">Event date</div>
-            <div className="v">{dash(f.eventDate)}</div>
+            <div className="v">{fmtDate(f.eventDate)}</div>
           </div>
           <div className="bk-fact">
             <div className="l">Guests</div>
@@ -394,7 +406,7 @@ export default function BookingManager({ booking }: { booking: Booking }) {
                 <KV label="Phone">
                   {f.phone ? <a href={`tel:${f.phone}`}>{f.phone}</a> : "—"}
                 </KV>
-                <KV label="Event date">{dash(f.eventDate)}</KV>
+                <KV label="Event date">{fmtDate(f.eventDate)}</KV>
                 <KV label="Event type">{dash(f.eventType)}</KV>
                 <KV label="Guests">{dash(f.guestCount)}</KV>
                 <KV label="Start time">{dash(f.startTime)}</KV>
