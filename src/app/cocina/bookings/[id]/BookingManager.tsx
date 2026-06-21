@@ -62,9 +62,9 @@ function fmtDate(s: string | null): string {
   if (!m) return s;
   const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
   if (isNaN(d.getTime())) return s;
-  return d.toLocaleDateString("en-GB", {
-    day: "numeric",
+  return d.toLocaleDateString("en-US", {
     month: "long",
+    day: "numeric",
     year: "numeric",
   });
 }
