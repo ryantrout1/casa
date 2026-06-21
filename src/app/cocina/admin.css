@@ -84,9 +84,10 @@ table.t tr.row-link:focus-visible { outline: 2px solid #3B628D; outline-offset: 
 @media (max-width: 900px) { .bk-layout { grid-template-columns: 1fr; } .bk-side { position: static; } }
 
 /* ── Compact key/value (read-only) ── */
-.kv-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px 18px; }
+.kv-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px 22px; }
+.kv { min-width: 0; }
 .kv .l { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.05em; color: #9aa0ad; font-weight: 700; margin-bottom: 3px; }
-.kv .v { font-size: 0.93rem; color: #1f2937; line-height: 1.4; }
+.kv .v { font-size: 0.93rem; color: #1f2937; line-height: 1.4; overflow-wrap: anywhere; }
 .kv .v a { color: #3B628D; }
 .kv-wide { grid-column: 1 / -1; }
 
@@ -94,7 +95,7 @@ table.t tr.row-link:focus-visible { outline: 2px solid #3B628D; outline-offset: 
 .bk-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 18px; margin-bottom: 16px; }
 .bk-grid .field-c { margin-bottom: 0; }
 .compose select { width: 100%; padding: 10px 12px; border: 1px solid #cfd3da; border-radius: 8px; font-size: 0.95rem; font-family: inherit; background: #fff; }
-.bk-toggle { display: flex !important; align-items: center; gap: 10px; border: 1px solid #cfd3da; border-radius: 8px; padding: 0 12px; height: 42px; cursor: pointer; font-size: 0.92rem !important; color: #1f2937 !important; font-weight: 500 !important; background: #fff; margin: 0 !important; }
+.bk-toggle { display: flex !important; align-items: center; gap: 10px; border: 1px solid #cfd3da; border-radius: 8px; padding: 0 12px; height: 42px; cursor: pointer; font-size: 0.92rem !important; color: #1f2937 !important; font-weight: 500 !important; background: #fff; margin: 0 !important; white-space: nowrap; }
 .bk-toggle input { width: 18px; height: 18px; accent-color: #16A89E; cursor: pointer; }
 .bk-toggle.on { border-color: #55B1AD; background: #f0faf8; color: #166a43 !important; font-weight: 700 !important; }
 .bk-actions { display: flex; align-items: center; gap: 14px; margin-top: 4px; }
