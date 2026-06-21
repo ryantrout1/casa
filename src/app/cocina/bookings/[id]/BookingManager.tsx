@@ -387,7 +387,7 @@ export default function BookingManager({ booking }: { booking: Booking }) {
                 </div>
               </>
             ) : (
-              <div className="dl two">
+              <div className="dl">
                 <KV label="Email">
                   {f.email ? <a href={`mailto:${f.email}`}>{f.email}</a> : "—"}
                 </KV>

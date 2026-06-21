@@ -89,7 +89,7 @@ table.t tr.row-link:focus-visible { outline: 2px solid #3B628D; outline-offset: 
 .dl-row:last-child { border-bottom: none; }
 .dl.two .dl-row.full { grid-column: 1 / -1; }
 .dl-l { flex: 0 0 124px; font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.05em; color: #9aa0ad; font-weight: 700; line-height: 1.55; }
-.dl-v { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; font-size: 0.93rem; color: #1f2937; line-height: 1.55; }
+.dl-v { flex: 1 1 auto; min-width: 0; overflow-wrap: break-word; font-size: 0.93rem; color: #1f2937; line-height: 1.55; }
 .dl-v a { color: #3B628D; }
 @media (max-width: 560px) { .dl.two { grid-template-columns: 1fr; column-gap: 0; } .dl-l { flex-basis: 108px; } }
 
