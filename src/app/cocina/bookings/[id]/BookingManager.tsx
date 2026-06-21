@@ -70,9 +70,9 @@ function KV({
   wide?: boolean;
 }) {
   return (
-    <div className={`kv${wide ? " kv-wide" : ""}`}>
-      <div className="l">{label}</div>
-      <div className="v">{children}</div>
+    <div className={`dl-row${wide ? " full" : ""}`}>
+      <div className="dl-l">{label}</div>
+      <div className="dl-v">{children}</div>
     </div>
   );
 }
@@ -387,7 +387,7 @@ export default function BookingManager({ booking }: { booking: Booking }) {
                 </div>
               </>
             ) : (
-              <div className="kv-grid">
+              <div className="dl two">
                 <KV label="Email">
                   {f.email ? <a href={`mailto:${f.email}`}>{f.email}</a> : "—"}
                 </KV>
@@ -411,7 +411,7 @@ export default function BookingManager({ booking }: { booking: Booking }) {
         <div className="bk-side">
           <div className="panel">
             <h2>Menu &amp; selections</h2>
-            <div className="kv-grid">
+            <div className="dl">
               <KV label="Package" wide>
                 {pkgName}
               </KV>
@@ -433,7 +433,7 @@ export default function BookingManager({ booking }: { booking: Booking }) {
 
           <div className="panel">
             <h2>Record</h2>
-            <div className="kv-grid">
+            <div className="dl">
               <KV label="Source">{booking.source}</KV>
               <KV label="Notification email">
                 {booking.emailed ? "Sent to the restaurant" : "Not sent"}
