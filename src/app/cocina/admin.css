@@ -60,6 +60,9 @@ table.t { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 table.t th { text-align: left; color: #6b7280; font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.03em; padding: 8px 10px; border-bottom: 1px solid #e6e8ec; }
 table.t td { padding: 10px; border-bottom: 1px solid #f0f1f4; }
 table.t tr:last-child td { border-bottom: none; }
+table.t tr.row-link { cursor: pointer; }
+table.t tr.row-link:hover td { background: #faf6ec; }
+table.t tr.row-link:focus-visible { outline: 2px solid #3B628D; outline-offset: -2px; }
 table.t a { color: #3B628D; text-decoration: none; }
 table.t a:hover { text-decoration: underline; }
 

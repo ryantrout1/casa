@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 
-import Link from "next/link";
 import { db } from "@/lib/db";
+import BookingRow from "./BookingRow";
 
 type Row = {
   id: string;
@@ -79,24 +79,18 @@ export default async function BookingsPage() {
             </thead>
             <tbody>
               {rows.map((r) => (
-                <tr key={r.id}>
-                  <td>{fmtDateTime(r.created_at)}</td>
-                  <td>{dash(r.package_name ?? r.package)}</td>
-                  <td>
-                    <Link href={`/cocina/bookings/${r.id}`}>
-                      {dash(r.contact_name)}
-                    </Link>
-                  </td>
-                  <td>{dash(r.event_date)}</td>
-                  <td>{dash(r.guest_count)}</td>
-                  <td>{money(r.estimate)}</td>
-                  <td>
-                    {r.status === "new" ? <strong>new</strong> : r.status}
-                    {!r.emailed ? (
-                      <span className="muted"> · ✉︎ not sent</span>
-                    ) : null}
-                  </td>
-                </tr>
+                <BookingRow
+                  key={r.id}
+                  id={r.id}
+                  received={fmtDateTime(r.created_at)}
+                  pkg={dash(r.package_name ?? r.package)}
+                  name={dash(r.contact_name)}
+                  eventDate={dash(r.event_date)}
+                  guests={dash(r.guest_count)}
+                  est={money(r.estimate)}
+                  status={r.status}
+                  emailed={r.emailed}
+                />
               ))}
             </tbody>
           </table>
