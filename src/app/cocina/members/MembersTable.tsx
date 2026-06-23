@@ -10,9 +10,17 @@ export type Member = {
   phone: string | null;
   punch_progress: number;
   last_visit_at: string | null;
+  birth_month: number | null;
+  birth_day: number | null;
 };
 
-type SortKey = "name" | "contact" | "card" | "visit";
+type SortKey = "name" | "contact" | "card" | "visit" | "bday";
+
+const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+function fmtBirthday(m: number | null, d: number | null): string {
+  if (!m || !d || m < 1 || m > 12) return "—";
+  return `${MON[m - 1]} ${d}`;
+}
 
 function fmtDate(d: string | null): string {
   if (!d) return "—";
@@ -59,6 +67,13 @@ export default function MembersTable({ members }: { members: Member[] }) {
         );
       } else if (sortKey === "card") {
         cmp = a.punch_progress - b.punch_progress;
+      } else if (sortKey === "bday") {
+        const ak = a.birth_month && a.birth_day ? a.birth_month * 100 + a.birth_day : null;
+        const bk = b.birth_month && b.birth_day ? b.birth_month * 100 + b.birth_day : null;
+        if (ak === null && bk === null) cmp = 0;
+        else if (ak === null) return 1; // no birthday always sorts last
+        else if (bk === null) return -1;
+        else cmp = ak - bk;
       } else {
         const av = a.last_visit_at ? new Date(a.last_visit_at).getTime() : 0;
         const bv = b.last_visit_at ? new Date(b.last_visit_at).getTime() : 0;
@@ -148,6 +163,13 @@ export default function MembersTable({ members }: { members: Member[] }) {
               >
                 Last visit{arrow("visit")}
               </th>
+              <th
+                className="th-sort"
+                aria-sort={ariaSort("bday")}
+                onClick={() => sortBy("bday")}
+              >
+                Birthday{arrow("bday")}
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -174,11 +196,12 @@ export default function MembersTable({ members }: { members: Member[] }) {
                 </td>
                 <td>{m.punch_progress} / 10</td>
                 <td>{fmtDate(m.last_visit_at)}</td>
+                <td>{fmtBirthday(m.birth_month, m.birth_day)}</td>
               </tr>
             ))}
             {total === 0 ? (
               <tr>
-                <td colSpan={4} className="muted">
+                <td colSpan={5} className="muted">
                   No members match that search.
                 </td>
               </tr>
