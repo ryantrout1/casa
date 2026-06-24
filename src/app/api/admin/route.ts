@@ -70,7 +70,9 @@ export async function POST(req: Request) {
 
       const newProgress = nextProgress(progress);
       await sql`
-        update members set punch_progress = ${newProgress}, last_visit_at = now()
+        update members set punch_progress = ${newProgress},
+            lifetime_visits = lifetime_visits + 1,
+            last_visit_at = now()
         where id = ${memberId}
       `;
 

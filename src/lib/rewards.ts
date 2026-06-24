@@ -6,15 +6,20 @@
 // import from this module so a program change is a one-file edit, not a hunt
 // across a dozen files.
 //
-// Phase 1 (this file) reproduces the program exactly as it ran before the
-// refactor: free dessert at the 5th visit, free entrée at the 10th, then the
-// card resets. No behavior change. Later phases edit the config below.
+// The current ladder (Casa Familia Rewards): free agua fresca at the 3rd
+// visit, free dessert at the 5th, free appetizer at the 10th, then the card
+// resets and repeats. A separate lifetime visit count (members.lifetime_visits)
+// is never reset and is maintained by the check-in routes, not this module.
 
 export const CARD_SIZE = 10; // visits per card cycle; card resets after this
 
 export type RewardType =
   | "welcome_chips_queso"
+  | "punch_agua"
   | "punch_dessert"
+  | "punch_appetizer"
+  | "birthday_treat"
+  // legacy types kept so any rows created before this ladder still render
   | "punch_entree"
   | "birthday_entree";
 
@@ -22,10 +27,10 @@ export type RewardType =
 // treat or birthday reward).
 export type MilestoneRewardType = Extract<
   RewardType,
-  "punch_dessert" | "punch_entree"
+  "punch_agua" | "punch_dessert" | "punch_appetizer"
 >;
 
-export type MilestoneSlug = "dessert" | "entree";
+export type MilestoneSlug = "agua" | "dessert" | "appetizer";
 
 export type Milestone = {
   visit: number; // which visit in the cycle earns it
@@ -37,8 +42,9 @@ export type Milestone = {
 
 // The visit ladder for one card cycle, ordered by visit number.
 export const MILESTONES: Milestone[] = [
+  { visit: 3, type: "punch_agua", slug: "agua", label: "Free agua fresca", emoji: "🥤" },
   { visit: 5, type: "punch_dessert", slug: "dessert", label: "Free dessert", emoji: "🍰" },
-  { visit: CARD_SIZE, type: "punch_entree", slug: "entree", label: "Free entrée", emoji: "🌮" },
+  { visit: CARD_SIZE, type: "punch_appetizer", slug: "appetizer", label: "Free appetizer", emoji: "🌮" },
 ];
 
 // Reward type granted at signup.
@@ -48,7 +54,7 @@ export const WELCOME_REWARD: RewardType = "welcome_chips_queso";
 // Mirrors the historical rule: the entrée lands at the card size (or beyond,
 // defensively), dessert lands on its exact milestone visit.
 export function rewardForVisit(progress: number): MilestoneRewardType | null {
-  if (progress >= CARD_SIZE) return "punch_entree";
+  if (progress >= CARD_SIZE) return "punch_appetizer";
   const m = MILESTONES.find((x) => x.visit === progress);
   return m ? m.type : null;
 }
@@ -58,13 +64,18 @@ export function nextProgress(progress: number): number {
   return progress >= CARD_SIZE ? 0 : progress;
 }
 
-// "X more visits 'til a free dessert/entrée" line for the check-in screen.
+// "X more visits 'til a free …" line for the check-in screen.
 export function nextRewardLine(progress: number): string {
   if (progress >= CARD_SIZE) return "";
   const next = MILESTONES.find((m) => progress < m.visit);
   if (!next) return "";
   const left = next.visit - progress;
-  const treat = next.slug === "dessert" ? "dessert 🍰" : "entrée 🌮";
+  const treat =
+    next.slug === "agua"
+      ? "agua fresca 🥤"
+      : next.slug === "dessert"
+        ? "dessert 🍰"
+        : "appetizer 🌮";
   return `${left} more visit${left > 1 ? "s" : ""} 'til a free ${treat}`;
 }
 
@@ -93,7 +104,11 @@ export function oneAwayValues(): number[] {
 // Canonical short label, used on guest-facing surfaces and the redeem queue.
 export const REWARD_LABELS: Record<RewardType, string> = {
   welcome_chips_queso: "Free chips & queso",
+  punch_agua: "Free agua fresca",
   punch_dessert: "Free dessert",
+  punch_appetizer: "Free appetizer",
+  birthday_treat: "Birthday reward",
+  // legacy
   punch_entree: "Free entrée",
   birthday_entree: "Birthday entrée",
 };
@@ -104,7 +119,11 @@ export function rewardLabel(type: string): string {
 // Detailed label with milestone context, used on the admin member page.
 export const REWARD_LABELS_DETAILED: Record<RewardType, string> = {
   welcome_chips_queso: "Chips & queso (welcome)",
-  punch_dessert: `Free dessert (${MILESTONES[0].visit} visits)`,
+  punch_agua: `Free agua fresca (${MILESTONES[0].visit} visits)`,
+  punch_dessert: `Free dessert (${MILESTONES[1].visit} visits)`,
+  punch_appetizer: `Free appetizer (${CARD_SIZE} visits)`,
+  birthday_treat: "Birthday reward (appetizer or specialty drink)",
+  // legacy
   punch_entree: `Free entrée (${CARD_SIZE} visits)`,
   birthday_entree: "Birthday entrée",
 };

@@ -14,6 +14,7 @@ type Member = {
   birth_month: number | null;
   birth_day: number | null;
   punch_progress: number;
+  lifetime_visits: number;
   last_visit_at: string | null;
   email_subscribed: boolean;
   sms_consent: boolean;
@@ -47,7 +48,7 @@ export default async function MemberPage({
 
   const members = (await sql`
     select id, name, email, phone, birth_month, birth_day, punch_progress,
-           last_visit_at, email_subscribed, sms_consent, source
+           lifetime_visits, last_visit_at, email_subscribed, sms_consent, source
     from members where id = ${id}
   `) as Member[];
   if (members.length === 0) notFound();
@@ -78,6 +79,7 @@ export default async function MemberPage({
       <h1>{m.name ?? "(no name)"}</h1>
       <p className="lede">
         Card progress: <strong>{m.punch_progress} / {CARD_SIZE}</strong>
+        {" · "}Lifetime visits: <strong>{m.lifetime_visits}</strong>
       </p>
 
       <div className="panel">

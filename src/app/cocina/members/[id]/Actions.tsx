@@ -32,8 +32,9 @@ export default function Actions({
         return;
       }
       if (data.alreadyCheckedInToday) setMsg("Already checked in today.");
+      else if (data.rewardEarned === "punch_agua") setMsg("Visit added — free agua fresca earned!");
       else if (data.rewardEarned === "punch_dessert") setMsg("Visit added — free dessert earned!");
-      else if (data.rewardEarned === "punch_entree") setMsg("Visit added — free entrée earned! Card reset.");
+      else if (data.rewardEarned === "punch_appetizer") setMsg("Visit added — free appetizer earned! Card reset.");
       else setMsg("Done.");
       router.refresh();
     } catch {

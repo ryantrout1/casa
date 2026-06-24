@@ -457,7 +457,8 @@ a{text-decoration:none;color:inherit}ul{list-style:none}
 .v8 .punch .dot{width:46px;height:46px;border-radius:50%;border:2px dashed #cdbd97;display:grid;place-items:center;font-family:'Bangers',cursive;font-size:20px;color:#bdab84}
 .v8 .punch .lbl{font-family:'Fredoka',sans-serif;font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.03em;color:#9a8a66;text-align:center;line-height:1.2;min-height:24px}
 .v8 .punch.reward .dot{border-style:solid;width:54px;height:54px;font-size:15px;color:#fff;border-color:var(--mag);background:var(--mag);box-shadow:0 9px 20px -9px rgba(224,33,138,.65)}
-.v8 .punch.reward.gold .dot{border-color:var(--orng);background:var(--orng);box-shadow:0 9px 20px -9px rgba(244,123,32,.65)}
+.v8 .punch.reward.agua .dot{border-color:var(--teal);background:var(--teal);box-shadow:0 9px 20px -9px rgba(22,168,158,.6)}
+.v8 .punch.reward.appetizer .dot{border-color:var(--orng);background:var(--orng);box-shadow:0 9px 20px -9px rgba(244,123,32,.65)}
 .v8 .punch.reward .lbl{color:var(--navy)}
 .v8 .punchcard .signup-note{text-align:center;margin-top:22px;font-family:'Fredoka',sans-serif;font-weight:600;color:var(--navy);font-size:15px}
 .v8 .punchcard .signup-note b{color:var(--mag)}
@@ -860,6 +861,6 @@ a{text-decoration:none;color:inherit}ul{list-style:none}
 .hd{width:28px;height:28px;border-radius:50%;border:2px solid #d6dbe3;display:flex;align-items:center;
   justify-content:center;font-size:12px;font-weight:800;color:#c2c8d2;background:#fff}
 .hd.on{background:var(--teal);border-color:var(--teal);color:#fff}
-.hd.dessert,.hd.entree{border-color:var(--yel);color:var(--yel)}
-.hd.on.dessert,.hd.on.entree{background:var(--yel);border-color:var(--yel);color:var(--navy)}
+.hd.agua,.hd.dessert,.hd.appetizer{border-color:var(--yel);color:var(--yel)}
+.hd.on.agua,.hd.on.dessert,.hd.on.appetizer{background:var(--yel);border-color:var(--yel);color:var(--navy)}
 .hola-count{font-size:13px;font-weight:800;color:#4a5d77;margin:0}

@@ -56,9 +56,7 @@ export default function Rewards() {
                 <div
                   key={p.n}
                   className={
-                    "punch" +
-                    (p.reward ? " reward" : "") +
-                    (p.reward === "entree" ? " gold" : "")
+                    "punch" + (p.reward ? ` reward ${p.reward}` : "")
                   }
                 >
                   <div className="dot">{p.reward ? "★" : p.n}</div>
@@ -73,8 +71,8 @@ export default function Rewards() {
               redeemable on your next visit.
             </div>
             <div className="fineprint">
-              One punch per visit (max one per day). Free entrée up to $15; card
-              resets after the 10th visit.
+              One punch per visit (max one per day). The card resets after the
+              10th visit — then start earning again.
             </div>
           </div>
         </div>
@@ -135,8 +133,8 @@ export default function Rewards() {
               <div className="n">3</div>
               <h3>Earn &amp; redeem</h3>
               <p>
-                Free dessert at 5 visits, a free entrée at 10 — then start the
-                card again.
+                Free agua fresca at 3 visits, a dessert at 5, an appetizer at
+                10 — then start the card again.
               </p>
             </div>
           </div>

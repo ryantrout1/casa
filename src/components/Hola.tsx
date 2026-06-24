@@ -218,10 +218,10 @@ export default function Hola() {
                 </h2>
                 <p className="hola-lede">You&apos;re already checked in today — see you next visit!</p>
               </>
-            ) : result.rewardEarned === "punch_entree" ? (
+            ) : result.rewardEarned === "punch_appetizer" ? (
               <>
                 <div className="hola-emoji">🌮🎉</div>
-                <h2 className="pop">FREE ENTRÉE EARNED!</h2>
+                <h2 className="pop">FREE APPETIZER EARNED!</h2>
                 <p className="hola-lede">
                   {firstName ? `Way to go, ${firstName}! ` : ""}Show this screen to your server to redeem. Your card starts fresh — ¡a comer!
                 </p>
@@ -231,7 +231,15 @@ export default function Hola() {
                 <div className="hola-emoji">🍰🎉</div>
                 <h2 className="pop">FREE DESSERT EARNED!</h2>
                 <p className="hola-lede">
-                  {firstName ? `Nice, ${firstName}! ` : ""}Show this screen to your server. Keep going for a free entrée at 10.
+                  {firstName ? `Nice, ${firstName}! ` : ""}Show this screen to your server. Keep going for a free appetizer at 10.
+                </p>
+              </>
+            ) : result.rewardEarned === "punch_agua" ? (
+              <>
+                <div className="hola-emoji">🥤🎉</div>
+                <h2 className="pop">FREE AGUA FRESCA EARNED!</h2>
+                <p className="hola-lede">
+                  {firstName ? `¡Salud, ${firstName}! ` : ""}Show this screen to your server. Keep going for a free dessert at 5.
                 </p>
               </>
             ) : (
@@ -296,7 +304,7 @@ export default function Hola() {
             <p className="hola-lede">
               Welcome to la familia. Your <b>free chips &amp; queso</b> is ready — show your server to redeem on this visit.
             </p>
-            <p className="hola-fine">Scan again on your next visit to start earning toward a free dessert and entrée.</p>
+            <p className="hola-fine">Scan again on your next visit to start earning toward a free agua fresca, dessert, and appetizer.</p>
             <button className="hola-link" onClick={reset}>Done</button>
           </div>
         )}
