@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { CARD_SIZE, rewardForVisit, nextProgress } from "@/lib/rewards";
+import { CARD_SIZE, rewardForVisit, nextProgress, isBirthdayWeek, BIRTHDAY_REWARD } from "@/lib/rewards";
 
 function normPhone(p: unknown): string | null {
   const d = String(p ?? "").replace(/\D/g, "");
@@ -19,7 +19,13 @@ function phoenixToday(): string {
   }).format(new Date());
 }
 
-type Member = { id: string; name: string | null; punch_progress: number };
+type Member = {
+  id: string;
+  name: string | null;
+  punch_progress: number;
+  birth_month: number | null;
+  birth_day: number | null;
+};
 
 export async function POST(req: Request) {
   try {
@@ -37,7 +43,7 @@ export async function POST(req: Request) {
     }
 
     const found = (await sql`
-      select id, name, punch_progress
+      select id, name, punch_progress, birth_month, birth_day
       from members
       where (${phone10}::text is not null
               and right(regexp_replace(coalesce(phone, ''), '[^0-9]', '', 'g'), 10) = ${phone10})
@@ -89,12 +95,31 @@ export async function POST(req: Request) {
       where id = ${member.id}
     `;
 
+    // Birthday-week reward: once per year, independent of punch progress.
+    let birthdayEarned = false;
+    if (isBirthdayWeek(member.birth_month, member.birth_day)) {
+      const recent = (await sql`
+        select 1 from rewards
+        where member_id = ${member.id} and type = ${BIRTHDAY_REWARD}
+          and earned_at > now() - interval '330 days'
+        limit 1
+      `) as unknown[];
+      if (recent.length === 0) {
+        await sql`
+          insert into rewards (member_id, type, status)
+          values (${member.id}, ${BIRTHDAY_REWARD}, 'earned')
+        `;
+        birthdayEarned = true;
+      }
+    }
+
     return NextResponse.json({
       found: true,
       name: member.name,
       progress: newProgress,
       target: CARD_SIZE,
       rewardEarned,
+      birthdayEarned,
     });
   } catch {
     return NextResponse.json(

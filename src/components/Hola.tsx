@@ -15,6 +15,7 @@ type CheckinResult = {
   progress: number;
   target: number;
   rewardEarned: MilestoneRewardType | null;
+  birthdayEarned: boolean;
   alreadyToday: boolean;
 };
 
@@ -123,6 +124,7 @@ export default function Hola() {
         progress: data.progress ?? 0,
         target: data.target ?? CARD_SIZE,
         rewardEarned: data.rewardEarned ?? null,
+        birthdayEarned: Boolean(data.birthdayEarned),
         alreadyToday: Boolean(data.alreadyCheckedInToday),
       });
       setMode("result");
@@ -250,6 +252,11 @@ export default function Hola() {
                 </h2>
                 <p className="hola-lede">{nextRewardLine(result.progress)}</p>
               </>
+            )}
+            {result.birthdayEarned && (
+              <p className="hola-lede" style={{ color: "var(--mag)", fontWeight: 700 }}>
+                🎂 ¡Feliz cumpleaños! Birthday reward unlocked — a free appetizer or specialty drink, your pick. Show your server.
+              </p>
             )}
             <Dots progress={result.progress} />
             <p className="hola-count">{result.progress} / {CARD_SIZE} visits</p>

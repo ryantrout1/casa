@@ -21,7 +21,7 @@ export default function Rewards() {
           <div className="tagblk">Free to join</div>
           <p className="lede">
             Our guests are family — and family gets rewarded. Earn free food as
-            you go, an entrée on your birthday, and first dibs on every fiesta.
+            you go, a treat on your birthday, and first dibs on every fiesta.
           </p>
           <div className="beat">
             <span className="a">EAT</span>
@@ -92,8 +92,8 @@ export default function Rewards() {
             </div>
             <div className="perk">
               <div className="ic">🎂</div>
-              <h3>Birthday Entrée</h3>
-              <p>A free entrée, redeemable any time during your birthday week.</p>
+              <h3>Birthday Reward</h3>
+              <p>A free appetizer or specialty drink — your choice — during your birthday week.</p>
             </div>
             <div className="perk">
               <div className="ic">🎟️</div>

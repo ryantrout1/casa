@@ -136,3 +136,52 @@ export function nextRewardLabel(progress: number): string {
   const t = rewardForVisit(progress + 1);
   return t ? rewardLabel(t) : "";
 }
+
+// ── Birthday reward ───────────────────────────────────────────────────────
+// Granted once per year when a member checks in during their birthday week.
+// The guest chooses an appetizer or a specialty drink at the table, so it's a
+// single reward type; the label conveys the choice.
+export const BIRTHDAY_REWARD: RewardType = "birthday_treat";
+
+// A Phoenix calendar day (no DST) as a UTC-midnight Date, for week math.
+function phoenixDayUTC(ref: Date): Date {
+  const s = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Phoenix",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(ref); // "YYYY-MM-DD"
+  const [y, m, d] = s.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d));
+}
+
+function isLeapYear(y: number): boolean {
+  return (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
+}
+
+// The birthday's occurrence in a given year (Feb 29 → Feb 28 in non-leap years).
+function birthdayInYear(year: number, month: number, day: number): Date {
+  const d = month === 2 && day === 29 && !isLeapYear(year) ? 28 : day;
+  return new Date(Date.UTC(year, month - 1, d));
+}
+
+// True if `ref` (default: now) falls in the Sun–Sat week containing the
+// member's birthday. Adjacent years are checked so the Dec/Jan boundary works.
+export function isBirthdayWeek(
+  birthMonth: number | null,
+  birthDay: number | null,
+  ref: Date = new Date(),
+): boolean {
+  if (!birthMonth || !birthDay) return false;
+  const today = phoenixDayUTC(ref);
+  const y = today.getUTCFullYear();
+  for (const year of [y - 1, y, y + 1]) {
+    const bday = birthdayInYear(year, birthMonth, birthDay);
+    const weekStart = new Date(bday);
+    weekStart.setUTCDate(bday.getUTCDate() - bday.getUTCDay()); // back to Sunday
+    const weekEnd = new Date(weekStart);
+    weekEnd.setUTCDate(weekStart.getUTCDate() + 6); // Saturday
+    if (today >= weekStart && today <= weekEnd) return true;
+  }
+  return false;
+}

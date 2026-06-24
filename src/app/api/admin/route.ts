@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { rewardForVisit, nextProgress } from "@/lib/rewards";
+import { rewardForVisit, nextProgress, isBirthdayWeek, BIRTHDAY_REWARD } from "@/lib/rewards";
 
 function phoenixToday(): string {
   return new Intl.DateTimeFormat("en-CA", {
@@ -29,14 +29,35 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true });
     }
 
+    if (action === "grant_birthday") {
+      const memberId = String(body.memberId ?? "");
+      if (!memberId) {
+        return NextResponse.json({ error: "Missing memberId." }, { status: 400 });
+      }
+      const recent = (await sql`
+        select 1 from rewards
+        where member_id = ${memberId} and type = ${BIRTHDAY_REWARD}
+          and earned_at > now() - interval '330 days'
+        limit 1
+      `) as unknown[];
+      if (recent.length > 0) {
+        return NextResponse.json({ ok: true, alreadyGranted: true });
+      }
+      await sql`
+        insert into rewards (member_id, type, status)
+        values (${memberId}, ${BIRTHDAY_REWARD}, 'earned')
+      `;
+      return NextResponse.json({ ok: true, birthdayGranted: true });
+    }
+
     if (action === "checkin") {
       const memberId = String(body.memberId ?? "");
       if (!memberId) {
         return NextResponse.json({ error: "Missing memberId." }, { status: 400 });
       }
       const found = (await sql`
-        select id, punch_progress from members where id = ${memberId} limit 1
-      `) as { id: string; punch_progress: number }[];
+        select id, punch_progress, birth_month, birth_day from members where id = ${memberId} limit 1
+      `) as { id: string; punch_progress: number; birth_month: number | null; birth_day: number | null }[];
       if (found.length === 0) {
         return NextResponse.json({ error: "Member not found." }, { status: 404 });
       }
@@ -76,7 +97,25 @@ export async function POST(req: Request) {
         where id = ${memberId}
       `;
 
-      return NextResponse.json({ ok: true, progress: newProgress, rewardEarned });
+      // Birthday-week reward: once per year, independent of punch progress.
+      let birthdayEarned = false;
+      if (isBirthdayWeek(member.birth_month, member.birth_day)) {
+        const recent = (await sql`
+          select 1 from rewards
+          where member_id = ${memberId} and type = ${BIRTHDAY_REWARD}
+            and earned_at > now() - interval '330 days'
+          limit 1
+        `) as unknown[];
+        if (recent.length === 0) {
+          await sql`
+            insert into rewards (member_id, type, status)
+            values (${memberId}, ${BIRTHDAY_REWARD}, 'earned')
+          `;
+          birthdayEarned = true;
+        }
+      }
+
+      return NextResponse.json({ ok: true, progress: newProgress, rewardEarned, birthdayEarned });
     }
 
     return NextResponse.json({ error: "Unknown action." }, { status: 400 });

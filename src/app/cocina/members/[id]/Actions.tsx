@@ -31,11 +31,15 @@ export default function Actions({
         setMsg(data?.error ?? "Something went wrong.");
         return;
       }
-      if (data.alreadyCheckedInToday) setMsg("Already checked in today.");
-      else if (data.rewardEarned === "punch_agua") setMsg("Visit added — free agua fresca earned!");
-      else if (data.rewardEarned === "punch_dessert") setMsg("Visit added — free dessert earned!");
-      else if (data.rewardEarned === "punch_appetizer") setMsg("Visit added — free appetizer earned! Card reset.");
-      else setMsg("Done.");
+      let m = "Done.";
+      if (data.alreadyCheckedInToday) m = "Already checked in today.";
+      else if (data.rewardEarned === "punch_agua") m = "Visit added — free agua fresca earned!";
+      else if (data.rewardEarned === "punch_dessert") m = "Visit added — free dessert earned!";
+      else if (data.rewardEarned === "punch_appetizer") m = "Visit added — free appetizer earned! Card reset.";
+      else if (data.birthdayGranted) m = "Birthday reward granted!";
+      else if (data.alreadyGranted) m = "Birthday reward already given this year.";
+      if (data.birthdayEarned) m += " 🎂 Birthday reward too!";
+      setMsg(m);
       router.refresh();
     } catch {
       setMsg("Something went wrong.");
@@ -48,6 +52,9 @@ export default function Actions({
     <div className="actions">
       <button disabled={busy} onClick={() => call({ action: "checkin", memberId })}>
         + Add today&apos;s visit
+      </button>
+      <button disabled={busy} onClick={() => call({ action: "grant_birthday", memberId })}>
+        🎂 Grant birthday reward
       </button>
       {earnedRewards.map((r) => (
         <button
