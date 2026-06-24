@@ -2,23 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { rewardLabel } from "@/lib/rewards";
 
 type Reward = { id: string; type: string };
-
-function label(t: string): string {
-  switch (t) {
-    case "welcome_chips_queso":
-      return "Chips & queso";
-    case "punch_dessert":
-      return "Free dessert";
-    case "punch_entree":
-      return "Free entrée";
-    case "birthday_entree":
-      return "Birthday entrée";
-    default:
-      return t;
-  }
-}
 
 export default function Actions({
   memberId,
@@ -68,7 +54,7 @@ export default function Actions({
           disabled={busy}
           onClick={() => call({ action: "redeem", rewardId: r.id })}
         >
-          Mark “{label(r.type)}” redeemed
+          Mark “{rewardLabel(r.type)}” redeemed
         </button>
       ))}
       {msg ? <span className="msg">{msg}</span> : null}

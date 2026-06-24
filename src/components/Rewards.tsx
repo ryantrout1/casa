@@ -1,17 +1,10 @@
 import RewardsForm from "@/components/RewardsForm";
+import { MILESTONES, punchCells, type MilestoneSlug } from "@/lib/rewards";
 
-const PUNCHES = [
-  { n: 1 },
-  { n: 2 },
-  { n: 3 },
-  { n: 4 },
-  { n: 5, reward: "dessert" },
-  { n: 6 },
-  { n: 7 },
-  { n: 8 },
-  { n: 9 },
-  { n: 10, reward: "entree" },
-];
+const PUNCHES = punchCells();
+const SLUG_LABEL = Object.fromEntries(
+  MILESTONES.map((m) => [m.slug, m.label]),
+) as Record<MilestoneSlug, string>;
 
 export default function Rewards() {
   return (
@@ -70,11 +63,7 @@ export default function Rewards() {
                 >
                   <div className="dot">{p.reward ? "★" : p.n}</div>
                   <div className="lbl">
-                    {p.reward === "dessert"
-                      ? "Free dessert"
-                      : p.reward === "entree"
-                        ? "Free entrée"
-                        : ""}
+                    {p.reward ? SLUG_LABEL[p.reward] : ""}
                   </div>
                 </div>
               ))}

@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 import { db } from "@/lib/db";
+import { rewardLabel } from "@/lib/rewards";
 import RedeemButton from "./RedeemButton";
 
 type Row = {
@@ -13,17 +14,6 @@ type Row = {
   email: string | null;
   phone: string | null;
 };
-
-const LABELS: Record<string, string> = {
-  welcome_chips_queso: "Free chips & queso",
-  punch_dessert: "Free dessert",
-  punch_entree: "Free entrée",
-  birthday_entree: "Birthday entrée",
-};
-
-function label(type: string): string {
-  return LABELS[type] ?? type;
-}
 
 function fmtDate(d: string): string {
   return new Date(d).toLocaleDateString("en-US", {
@@ -76,7 +66,7 @@ export default async function RewardsPage() {
                       {r.name ?? r.email ?? r.phone ?? "(no name)"}
                     </Link>
                   </td>
-                  <td><span className="pill good">{label(r.type)}</span></td>
+                  <td><span className="pill good">{rewardLabel(r.type)}</span></td>
                   <td>{fmtDate(r.earned_at)}</td>
                   <td style={{ textAlign: "right" }}><RedeemButton rewardId={r.id} /></td>
                 </tr>

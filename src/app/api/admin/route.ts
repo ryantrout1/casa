@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-
-const TARGET = 10;
-const DESSERT_AT = 5;
+import { rewardForVisit, nextProgress } from "@/lib/rewards";
 
 function phoenixToday(): string {
   return new Intl.DateTimeFormat("en-CA", {
@@ -61,9 +59,7 @@ export async function POST(req: Request) {
       }
 
       const progress = member.punch_progress + 1;
-      let rewardEarned: string | null = null;
-      if (progress === DESSERT_AT) rewardEarned = "punch_dessert";
-      if (progress >= TARGET) rewardEarned = "punch_entree";
+      const rewardEarned: string | null = rewardForVisit(progress);
 
       if (rewardEarned) {
         await sql`
@@ -72,7 +68,7 @@ export async function POST(req: Request) {
         `;
       }
 
-      const newProgress = progress >= TARGET ? 0 : progress;
+      const newProgress = nextProgress(progress);
       await sql`
         update members set punch_progress = ${newProgress}, last_visit_at = now()
         where id = ${memberId}

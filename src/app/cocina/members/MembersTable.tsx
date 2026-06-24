@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { CARD_SIZE } from "@/lib/rewards";
 
 export type Member = {
   id: string;
@@ -194,7 +195,7 @@ export default function MembersTable({ members }: { members: Member[] }) {
                 <td>
                   {m.email ?? m.phone ?? <span className="muted">—</span>}
                 </td>
-                <td>{m.punch_progress} / 10</td>
+                <td>{m.punch_progress} / {CARD_SIZE}</td>
                 <td>{fmtDate(m.last_visit_at)}</td>
                 <td>{fmtBirthday(m.birth_month, m.birth_day)}</td>
               </tr>

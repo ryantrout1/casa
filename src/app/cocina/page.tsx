@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 import { db } from "@/lib/db";
+import { CARD_SIZE, oneAwayValues, nextRewardLabel } from "@/lib/rewards";
 
 type Stats = {
   members: number;
@@ -25,6 +26,8 @@ type NearRow = {
 export default async function Dashboard() {
   const sql = db();
 
+  const oneAway = oneAwayValues();
+
   const statsRows = (await sql`
     select
       (select count(*) from members)::int as members,
@@ -33,7 +36,7 @@ export default async function Dashboard() {
       (select count(*) from members where birth_month is not null)::int as with_birthday,
       (select count(*) from members where last_visit_at > now() - interval '30 days')::int as active30,
       (select count(*) from members where last_visit_at < now() - interval '60 days')::int as lapsed60,
-      (select count(*) from members where punch_progress in (4, 9))::int as near_reward,
+      (select count(*) from members where punch_progress = any(${oneAway}))::int as near_reward,
       (select count(*) from rewards where status = 'earned')::int as outstanding,
       (select count(*) from visits)::int as visits,
       (select count(*) from members where source = 'rewards_signup' and created_at > now() - interval '30 days')::int as new_signups
@@ -43,7 +46,7 @@ export default async function Dashboard() {
   const near = (await sql`
     select id, name, punch_progress
     from members
-    where punch_progress in (4, 9)
+    where punch_progress = any(${oneAway})
     order by punch_progress desc, name asc
     limit 30
   `) as NearRow[];
@@ -93,10 +96,10 @@ export default async function Dashboard() {
                       {m.name ?? <span className="muted">(no name)</span>}
                     </Link>
                   </td>
-                  <td>{m.punch_progress} / 10</td>
+                  <td>{m.punch_progress} / {CARD_SIZE}</td>
                   <td>
                     <span className="pill warn">
-                      {m.punch_progress === 4 ? "Free dessert" : "Free entrée"}
+                      {nextRewardLabel(m.punch_progress)}
                     </span>
                   </td>
                 </tr>

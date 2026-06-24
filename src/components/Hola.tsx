@@ -1,16 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import {
+  CARD_SIZE,
+  milestoneSlugAt,
+  nextRewardLine,
+  type MilestoneRewardType,
+} from "@/lib/rewards";
 
-const TARGET = 10;
-const DESSERT_AT = 5;
 const PHONE_KEY = "casa_phone";
 
 type CheckinResult = {
   name: string | null;
   progress: number;
   target: number;
-  rewardEarned: "punch_dessert" | "punch_entree" | null;
+  rewardEarned: MilestoneRewardType | null;
   alreadyToday: boolean;
 };
 
@@ -23,10 +27,10 @@ function digits(s: string): string {
 function Dots({ progress }: { progress: number }) {
   return (
     <div className="hola-dots">
-      {Array.from({ length: TARGET }).map((_, i) => {
+      {Array.from({ length: CARD_SIZE }).map((_, i) => {
         const n = i + 1;
         const on = n <= progress;
-        const milestone = n === DESSERT_AT ? "dessert" : n === TARGET ? "entree" : "";
+        const milestone = milestoneSlugAt(n);
         return (
           <div key={n} className={`hd ${on ? "on" : ""} ${milestone}`}>
             {milestone ? "★" : n}
@@ -35,16 +39,6 @@ function Dots({ progress }: { progress: number }) {
       })}
     </div>
   );
-}
-
-function nextRewardLine(progress: number): string {
-  if (progress >= TARGET) return "";
-  if (progress < DESSERT_AT) {
-    const left = DESSERT_AT - progress;
-    return `${left} more visit${left > 1 ? "s" : ""} 'til a free dessert 🍰`;
-  }
-  const left = TARGET - progress;
-  return `${left} more visit${left > 1 ? "s" : ""} 'til a free entrée 🌮`;
 }
 
 export default function Hola() {
@@ -127,7 +121,7 @@ export default function Hola() {
       setResult({
         name: data.name ?? null,
         progress: data.progress ?? 0,
-        target: data.target ?? TARGET,
+        target: data.target ?? CARD_SIZE,
         rewardEarned: data.rewardEarned ?? null,
         alreadyToday: Boolean(data.alreadyCheckedInToday),
       });
@@ -250,7 +244,7 @@ export default function Hola() {
               </>
             )}
             <Dots progress={result.progress} />
-            <p className="hola-count">{result.progress} / {TARGET} visits</p>
+            <p className="hola-count">{result.progress} / {CARD_SIZE} visits</p>
             <button className="hola-link" onClick={reset}>Not you? Use a different number</button>
           </div>
         )}

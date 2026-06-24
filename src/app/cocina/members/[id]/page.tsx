@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
+import { CARD_SIZE, rewardLabelDetailed } from "@/lib/rewards";
 import Actions from "./Actions";
 
 type Member = {
@@ -26,21 +27,6 @@ type Reward = {
   earned_at: string;
   redeemed_at: string | null;
 };
-
-function rewardLabel(t: string): string {
-  switch (t) {
-    case "welcome_chips_queso":
-      return "Chips & queso (welcome)";
-    case "punch_dessert":
-      return "Free dessert (5 visits)";
-    case "punch_entree":
-      return "Free entrée (10 visits)";
-    case "birthday_entree":
-      return "Birthday entrée";
-    default:
-      return t;
-  }
-}
 
 function fmtDate(d: string | null): string {
   if (!d) return "—";
@@ -91,7 +77,7 @@ export default async function MemberPage({
       </Link>
       <h1>{m.name ?? "(no name)"}</h1>
       <p className="lede">
-        Card progress: <strong>{m.punch_progress} / 10</strong>
+        Card progress: <strong>{m.punch_progress} / {CARD_SIZE}</strong>
       </p>
 
       <div className="panel">
@@ -131,7 +117,7 @@ export default async function MemberPage({
             <tbody>
               {rewards.map((r) => (
                 <tr key={r.id}>
-                  <td>{rewardLabel(r.type)}</td>
+                  <td>{rewardLabelDetailed(r.type)}</td>
                   <td>
                     <span className={`pill ${r.status === "earned" ? "warn" : "good"}`}>
                       {r.status}

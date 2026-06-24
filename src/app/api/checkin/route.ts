@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-
-const TARGET = 10; // free entrée at 10
-const DESSERT_AT = 5; // free dessert at 5
+import { CARD_SIZE, rewardForVisit, nextProgress } from "@/lib/rewards";
 
 function normPhone(p: unknown): string | null {
   const d = String(p ?? "").replace(/\D/g, "");
@@ -68,14 +66,12 @@ export async function POST(req: Request) {
         name: member.name,
         alreadyCheckedInToday: true,
         progress: member.punch_progress,
-        target: TARGET,
+        target: CARD_SIZE,
       });
     }
 
     const progress = member.punch_progress + 1;
-    let rewardEarned: string | null = null;
-    if (progress === DESSERT_AT) rewardEarned = "punch_dessert";
-    if (progress >= TARGET) rewardEarned = "punch_entree";
+    const rewardEarned: string | null = rewardForVisit(progress);
 
     if (rewardEarned) {
       await sql`
@@ -84,7 +80,7 @@ export async function POST(req: Request) {
       `;
     }
 
-    const newProgress = progress >= TARGET ? 0 : progress; // reset after the entrée
+    const newProgress = nextProgress(progress);
     await sql`
       update members
       set punch_progress = ${newProgress}, last_visit_at = now()
@@ -95,7 +91,7 @@ export async function POST(req: Request) {
       found: true,
       name: member.name,
       progress: newProgress,
-      target: TARGET,
+      target: CARD_SIZE,
       rewardEarned,
     });
   } catch {

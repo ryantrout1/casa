@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { WELCOME_REWARD } from "@/lib/rewards";
 
 function normPhone(p: unknown): string | null {
   const d = String(p ?? "").replace(/\D/g, "");
@@ -86,7 +87,7 @@ export async function POST(req: Request) {
     // Welcome treat: free chips & queso, redeemable on next visit
     await sql`
       insert into rewards (member_id, type, status)
-      values (${memberId}, 'welcome_chips_queso', 'earned')
+      values (${memberId}, ${WELCOME_REWARD}, 'earned')
     `;
 
     return NextResponse.json({ ok: true });
