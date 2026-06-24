@@ -10,6 +10,8 @@ import {
   rewardLabel,
   rewardLabelDetailed,
   nextRewardLabel,
+  isBirthdayWeek,
+  BIRTHDAY_REWARD,
 } from "./rewards";
 
 // Casa Familia Rewards ladder (Phase 2): agua fresca at the 3rd visit, dessert
@@ -128,5 +130,34 @@ describe("labels", () => {
     expect(nextRewardLabel(2)).toBe("Free agua fresca");
     expect(nextRewardLabel(4)).toBe("Free dessert");
     expect(nextRewardLabel(9)).toBe("Free appetizer");
+  });
+});
+
+describe("isBirthdayWeek", () => {
+  // Helper: a UTC noon Date for a Phoenix calendar day (Phoenix is UTC-7).
+  const day = (y: number, m: number, d: number) =>
+    new Date(Date.UTC(y, m - 1, d, 19, 0, 0)); // 19:00Z = 12:00 Phoenix same day
+
+  it("is true on the birthday itself", () => {
+    expect(isBirthdayWeek(6, 15, day(2026, 6, 15))).toBe(true);
+  });
+  it("is false well outside the birthday week", () => {
+    expect(isBirthdayWeek(6, 15, day(2026, 6, 25))).toBe(false); // +10 days
+    expect(isBirthdayWeek(6, 15, day(2026, 6, 5))).toBe(false); // -10 days
+  });
+  it("handles Feb 29 birthdays in a non-leap year (treated as Feb 28)", () => {
+    expect(isBirthdayWeek(2, 29, day(2025, 2, 28))).toBe(true);
+    expect(isBirthdayWeek(2, 29, day(2025, 3, 20))).toBe(false);
+  });
+  it("is false when no birthday is on file", () => {
+    expect(isBirthdayWeek(null, null, day(2026, 6, 15))).toBe(false);
+    expect(isBirthdayWeek(6, null, day(2026, 6, 15))).toBe(false);
+  });
+});
+
+describe("BIRTHDAY_REWARD", () => {
+  it("is the birthday treat type with a guest-choice label", () => {
+    expect(BIRTHDAY_REWARD).toBe("birthday_treat");
+    expect(rewardLabel(BIRTHDAY_REWARD)).toBe("Birthday reward");
   });
 });
