@@ -43,9 +43,6 @@ export default function Hero() {
             <div className="inner">
               <img src="/images/HERO_BAR.jpg" alt="" />
             </div>
-            <div className="vidnote">
-              <span className="play"></span> Background video plays here
-            </div>
           </div>
         </div>
       </div>
