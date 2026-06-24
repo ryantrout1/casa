@@ -12,10 +12,9 @@ import {
   nextRewardLabel,
 } from "./rewards";
 
-// Phase 1 is a behavior-preserving refactor. These tests pin the program
-// exactly as it ran before the lib existed: dessert at the 5th visit, entrée
-// at the 10th, card resets after 10. If a later phase changes the ladder,
-// these expectations change with it — intentionally.
+// Casa Familia Rewards ladder (Phase 2): agua fresca at the 3rd visit, dessert
+// at the 5th, appetizer at the 10th, then the card resets and repeats. The
+// lifetime visit count (never reset) is a DB concern, verified at runtime.
 
 describe("CARD_SIZE", () => {
   it("is a 10-visit card", () => {
@@ -24,8 +23,14 @@ describe("CARD_SIZE", () => {
 });
 
 describe("rewardForVisit", () => {
-  it("grants nothing on visits 1-4", () => {
-    for (const p of [1, 2, 3, 4]) expect(rewardForVisit(p)).toBeNull();
+  it("grants nothing on visits 1-2", () => {
+    for (const p of [1, 2]) expect(rewardForVisit(p)).toBeNull();
+  });
+  it("grants the agua fresca on the 3rd visit", () => {
+    expect(rewardForVisit(3)).toBe("punch_agua");
+  });
+  it("grants nothing on the 4th visit", () => {
+    expect(rewardForVisit(4)).toBeNull();
   });
   it("grants the dessert on the 5th visit", () => {
     expect(rewardForVisit(5)).toBe("punch_dessert");
@@ -33,30 +38,34 @@ describe("rewardForVisit", () => {
   it("grants nothing on visits 6-9", () => {
     for (const p of [6, 7, 8, 9]) expect(rewardForVisit(p)).toBeNull();
   });
-  it("grants the entrée at the 10th visit (and beyond, defensively)", () => {
-    expect(rewardForVisit(10)).toBe("punch_entree");
-    expect(rewardForVisit(11)).toBe("punch_entree");
+  it("grants the appetizer at the 10th visit (and beyond, defensively)", () => {
+    expect(rewardForVisit(10)).toBe("punch_appetizer");
+    expect(rewardForVisit(11)).toBe("punch_appetizer");
   });
 });
 
 describe("nextProgress", () => {
   it("keeps progress mid-card", () => {
-    for (const p of [0, 1, 5, 9]) expect(nextProgress(p)).toBe(p);
+    for (const p of [0, 1, 3, 5, 9]) expect(nextProgress(p)).toBe(p);
   });
-  it("resets to 0 once the card is complete", () => {
+  it("resets to 0 once the card is complete (card repeats)", () => {
     expect(nextProgress(10)).toBe(0);
     expect(nextProgress(11)).toBe(0);
   });
 });
 
 describe("nextRewardLine", () => {
-  it("counts down to the dessert before visit 5", () => {
-    expect(nextRewardLine(0)).toBe("5 more visits 'til a free dessert 🍰");
+  it("counts down to the agua fresca before visit 3", () => {
+    expect(nextRewardLine(0)).toBe("3 more visits 'til a free agua fresca 🥤");
+    expect(nextRewardLine(2)).toBe("1 more visit 'til a free agua fresca 🥤");
+  });
+  it("counts down to the dessert between visits 3 and 5", () => {
+    expect(nextRewardLine(3)).toBe("2 more visits 'til a free dessert 🍰");
     expect(nextRewardLine(4)).toBe("1 more visit 'til a free dessert 🍰");
   });
-  it("counts down to the entrée from visit 5 onward", () => {
-    expect(nextRewardLine(5)).toBe("5 more visits 'til a free entrée 🌮");
-    expect(nextRewardLine(9)).toBe("1 more visit 'til a free entrée 🌮");
+  it("counts down to the appetizer from visit 5 onward", () => {
+    expect(nextRewardLine(5)).toBe("5 more visits 'til a free appetizer 🌮");
+    expect(nextRewardLine(9)).toBe("1 more visit 'til a free appetizer 🌮");
   });
   it("is empty once the card is complete", () => {
     expect(nextRewardLine(10)).toBe("");
@@ -64,12 +73,13 @@ describe("nextRewardLine", () => {
 });
 
 describe("milestoneSlugAt", () => {
-  it("marks the dessert and entrée positions", () => {
+  it("marks the agua, dessert and appetizer positions", () => {
+    expect(milestoneSlugAt(3)).toBe("agua");
     expect(milestoneSlugAt(5)).toBe("dessert");
-    expect(milestoneSlugAt(10)).toBe("entree");
+    expect(milestoneSlugAt(10)).toBe("appetizer");
   });
   it("is empty for plain punches", () => {
-    for (const n of [1, 2, 3, 4, 6, 7, 8, 9]) expect(milestoneSlugAt(n)).toBe("");
+    for (const n of [1, 2, 4, 6, 7, 8, 9]) expect(milestoneSlugAt(n)).toBe("");
   });
 });
 
@@ -78,9 +88,10 @@ describe("punchCells", () => {
   it("has one cell per card slot", () => {
     expect(cells).toHaveLength(10);
   });
-  it("marks 5 as dessert and 10 as entrée", () => {
+  it("marks 3 agua, 5 dessert, 10 appetizer", () => {
+    expect(cells[2]).toEqual({ n: 3, reward: "agua" });
     expect(cells[4]).toEqual({ n: 5, reward: "dessert" });
-    expect(cells[9]).toEqual({ n: 10, reward: "entree" });
+    expect(cells[9]).toEqual({ n: 10, reward: "appetizer" });
   });
   it("leaves plain punches without a reward", () => {
     expect(cells[0]).toEqual({ n: 1 });
@@ -89,14 +100,18 @@ describe("punchCells", () => {
 
 describe("oneAwayValues", () => {
   it("is one short of each milestone", () => {
-    expect(oneAwayValues()).toEqual([4, 9]);
+    expect(oneAwayValues()).toEqual([2, 4, 9]);
   });
 });
 
 describe("labels", () => {
   it("canonical labels", () => {
     expect(rewardLabel("welcome_chips_queso")).toBe("Free chips & queso");
+    expect(rewardLabel("punch_agua")).toBe("Free agua fresca");
     expect(rewardLabel("punch_dessert")).toBe("Free dessert");
+    expect(rewardLabel("punch_appetizer")).toBe("Free appetizer");
+  });
+  it("keeps legacy labels rendering for any old rows", () => {
     expect(rewardLabel("punch_entree")).toBe("Free entrée");
     expect(rewardLabel("birthday_entree")).toBe("Birthday entrée");
   });
@@ -105,11 +120,13 @@ describe("labels", () => {
   });
   it("detailed labels carry milestone context", () => {
     expect(rewardLabelDetailed("welcome_chips_queso")).toBe("Chips & queso (welcome)");
+    expect(rewardLabelDetailed("punch_agua")).toBe("Free agua fresca (3 visits)");
     expect(rewardLabelDetailed("punch_dessert")).toBe("Free dessert (5 visits)");
-    expect(rewardLabelDetailed("punch_entree")).toBe("Free entrée (10 visits)");
+    expect(rewardLabelDetailed("punch_appetizer")).toBe("Free appetizer (10 visits)");
   });
   it("nextRewardLabel names the upcoming reward", () => {
+    expect(nextRewardLabel(2)).toBe("Free agua fresca");
     expect(nextRewardLabel(4)).toBe("Free dessert");
-    expect(nextRewardLabel(9)).toBe("Free entrée");
+    expect(nextRewardLabel(9)).toBe("Free appetizer");
   });
 });
