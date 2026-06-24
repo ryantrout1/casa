@@ -13,6 +13,10 @@
 
 export const CARD_SIZE = 10; // visits per card cycle; card resets after this
 
+// Official program name (per Stephanie). The on-page wordmark stays the
+// stylized "CASA REWARDS" lockup; this is for running copy and metadata.
+export const PROGRAM_NAME = "Casa Familia Rewards";
+
 export type RewardType =
   | "welcome_chips_queso"
   | "punch_agua"

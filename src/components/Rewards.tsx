@@ -1,5 +1,5 @@
 import RewardsForm from "@/components/RewardsForm";
-import { MILESTONES, punchCells, type MilestoneSlug } from "@/lib/rewards";
+import { MILESTONES, punchCells, PROGRAM_NAME, type MilestoneSlug } from "@/lib/rewards";
 
 const PUNCHES = punchCells();
 const SLUG_LABEL = Object.fromEntries(
@@ -146,7 +146,7 @@ export default function Rewards() {
           <div className="head">
             <div className="scr">únete hoy</div>
             <h2>JOIN CASA REWARDS</h2>
-            <p>Free to join, and your first reward starts on your next visit.</p>
+            <p>{PROGRAM_NAME} is free to join, and your first reward starts on your next visit.</p>
           </div>
           <RewardsForm />
         </div>
