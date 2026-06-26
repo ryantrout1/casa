@@ -35,13 +35,11 @@ export default function Hero() {
             </div>
           </div>
           <div className="photo">
-            <span className="sticker">
-              VIVA
-              <br />
-              MÉXICO!
-            </span>
             <div className="inner">
-              <img src="/images/HERO_BAR.jpg" alt="" />
+              <img
+                src="/images/FLY_ELTRI630.jpg"
+                alt="El Tri is moving on — Knockout Round World Cup watch party, Tuesday June 30, kickoff 6PM"
+              />
             </div>
           </div>
         </div>
