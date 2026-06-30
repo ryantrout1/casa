@@ -42,6 +42,12 @@ export async function POST(req: Request) {
         { status: 400 },
       );
     }
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+      return NextResponse.json(
+        { error: "Please enter a valid email address." },
+        { status: 400 },
+      );
+    }
     if (!phone || phone.length < 10) {
       return NextResponse.json(
         { error: "A valid mobile phone number is required." },

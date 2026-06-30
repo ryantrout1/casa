@@ -30,7 +30,9 @@ export default async function CampaignsPage() {
   const countRows = (await sql`
     select count(*)::int as subscribers
     from members
-    where email_subscribed = true and email is not null
+    where email_subscribed = true
+      and email is not null
+      and email ~ '^[^@[:space:]]+@[^@[:space:]]+\\.[^@[:space:]]+$'
   `) as { subscribers: number }[];
   const subscribers = countRows[0].subscribers;
 

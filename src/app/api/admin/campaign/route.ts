@@ -84,7 +84,9 @@ export async function POST(req: Request) {
     if (action === "send") {
       const members = (await sql`
         select id, email from members
-        where email_subscribed = true and email is not null
+        where email_subscribed = true
+          and email is not null
+          and email ~ '^[^@[:space:]]+@[^@[:space:]]+\\.[^@[:space:]]+$'
       `) as { id: string; email: string }[];
 
       if (members.length === 0) {
@@ -101,7 +103,7 @@ export async function POST(req: Request) {
 
       const recipients = members.map((m) => ({
         m: m.id,
-        e: m.email,
+        e: m.email.trim(),
         html: renderEmail(
           html,
           `${origin}/api/unsubscribe?m=${m.id}&c=${campaignId}`,
@@ -110,26 +112,48 @@ export async function POST(req: Request) {
       }));
 
       const sends: { m: string; e: string; r: string | null }[] = [];
+      const batchErrors: string[] = [];
       let sent = 0;
+      // Send in batches of 100. Resend rejects an ENTIRE batch if even one
+      // address is malformed, so isolate each batch: a single failure skips
+      // only that batch and the rest still go out, instead of aborting the
+      // whole send (and the audience query already filters invalid emails).
       for (const group of chunk(recipients, 100)) {
-        const result = (await sendBatch(
-          group.map((r) => ({ to: r.e, subject, html: r.html })),
-        )) as BatchResult;
-        const ids = Array.isArray(result?.data) ? result.data : [];
-        group.forEach((r, i) => sends.push({ m: r.m, e: r.e, r: ids[i]?.id ?? null }));
-        sent += group.length;
+        try {
+          const result = (await sendBatch(
+            group.map((r) => ({ to: r.e, subject, html: r.html })),
+          )) as BatchResult;
+          const ids = Array.isArray(result?.data) ? result.data : [];
+          group.forEach((r, i) => sends.push({ m: r.m, e: r.e, r: ids[i]?.id ?? null }));
+          sent += group.length;
+        } catch (err) {
+          batchErrors.push(err instanceof Error ? err.message : String(err));
+        }
       }
 
-      // bulk-insert one email_sends row per recipient
+      // bulk-insert one email_sends row per recipient that actually sent
+      if (sends.length > 0) {
+        await sql`
+          insert into email_sends (campaign_id, member_id, email, resend_id)
+          select ${campaignId}::uuid, (x->>'m')::uuid, x->>'e', x->>'r'
+          from json_array_elements(${JSON.stringify(sends)}::json) as x
+        `;
+      }
+
+      // Always resolve the campaign status — never leave it stuck in 'sending'.
+      const finalStatus = sent > 0 ? "sent" : "failed";
       await sql`
-        insert into email_sends (campaign_id, member_id, email, resend_id)
-        select ${campaignId}::uuid, (x->>'m')::uuid, x->>'e', x->>'r'
-        from json_array_elements(${JSON.stringify(sends)}::json) as x
+        update campaigns set sent_count = ${sent}, status = ${finalStatus} where id = ${campaignId}
       `;
 
-      await sql`
-        update campaigns set sent_count = ${sent}, status = 'sent' where id = ${campaignId}
-      `;
+      if (batchErrors.length > 0) {
+        return NextResponse.json({
+          ok: sent > 0,
+          sent,
+          skipped: recipients.length - sent,
+          warning: batchErrors[0],
+        });
+      }
 
       return NextResponse.json({ ok: true, sent });
     }
