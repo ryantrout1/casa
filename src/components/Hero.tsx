@@ -38,7 +38,7 @@ export default function Hero() {
             <div className="inner">
               <img
                 src="/images/FLY_ELTRI630.jpg"
-                alt="El Tri is moving on — Knockout Round World Cup watch party, Tuesday June 30, kickoff 6PM"
+                alt="El Tri is moving on — México vs Ecuador Knockout Round World Cup watch party, Tuesday June 30, kickoff 6PM"
               />
             </div>
           </div>

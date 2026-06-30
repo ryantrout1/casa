@@ -1,7 +1,7 @@
 import FiestaGallery, { FlyerItem } from "@/components/FiestaGallery";
 
 const FIESTAS: FlyerItem[] = [
-  { img: "FLY_ELTRI630", cap: "El Tri Knockout Round · June 30", alt: "El Tri is moving on — Knockout Round World Cup watch party, Tuesday June 30, kickoff 6PM, $2 draft beer when México scores, all-you-can-eat Taco Tuesday $19.99" },
+  { img: "FLY_ELTRI630", cap: "México vs Ecuador · June 30", alt: "El Tri is moving on — México vs Ecuador Knockout Round World Cup watch party, Tuesday June 30, kickoff 6PM, $2 draft beer when México scores, all-you-can-eat Taco Tuesday $19.99" },
   { img: "FLY_MXCZECH", cap: "México vs Czechia · June 24", alt: "México vs Czechia watch party — Wednesday June 24, game at 6PM, $2 draft beer when México scores" },
   { img: "FLY_MXKOREA", cap: "México vs South Korea · June 18", alt: "México vs South Korea watch party — Thursday June 18" },
   { img: "FLY_FIFA", cap: "FIFA Watch Parties", alt: "FIFA is Coming — watch every match with us" },
