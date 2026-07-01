@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 
-export type FlyerItem = { img: string; alt: string; cap?: string };
+export type FlyerItem = { src: string; alt: string; cap?: string };
 
 export default function FiestaGallery({
   variant,
@@ -48,17 +48,17 @@ export default function FiestaGallery({
       {variant === "gallery" ? (
         <div className="gallery">
           {items.map((f) => (
-            <div className="gcard flyer-zoom" key={f.img} {...activate(f)}>
-              <img src={`/images/${f.img}.jpg`} alt={f.alt} />
+            <div className="gcard flyer-zoom" key={f.src} {...activate(f)}>
+              <img src={f.src} alt={f.alt} />
             </div>
           ))}
         </div>
       ) : (
         <div className="fz-grid">
           {items.map((f) => (
-            <div className="fzcard" key={f.img}>
+            <div className="fzcard" key={f.src}>
               <div className="frame flyer-zoom" {...activate(f)}>
-                <img src={`/images/${f.img}.jpg`} alt={f.alt} />
+                <img src={f.src} alt={f.alt} />
               </div>
               {f.cap ? <div className="cap">{f.cap}</div> : null}
             </div>
@@ -83,7 +83,7 @@ export default function FiestaGallery({
             ×
           </button>
           <img
-            src={`/images/${open.img}.jpg`}
+            src={open.src}
             alt={open.alt}
             onClick={(e) => e.stopPropagation()}
           />

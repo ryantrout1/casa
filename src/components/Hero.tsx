@@ -1,4 +1,10 @@
-export default function Hero() {
+import { getHeroFiesta } from "@/lib/fiestas";
+
+export default async function Hero() {
+  const hero = await getHeroFiesta();
+  const src = hero?.src ?? "/images/HERO_BAR.jpg";
+  const alt = hero?.alt ?? "Inside Casa de Leyva";
+
   return (
     <section className="hero sec">
       <div className="wrap">
@@ -36,10 +42,7 @@ export default function Hero() {
           </div>
           <div className="photo">
             <div className="inner">
-              <img
-                src="/images/FLY_ELTRI630.jpg"
-                alt="El Tri is moving on — México vs Ecuador Knockout Round World Cup watch party, Tuesday June 30, kickoff 6PM"
-              />
+              <img src={src} alt={alt} />
             </div>
           </div>
         </div>
