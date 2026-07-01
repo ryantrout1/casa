@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef, useImperativeHandle, useRef, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 
 export type EditorHandle = { getHTML: () => string; isEmpty: () => boolean };
 
@@ -8,13 +8,22 @@ function preventDefault(e: React.MouseEvent) {
   e.preventDefault();
 }
 
-const Editor = forwardRef<EditorHandle, { onUploadingChange?: (b: boolean) => void }>(
-  function Editor({ onUploadingChange }, ref) {
+const Editor = forwardRef<EditorHandle, { onUploadingChange?: (b: boolean) => void; initialHTML?: string }>(
+  function Editor({ onUploadingChange, initialHTML }, ref) {
     const elRef = useRef<HTMLDivElement>(null);
     const fileRef = useRef<HTMLInputElement>(null);
     const [hasImage, setHasImage] = useState(false);
     const [uploading, setUploading] = useState(false);
     const [note, setNote] = useState("");
+
+    // Seed the (uncontrolled) editor with a draft's saved message, once.
+    useEffect(() => {
+      if (initialHTML && elRef.current && elRef.current.innerHTML.trim() === "") {
+        elRef.current.innerHTML = initialHTML;
+        if (initialHTML.includes("<img")) setHasImage(true);
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     useImperativeHandle(ref, () => ({
       getHTML: () => {

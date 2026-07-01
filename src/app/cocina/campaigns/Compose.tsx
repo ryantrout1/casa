@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import Editor, { type EditorHandle } from "./Editor";
 import {
   ALL_CHANNELS,
@@ -9,15 +10,37 @@ import {
   type ChannelId,
   type PublishResults,
 } from "@/lib/publish";
+import { type DraftFlyer } from "@/lib/schedule";
+
+type InitialDraft = {
+  id: string;
+  subject: string;
+  body: string;
+  channels: ChannelId[];
+  flyer: DraftFlyer;
+};
+
+function channelsRecord(list: ChannelId[] | undefined): Record<ChannelId, boolean> {
+  if (!list) return { email: true, hero: true, grid: true, fiestas_page: true };
+  return {
+    email: list.includes("email"),
+    hero: list.includes("hero"),
+    grid: list.includes("grid"),
+    fiestas_page: list.includes("fiestas_page"),
+  };
+}
 
 export default function Compose({
   subscriberCount,
   defaultTestEmail,
+  initialDraft,
 }: {
   subscriberCount: number;
   defaultTestEmail: string;
+  initialDraft?: InitialDraft;
 }) {
-  const [subject, setSubject] = useState("");
+  const router = useRouter();
+  const [subject, setSubject] = useState(initialDraft?.subject ?? "");
   const [testEmail, setTestEmail] = useState(defaultTestEmail);
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -27,24 +50,31 @@ export default function Compose({
 
   // Fiesta flyer (drives the website surfaces).
   const flyerFileRef = useRef<HTMLInputElement>(null);
-  const [flyerUrl, setFlyerUrl] = useState("");
-  const [flyerCaption, setFlyerCaption] = useState("");
-  const [flyerDate, setFlyerDate] = useState("");
-  const [flyerAlt, setFlyerAlt] = useState("");
+  const [flyerUrl, setFlyerUrl] = useState(initialDraft?.flyer.imageUrl ?? "");
+  const [flyerCaption, setFlyerCaption] = useState(initialDraft?.flyer.caption ?? "");
+  const [flyerDate, setFlyerDate] = useState(initialDraft?.flyer.eventDate ?? "");
+  const [flyerAlt, setFlyerAlt] = useState(initialDraft?.flyer.alt ?? "");
   const [flyerUploading, setFlyerUploading] = useState(false);
 
   // Destinations. Default to the full fan-out; email locks after it sends.
-  const [channels, setChannels] = useState<Record<ChannelId, boolean>>({
-    email: true,
-    hero: true,
-    grid: true,
-    fiestas_page: true,
-  });
+  const [channels, setChannels] = useState<Record<ChannelId, boolean>>(
+    channelsRecord(initialDraft?.channels),
+  );
   const [emailSent, setEmailSent] = useState(false);
   const [results, setResults] = useState<PublishResults | null>(null);
+  const [draftId, setDraftId] = useState<string | null>(initialDraft?.id ?? null);
 
   function toggle(key: ChannelId) {
     setChannels((c) => ({ ...c, [key]: !c[key] }));
+  }
+
+  function flyerPayload() {
+    return {
+      imageUrl: flyerUrl,
+      caption: flyerCaption,
+      alt: flyerAlt,
+      eventDate: flyerDate || undefined,
+    };
   }
 
   async function onPickFlyer(e: React.ChangeEvent<HTMLInputElement>) {
@@ -79,6 +109,69 @@ export default function Compose({
       }
     }
     if (flyerFileRef.current) flyerFileRef.current.value = "";
+  }
+
+  async function saveDraft() {
+    const html = editorRef.current?.getHTML() ?? "";
+    const selected = (Object.keys(channels) as ChannelId[]).filter((k) => channels[k]);
+    setBusy(true);
+    setMsg("");
+    setErr(false);
+    try {
+      const res = await fetch("/api/admin/campaign", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: draftId ? "update_draft" : "save_draft",
+          id: draftId ?? undefined,
+          subject,
+          html,
+          flyer: flyerPayload(),
+          channels: selected,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setErr(true);
+        setMsg(data?.error ?? "Couldn't save draft.");
+        return;
+      }
+      setDraftId(data.id);
+      setMsg("Draft saved.");
+      router.refresh();
+    } catch {
+      setErr(true);
+      setMsg("Couldn't save draft.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function deleteDraft() {
+    if (!draftId) return;
+    if (!window.confirm("Delete this draft? This can't be undone.")) return;
+    setBusy(true);
+    setMsg("");
+    setErr(false);
+    try {
+      const res = await fetch("/api/admin/campaign", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "delete", id: draftId }),
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        setErr(true);
+        setMsg(d?.error ?? "Couldn't delete draft.");
+        setBusy(false);
+        return;
+      }
+      window.location.assign("/cocina/campaigns");
+    } catch {
+      setErr(true);
+      setMsg("Couldn't delete draft.");
+      setBusy(false);
+    }
   }
 
   async function sendTest() {
@@ -140,13 +233,9 @@ export default function Compose({
           action: "publish",
           subject,
           html,
-          flyer: {
-            imageUrl: flyerUrl,
-            caption: flyerCaption,
-            alt: flyerAlt,
-            eventDate: flyerDate || undefined,
-          },
+          flyer: flyerPayload(),
           channels: selected,
+          draftId: draftId ?? undefined,
         }),
       });
       const data = await res.json();
@@ -160,9 +249,9 @@ export default function Compose({
         setEmailSent(true);
         setChannels((c) => ({ ...c, email: false }));
       }
-      // On a clean publish, refresh so the new send appears in Recent sends.
-      // On any failure, keep the results panel up so it can be read.
-      if (data.ok) setTimeout(() => window.location.reload(), 4000);
+      // On a clean publish, land on a fresh campaigns page (the draft, if any, is
+      // retired server-side). On any failure, keep the results panel up to read.
+      if (data.ok) setTimeout(() => window.location.assign("/cocina/campaigns"), 4000);
     } catch {
       setErr(true);
       setMsg("Something went wrong.");
@@ -175,6 +264,15 @@ export default function Compose({
 
   return (
     <div className="panel compose">
+      {draftId ? (
+        <div className="field-c" style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          <span className="pill">Draft</span>
+          <span className="muted">
+            Editing a saved draft. <a href="/cocina/campaigns">Start a new campaign</a>
+          </span>
+        </div>
+      ) : null}
+
       <div className="field-c">
         <label>Subject</label>
         <input
@@ -187,7 +285,7 @@ export default function Compose({
 
       <div className="field-c">
         <label>Email message</label>
-        <Editor ref={editorRef} onUploadingChange={setUploading} />
+        <Editor ref={editorRef} onUploadingChange={setUploading} initialHTML={initialDraft?.body} />
         <p className="hint">
           Casa header, footer, and an unsubscribe link are added automatically. Only used when{" "}
           <strong>Email</strong> is a destination below.
@@ -279,10 +377,18 @@ export default function Compose({
         </button>
       </div>
 
-      <div className="send-row">
+      <div className="send-row" style={{ gap: 10, flexWrap: "wrap" }}>
         <button disabled={anyBusy} onClick={publish}>
-          {busy ? "Publishing…" : "Publish"}
+          {busy ? "Working…" : draftId ? "Send now" : "Publish"}
         </button>
+        <button className="ghost" disabled={anyBusy} onClick={saveDraft}>
+          {draftId ? "Update draft" : "Save draft"}
+        </button>
+        {draftId ? (
+          <button className="ghost" disabled={anyBusy} onClick={deleteDraft} style={{ color: "#c0392b" }}>
+            Delete draft
+          </button>
+        ) : null}
         {msg ? <span className={err ? "send-msg err" : "send-msg ok"}>{msg}</span> : null}
       </div>
 

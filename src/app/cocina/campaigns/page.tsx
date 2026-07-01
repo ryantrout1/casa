@@ -3,6 +3,8 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { db } from "@/lib/db";
 import Compose from "./Compose";
+import { parseDraftConfig } from "@/lib/schedule";
+import { type ChannelId } from "@/lib/publish";
 
 type Row = {
   id: string;
@@ -41,8 +43,13 @@ function fmtChannels(channels: string | null, sentCount: number): string {
   return sentCount > 0 ? "Email" : "—";
 }
 
-export default async function CampaignsPage() {
+export default async function CampaignsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ draft?: string }>;
+}) {
   const sql = db();
+  const { draft } = await searchParams;
 
   const countRows = (await sql`
     select count(*)::int as subscribers
@@ -53,6 +60,34 @@ export default async function CampaignsPage() {
   `) as { subscribers: number }[];
   const subscribers = countRows[0].subscribers;
 
+  // Load a draft into the composer if one is requested (only actual drafts).
+  let initialDraft:
+    | { id: string; subject: string; body: string; channels: ChannelId[]; flyer: ReturnType<typeof parseDraftConfig>["flyer"] }
+    | undefined;
+  if (draft) {
+    const drows = (await sql`
+      select id, subject, body, publish_config
+      from campaigns where id = ${draft} and status = 'draft'
+    `) as { id: string; subject: string; body: string; publish_config: unknown }[];
+    if (drows[0]) {
+      const cfg = parseDraftConfig(drows[0].publish_config);
+      initialDraft = {
+        id: drows[0].id,
+        subject: drows[0].subject,
+        body: drows[0].body,
+        channels: cfg.channels,
+        flyer: cfg.flyer,
+      };
+    }
+  }
+
+  const drafts = (await sql`
+    select id, subject, created_at
+    from campaigns where status = 'draft'
+    order by created_at desc
+    limit 20
+  `) as { id: string; subject: string; created_at: string }[];
+
   const recent = (await sql`
     select c.id, c.subject, c.sent_count, c.status, c.sent_at,
       (select count(distinct s.id) from email_sends s join email_events e on e.send_id = s.id
@@ -62,7 +97,8 @@ export default async function CampaignsPage() {
       (select string_agg(d.channel, ',' order by d.channel)
         from campaign_dispatches d where d.campaign_id = c.id and d.status = 'ok') as channels
     from campaigns c
-    order by c.sent_at desc
+    where c.status <> 'draft'
+    order by coalesce(c.sent_at, c.created_at) desc
     limit 20
   `) as Row[];
 
@@ -74,7 +110,31 @@ export default async function CampaignsPage() {
         <strong>{subscribers}</strong> {subscribers === 1 ? "person" : "people"}.
       </p>
 
-      <Compose subscriberCount={subscribers} defaultTestEmail="ryan@casadeleyva.com" />
+      <Compose
+        key={initialDraft?.id ?? "new"}
+        subscriberCount={subscribers}
+        defaultTestEmail="ryan@casadeleyva.com"
+        initialDraft={initialDraft}
+      />
+
+      {drafts.length > 0 ? (
+        <div className="panel">
+          <h2>Drafts</h2>
+          <table className="t">
+            <thead>
+              <tr><th>Subject</th><th>Saved</th></tr>
+            </thead>
+            <tbody>
+              {drafts.map((d) => (
+                <tr key={d.id}>
+                  <td><Link href={`/cocina/campaigns?draft=${d.id}`}>{d.subject || "(untitled draft)"}</Link></td>
+                  <td className="muted">{fmtDateTime(d.created_at)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : null}
 
       <div className="panel">
         <h2>Recent sends</h2>
@@ -100,7 +160,7 @@ export default async function CampaignsPage() {
                   <td>{c.sent_count}</td>
                   <td>{c.opens} <span className="muted">· {pct(c.opens, c.sent_count)}</span></td>
                   <td>{c.clicks} <span className="muted">· {pct(c.clicks, c.sent_count)}</span></td>
-                  <td>{fmtDateTime(c.sent_at)}</td>
+                  <td>{c.sent_at ? fmtDateTime(c.sent_at) : "—"}</td>
                 </tr>
               ))}
             </tbody>
