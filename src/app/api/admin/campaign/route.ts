@@ -272,6 +272,17 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: overallOk(results), results, fiestaId, campaignId });
     }
 
+    if (action === "delete") {
+      const id = String(body.id ?? "");
+      if (!id) return NextResponse.json({ error: "Missing campaign id." }, { status: 400 });
+      // Cascade removes email_sends → email_events and campaign_dispatches;
+      // unsubscribes.campaign_id is set null so the unsubscribe itself is kept.
+      // The fiesta this campaign announced (fiesta_id) is a separate object and
+      // is left in place — manage it from /cocina/fiestas.
+      await sql`delete from campaigns where id = ${id}`;
+      return NextResponse.json({ ok: true });
+    }
+
     return NextResponse.json({ error: "Unknown action." }, { status: 400 });
   } catch (e) {
     return NextResponse.json(
