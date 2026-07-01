@@ -289,6 +289,15 @@ export default function Compose({
       setMsg("Pick a valid Arizona date and time to schedule.");
       return;
     }
+    // Same guard as Send now: scheduling an email IS a send — just deferred.
+    if (
+      selected.includes("email") &&
+      !window.confirm(
+        `Schedule this email to all ${subscriberCount} subscribers for ${fmtPhoenix(utc)} (Arizona time)? It will send automatically.`,
+      )
+    ) {
+      return;
+    }
     setBusy(true);
     setMsg("");
     setErr(false);
