@@ -8,8 +8,10 @@ import {
   emailAlreadySent,
   overallOk,
   resultEntries,
+  liveSurfaces,
   type ChannelId,
   type PublishResults,
+  type SurfaceFlags,
 } from "./publish";
 
 // Campaign fan-out (Phase 2). One publish targets any mix of destinations:
@@ -135,5 +137,23 @@ describe("resultEntries", () => {
     const r: PublishResults = { hero: { status: "ok" } };
     const chans = resultEntries(r).map((e) => e.channel as ChannelId);
     expect(chans).toEqual(["hero"]);
+  });
+});
+
+describe("liveSurfaces", () => {
+  const flags = (h: boolean, g: boolean, p: boolean): SurfaceFlags => ({
+    is_hero: h,
+    in_grid: g,
+    on_fiestas_page: p,
+  });
+  it("lists every owned surface a fiesta is currently on, in canonical order", () => {
+    expect(liveSurfaces(flags(true, true, true))).toEqual(["hero", "grid", "fiestas_page"]);
+  });
+  it("returns only the surfaces whose flag is set", () => {
+    expect(liveSurfaces(flags(false, true, true))).toEqual(["grid", "fiestas_page"]);
+    expect(liveSurfaces(flags(true, false, false))).toEqual(["hero"]);
+  });
+  it("returns an empty list when the fiesta is live nowhere", () => {
+    expect(liveSurfaces(flags(false, false, false))).toEqual([]);
   });
 });

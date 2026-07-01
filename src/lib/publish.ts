@@ -38,6 +38,16 @@ export function hasOwnedSurface(channels: ChannelId[]): boolean {
   return OWNED_SURFACES.some((s) => channels.includes(s));
 }
 
+// Which owned surfaces a fiesta's flags put it on, in canonical order. Drives
+// the "Live on" badges and toggles in the fiesta manager.
+export function liveSurfaces(flags: SurfaceFlags): ChannelId[] {
+  const out: ChannelId[] = [];
+  if (flags.is_hero) out.push("hero");
+  if (flags.in_grid) out.push("grid");
+  if (flags.on_fiestas_page) out.push("fiestas_page");
+  return out;
+}
+
 export type FlyerInput = {
   imageUrl?: string;
   caption?: string;
