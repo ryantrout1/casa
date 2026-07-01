@@ -25,6 +25,7 @@ const NAV: Group[] = [
     group: "Marketing",
     items: [
       { label: "Campaigns", href: "/cocina/campaigns", icon: "mail" },
+      { label: "Fiestas", href: "/cocina/fiestas", icon: "flyer" },
       { label: "Automations", icon: "bolt", soon: true },
       { label: "Text (SMS)", icon: "sms", soon: true },
     ],
@@ -72,6 +73,13 @@ function Icon({ name }: { name: string }) {
       </>
     ),
     bolt: <path d="M13 2 4 14h7l-1 8 9-12h-7z" />,
+    flyer: (
+      <>
+        <rect x="3" y="4" width="18" height="16" rx="2" />
+        <circle cx="8.5" cy="9" r="1.5" />
+        <path d="M21 16l-5-5-4 4-2-2-4 4" />
+      </>
+    ),
     calendar: (
       <>
         <rect x="3" y="4.5" width="18" height="16" rx="2" />
