@@ -14,8 +14,24 @@ import {
   type FlyerInput,
   type PublishResults,
 } from "@/lib/publish";
+import { isDraftEmpty } from "@/lib/schedule";
 
 export const dynamic = "force-dynamic";
+
+// Read the destinations + flyer a draft or publish carries.
+function readConfig(body: Record<string, unknown>): { channels: ChannelId[]; flyer: FlyerInput } {
+  const channels: ChannelId[] = Array.isArray(body.channels)
+    ? (body.channels as unknown[]).filter((c): c is ChannelId => ALL_CHANNELS.includes(c as ChannelId))
+    : [];
+  const f = (body.flyer ?? {}) as Record<string, unknown>;
+  const flyer: FlyerInput = {
+    imageUrl: f.imageUrl ? String(f.imageUrl) : undefined,
+    caption: f.caption ? String(f.caption) : undefined,
+    alt: f.alt ? String(f.alt) : undefined,
+    eventDate: f.eventDate ? String(f.eventDate) : null,
+  };
+  return { channels, flyer };
+}
 
 function chunk<T>(arr: T[], size: number): T[][] {
   const out: T[][] = [];
@@ -177,18 +193,7 @@ export async function POST(req: Request) {
     }
 
     if (action === "publish") {
-      const channels: ChannelId[] = Array.isArray(body.channels)
-        ? (body.channels as unknown[]).filter((c): c is ChannelId =>
-            ALL_CHANNELS.includes(c as ChannelId),
-          )
-        : [];
-      const flyerIn = (body.flyer ?? {}) as Record<string, unknown>;
-      const flyer: FlyerInput = {
-        imageUrl: flyerIn.imageUrl ? String(flyerIn.imageUrl) : undefined,
-        caption: flyerIn.caption ? String(flyerIn.caption) : undefined,
-        alt: flyerIn.alt ? String(flyerIn.alt) : undefined,
-        eventDate: flyerIn.eventDate ? String(flyerIn.eventDate) : null,
-      };
+      const { channels, flyer } = readConfig(body);
 
       const err = validatePublish(subject, textOnly, hasImage, flyer, channels);
       if (err) return NextResponse.json({ error: err }, { status: 400 });
@@ -269,7 +274,49 @@ export async function POST(req: Request) {
         revalidatePath("/fiestas");
       }
 
+      // If this was sent from a saved draft, retire the draft now that it's live.
+      const draftId = String(body.draftId ?? "");
+      if (draftId) {
+        await sql`delete from campaigns where id = ${draftId} and status = 'draft'`;
+      }
+
       return NextResponse.json({ ok: overallOk(results), results, fiestaId, campaignId });
+    }
+
+    if (action === "save_draft" || action === "update_draft") {
+      const { channels, flyer } = readConfig(body);
+      if (isDraftEmpty(subject, textOnly, hasImage, flyer)) {
+        return NextResponse.json(
+          { error: "Nothing to save yet — add a subject or a message first." },
+          { status: 400 },
+        );
+      }
+      const config = JSON.stringify({ channels, flyer });
+
+      if (action === "update_draft") {
+        const id = String(body.id ?? "");
+        if (!id) return NextResponse.json({ error: "Missing draft id." }, { status: 400 });
+        const rows = (await sql`
+          update campaigns
+          set subject = ${subject}, body = ${html}, publish_config = ${config}::jsonb
+          where id = ${id} and status = 'draft'
+          returning id
+        `) as { id: string }[];
+        if (rows.length === 0) {
+          return NextResponse.json(
+            { error: "Draft not found — it may have already been sent." },
+            { status: 404 },
+          );
+        }
+        return NextResponse.json({ ok: true, id });
+      }
+
+      const rows = (await sql`
+        insert into campaigns (subject, body, audience_count, sent_count, status, sent_at, publish_config)
+        values (${subject}, ${html}, 0, 0, 'draft', null, ${config}::jsonb)
+        returning id
+      `) as { id: string }[];
+      return NextResponse.json({ ok: true, id: rows[0].id });
     }
 
     if (action === "delete") {
