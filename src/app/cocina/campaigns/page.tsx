@@ -22,6 +22,13 @@ function fmtDateTime(d: string): string {
     month: "short", day: "numeric", hour: "numeric", minute: "2-digit",
   });
 }
+// Scheduled times are stored UTC and shown as Arizona wall-clock time.
+function fmtPhoenixTime(d: string): string {
+  return new Date(d).toLocaleString("en-US", {
+    timeZone: "America/Phoenix",
+    month: "short", day: "numeric", hour: "numeric", minute: "2-digit",
+  });
+}
 function pct(n: number, d: number): string {
   if (!d) return "—";
   return `${Math.round((n / d) * 100)}%`;
@@ -60,15 +67,30 @@ export default async function CampaignsPage({
   `) as { subscribers: number }[];
   const subscribers = countRows[0].subscribers;
 
-  // Load a draft into the composer if one is requested (only actual drafts).
+  // Load a draft or scheduled campaign into the composer if one is requested.
   let initialDraft:
-    | { id: string; subject: string; body: string; channels: ChannelId[]; flyer: ReturnType<typeof parseDraftConfig>["flyer"] }
+    | {
+        id: string;
+        subject: string;
+        body: string;
+        channels: ChannelId[];
+        flyer: ReturnType<typeof parseDraftConfig>["flyer"];
+        status: string;
+        scheduledFor: string | null;
+      }
     | undefined;
   if (draft) {
     const drows = (await sql`
-      select id, subject, body, publish_config
-      from campaigns where id = ${draft} and status = 'draft'
-    `) as { id: string; subject: string; body: string; publish_config: unknown }[];
+      select id, subject, body, publish_config, status, scheduled_for
+      from campaigns where id = ${draft} and status in ('draft', 'scheduled')
+    `) as {
+      id: string;
+      subject: string;
+      body: string;
+      publish_config: unknown;
+      status: string;
+      scheduled_for: string | null;
+    }[];
     if (drows[0]) {
       const cfg = parseDraftConfig(drows[0].publish_config);
       initialDraft = {
@@ -77,6 +99,10 @@ export default async function CampaignsPage({
         body: drows[0].body,
         channels: cfg.channels,
         flyer: cfg.flyer,
+        status: drows[0].status,
+        scheduledFor: drows[0].scheduled_for
+          ? new Date(drows[0].scheduled_for).toISOString()
+          : null,
       };
     }
   }
@@ -88,6 +114,13 @@ export default async function CampaignsPage({
     limit 20
   `) as { id: string; subject: string; created_at: string }[];
 
+  const scheduled = (await sql`
+    select id, subject, scheduled_for
+    from campaigns where status = 'scheduled'
+    order by scheduled_for asc
+    limit 20
+  `) as { id: string; subject: string; scheduled_for: string }[];
+
   const recent = (await sql`
     select c.id, c.subject, c.sent_count, c.status, c.sent_at,
       (select count(distinct s.id) from email_sends s join email_events e on e.send_id = s.id
@@ -97,7 +130,7 @@ export default async function CampaignsPage({
       (select string_agg(d.channel, ',' order by d.channel)
         from campaign_dispatches d where d.campaign_id = c.id and d.status = 'ok') as channels
     from campaigns c
-    where c.status <> 'draft'
+    where c.status not in ('draft', 'scheduled')
     order by coalesce(c.sent_at, c.created_at) desc
     limit 20
   `) as Row[];
@@ -129,6 +162,25 @@ export default async function CampaignsPage({
                 <tr key={d.id}>
                   <td><Link href={`/cocina/campaigns?draft=${d.id}`}>{d.subject || "(untitled draft)"}</Link></td>
                   <td className="muted">{fmtDateTime(d.created_at)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : null}
+
+      {scheduled.length > 0 ? (
+        <div className="panel">
+          <h2>Scheduled</h2>
+          <table className="t">
+            <thead>
+              <tr><th>Subject</th><th>Goes out (Arizona time)</th></tr>
+            </thead>
+            <tbody>
+              {scheduled.map((s) => (
+                <tr key={s.id}>
+                  <td><Link href={`/cocina/campaigns?draft=${s.id}`}>{s.subject || "(untitled)"}</Link></td>
+                  <td className="muted">{fmtPhoenixTime(s.scheduled_for)}</td>
                 </tr>
               ))}
             </tbody>

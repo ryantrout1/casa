@@ -10,7 +10,11 @@ import {
   type ChannelId,
   type PublishResults,
 } from "@/lib/publish";
-import { type DraftFlyer } from "@/lib/schedule";
+import {
+  phoenixLocalToUtcISO,
+  utcToPhoenixLocalInput,
+  type DraftFlyer,
+} from "@/lib/schedule";
 
 type InitialDraft = {
   id: string;
@@ -18,7 +22,17 @@ type InitialDraft = {
   body: string;
   channels: ChannelId[];
   flyer: DraftFlyer;
+  status?: string;
+  scheduledFor?: string | null;
 };
+
+// A stored UTC timestamp, shown as Arizona wall-clock time.
+function fmtPhoenix(iso: string): string {
+  return new Date(iso).toLocaleString("en-US", {
+    timeZone: "America/Phoenix",
+    month: "short", day: "numeric", hour: "numeric", minute: "2-digit",
+  });
+}
 
 function channelsRecord(list: ChannelId[] | undefined): Record<ChannelId, boolean> {
   if (!list) return { email: true, hero: true, grid: true, fiestas_page: true };
@@ -63,6 +77,12 @@ export default function Compose({
   const [emailSent, setEmailSent] = useState(false);
   const [results, setResults] = useState<PublishResults | null>(null);
   const [draftId, setDraftId] = useState<string | null>(initialDraft?.id ?? null);
+
+  // Scheduling (Arizona wall-clock in the input; UTC on the wire).
+  const isScheduled = initialDraft?.status === "scheduled";
+  const [scheduleLocal, setScheduleLocal] = useState(
+    initialDraft?.scheduledFor ? utcToPhoenixLocalInput(initialDraft.scheduledFor) : "",
+  );
 
   function toggle(key: ChannelId) {
     setChannels((c) => ({ ...c, [key]: !c[key] }));
@@ -260,16 +280,94 @@ export default function Compose({
     }
   }
 
+  async function schedule() {
+    const html = editorRef.current?.getHTML() ?? "";
+    const selected = (Object.keys(channels) as ChannelId[]).filter((k) => channels[k]);
+    const utc = phoenixLocalToUtcISO(scheduleLocal);
+    if (!utc) {
+      setErr(true);
+      setMsg("Pick a valid Arizona date and time to schedule.");
+      return;
+    }
+    setBusy(true);
+    setMsg("");
+    setErr(false);
+    try {
+      const res = await fetch("/api/admin/campaign", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "schedule",
+          id: draftId ?? undefined,
+          subject,
+          html,
+          flyer: flyerPayload(),
+          channels: selected,
+          scheduledFor: utc,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setErr(true);
+        setMsg(data?.error ?? "Couldn't schedule.");
+        setBusy(false);
+        return;
+      }
+      window.location.assign("/cocina/campaigns");
+    } catch {
+      setErr(true);
+      setMsg("Couldn't schedule.");
+      setBusy(false);
+    }
+  }
+
+  async function cancelSchedule() {
+    if (!draftId) return;
+    setBusy(true);
+    setMsg("");
+    setErr(false);
+    try {
+      const res = await fetch("/api/admin/campaign", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "cancel_schedule", id: draftId }),
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        setErr(true);
+        setMsg(d?.error ?? "Couldn't cancel the schedule.");
+        setBusy(false);
+        return;
+      }
+      window.location.assign("/cocina/campaigns");
+    } catch {
+      setErr(true);
+      setMsg("Couldn't cancel the schedule.");
+      setBusy(false);
+    }
+  }
+
   const anyBusy = busy || uploading || flyerUploading;
 
   return (
     <div className="panel compose">
       {draftId ? (
-        <div className="field-c" style={{ display: "flex", gap: 10, alignItems: "center" }}>
-          <span className="pill">Draft</span>
-          <span className="muted">
-            Editing a saved draft. <a href="/cocina/campaigns">Start a new campaign</a>
-          </span>
+        <div className="field-c" style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+          <span className="pill">{isScheduled ? "Scheduled" : "Draft"}</span>
+          {isScheduled && initialDraft?.scheduledFor ? (
+            <>
+              <span>
+                Scheduled for <strong>{fmtPhoenix(initialDraft.scheduledFor)}</strong> (Arizona time)
+              </span>
+              <button className="ghost" disabled={anyBusy} onClick={cancelSchedule}>
+                Cancel schedule
+              </button>
+            </>
+          ) : (
+            <span className="muted">
+              Editing a saved draft. <a href="/cocina/campaigns">Start a new campaign</a>
+            </span>
+          )}
         </div>
       ) : null}
 
@@ -377,16 +475,30 @@ export default function Compose({
         </button>
       </div>
 
+      <div className="field-c test-row">
+        <label>Schedule for (Arizona time)</label>
+        <input
+          type="datetime-local"
+          value={scheduleLocal}
+          onChange={(e) => setScheduleLocal(e.target.value)}
+        />
+        <button className="ghost" disabled={anyBusy || !scheduleLocal} onClick={schedule}>
+          {isScheduled ? "Reschedule" : "Schedule"}
+        </button>
+      </div>
+
       <div className="send-row" style={{ gap: 10, flexWrap: "wrap" }}>
         <button disabled={anyBusy} onClick={publish}>
           {busy ? "Working…" : draftId ? "Send now" : "Publish"}
         </button>
-        <button className="ghost" disabled={anyBusy} onClick={saveDraft}>
-          {draftId ? "Update draft" : "Save draft"}
-        </button>
+        {!isScheduled ? (
+          <button className="ghost" disabled={anyBusy} onClick={saveDraft}>
+            {draftId ? "Update draft" : "Save draft"}
+          </button>
+        ) : null}
         {draftId ? (
           <button className="ghost" disabled={anyBusy} onClick={deleteDraft} style={{ color: "#c0392b" }}>
-            Delete draft
+            {isScheduled ? "Delete" : "Delete draft"}
           </button>
         ) : null}
         {msg ? <span className={err ? "send-msg err" : "send-msg ok"}>{msg}</span> : null}
