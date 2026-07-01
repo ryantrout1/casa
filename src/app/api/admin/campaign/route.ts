@@ -1,18 +1,13 @@
 import { NextResponse } from "next/server";
-import { revalidatePath } from "next/cache";
 import sanitizeHtml from "sanitize-html";
 import { db } from "@/lib/db";
 import { renderEmail, sendBatch } from "@/lib/email";
+import { runPublish, sendCampaignEmail } from "@/lib/campaignSend";
 import {
   ALL_CHANNELS,
-  OWNED_SURFACES,
-  flagsForChannels,
-  hasOwnedSurface,
   validatePublish,
-  overallOk,
   type ChannelId,
   type FlyerInput,
-  type PublishResults,
 } from "@/lib/publish";
 import { isDraftEmpty } from "@/lib/schedule";
 
@@ -31,12 +26,6 @@ function readConfig(body: Record<string, unknown>): { channels: ChannelId[]; fly
     eventDate: f.eventDate ? String(f.eventDate) : null,
   };
   return { channels, flyer };
-}
-
-function chunk<T>(arr: T[], size: number): T[][] {
-  const out: T[][] = [];
-  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
-  return out;
 }
 
 function clean(html: string): string {
@@ -73,68 +62,6 @@ function clean(html: string): string {
 }
 
 type BatchResult = { data?: { id: string }[] };
-
-// Send a campaign email to every opted-in subscriber. The campaign row must
-// already exist; this fills in audience_count/sent_count/status and records one
-// email_sends row per recipient. Batches of 100 are isolated so one malformed
-// address can't abort the whole blast (the audience query also filters those).
-async function sendCampaignEmail(
-  sql: ReturnType<typeof db>,
-  campaignId: string,
-  subject: string,
-  html: string,
-  origin: string,
-  logoUrl: string,
-): Promise<{ sent: number; skipped: number; audience: number; warning?: string }> {
-  const members = (await sql`
-    select id, email from members
-    where email_subscribed = true
-      and email is not null
-      and email ~ '^[^@[:space:]]+@[^@[:space:]]+\\.[^@[:space:]]+$'
-  `) as { id: string; email: string }[];
-
-  await sql`update campaigns set audience_count = ${members.length} where id = ${campaignId}`;
-
-  if (members.length === 0) {
-    await sql`update campaigns set sent_count = 0, status = 'sent' where id = ${campaignId}`;
-    return { sent: 0, skipped: 0, audience: 0 };
-  }
-
-  const recipients = members.map((m) => ({
-    m: m.id,
-    e: m.email.trim(),
-    html: renderEmail(html, `${origin}/api/unsubscribe?m=${m.id}&c=${campaignId}`, logoUrl),
-  }));
-
-  const sends: { m: string; e: string; r: string | null }[] = [];
-  const batchErrors: string[] = [];
-  let sent = 0;
-  for (const group of chunk(recipients, 100)) {
-    try {
-      const result = (await sendBatch(
-        group.map((r) => ({ to: r.e, subject, html: r.html })),
-      )) as BatchResult;
-      const ids = Array.isArray(result?.data) ? result.data : [];
-      group.forEach((r, i) => sends.push({ m: r.m, e: r.e, r: ids[i]?.id ?? null }));
-      sent += group.length;
-    } catch (err) {
-      batchErrors.push(err instanceof Error ? err.message : String(err));
-    }
-  }
-
-  if (sends.length > 0) {
-    await sql`
-      insert into email_sends (campaign_id, member_id, email, resend_id)
-      select ${campaignId}::uuid, (x->>'m')::uuid, x->>'e', x->>'r'
-      from json_array_elements(${JSON.stringify(sends)}::json) as x
-    `;
-  }
-
-  const finalStatus = sent > 0 ? "sent" : "failed";
-  await sql`update campaigns set sent_count = ${sent}, status = ${finalStatus} where id = ${campaignId}`;
-
-  return { sent, skipped: recipients.length - sent, audience: members.length, warning: batchErrors[0] };
-}
 
 export async function POST(req: Request) {
   try {
@@ -198,89 +125,96 @@ export async function POST(req: Request) {
       const err = validatePublish(subject, textOnly, hasImage, flyer, channels);
       if (err) return NextResponse.json({ error: err }, { status: 400 });
 
-      const flags = flagsForChannels(channels);
-      const anyOwned = hasOwnedSurface(channels);
-      const results: PublishResults = {};
-      let fiestaId: string | null = null;
-
-      // 1) Owned surfaces — one fiesta row carries the placement flags.
-      if (anyOwned) {
-        try {
-          if (flags.is_hero) {
-            // Single-hero invariant: demote the current hero before promoting this one.
-            await sql`update fiestas set is_hero = false where is_hero = true`;
-          }
-          const frows = (await sql`
-            insert into fiestas
-              (image_url, alt, caption, event_date, is_hero, in_grid, on_fiestas_page, is_evergreen, featured_at)
-            values
-              (${flyer.imageUrl}, ${flyer.alt ?? ""}, ${flyer.caption ?? null}, ${flyer.eventDate || null},
-               ${flags.is_hero}, ${flags.in_grid}, ${flags.on_fiestas_page}, false, now())
-            returning id
-          `) as { id: string }[];
-          fiestaId = frows[0].id;
-          for (const s of OWNED_SURFACES) if (channels.includes(s)) results[s] = { status: "ok" };
-        } catch (e) {
-          const detail = e instanceof Error ? e.message : "Website update failed.";
-          for (const s of OWNED_SURFACES) if (channels.includes(s)) results[s] = { status: "failed", detail };
-        }
-      }
-
-      // 2) The campaign row records this publish and links its fiesta.
+      // The campaign row records this publish; runPublish links its fiesta,
+      // sends the email, records dispatches, and finalizes status/sent_at.
       const emailSelected = channels.includes("email");
       const initialStatus = emailSelected ? "sending" : "published";
       const campaignRows = (await sql`
         insert into campaigns (subject, body, audience_count, sent_count, status, fiesta_id)
-        values (${subject}, ${html}, 0, 0, ${initialStatus}, ${fiestaId})
+        values (${subject}, ${html}, 0, 0, ${initialStatus}, null)
         returning id
       `) as { id: string }[];
       const campaignId = campaignRows[0].id;
 
-      // 3) Email — isolated so its failure never rolls back the website surfaces.
-      if (emailSelected) {
-        try {
-          const r = await sendCampaignEmail(sql, campaignId, subject, html, origin, logoUrl);
-          if (r.sent > 0) {
-            results.email = {
-              status: "ok",
-              detail: r.skipped > 0 ? `${r.sent} sent, ${r.skipped} skipped` : `${r.sent} sent`,
-            };
-          } else if (r.audience === 0) {
-            results.email = { status: "skipped", detail: "No subscribers to email." };
-          } else {
-            results.email = { status: "failed", detail: r.warning ?? "No emails sent." };
-          }
-        } catch (e) {
-          results.email = { status: "failed", detail: e instanceof Error ? e.message : "Email failed." };
-          await sql`update campaigns set status = 'failed' where id = ${campaignId}`;
-        }
-      }
+      const { results, fiestaId, ok } = await runPublish(sql, {
+        campaignId, subject, html, channels, flyer, origin, logoUrl,
+      });
 
-      // 4) Record one dispatch row per channel touched.
-      const dispatchRows = ALL_CHANNELS
-        .filter((c) => results[c])
-        .map((c) => ({ channel: c, status: results[c]!.status, detail: results[c]!.detail ?? null }));
-      if (dispatchRows.length > 0) {
-        await sql`
-          insert into campaign_dispatches (campaign_id, channel, status, detail)
-          select ${campaignId}::uuid, x->>'channel', x->>'status', x->>'detail'
-          from json_array_elements(${JSON.stringify(dispatchRows)}::json) as x
-        `;
-      }
-
-      // 5) Reflect website changes immediately.
-      if (anyOwned) {
-        revalidatePath("/");
-        revalidatePath("/fiestas");
-      }
-
-      // If this was sent from a saved draft, retire the draft now that it's live.
+      // If this was sent from a saved draft (or a scheduled campaign opened in
+      // the composer), retire that copy now that it's live — a scheduled copy
+      // left behind would fire again later.
       const draftId = String(body.draftId ?? "");
       if (draftId) {
-        await sql`delete from campaigns where id = ${draftId} and status = 'draft'`;
+        await sql`delete from campaigns where id = ${draftId} and status in ('draft', 'scheduled')`;
       }
 
-      return NextResponse.json({ ok: overallOk(results), results, fiestaId, campaignId });
+      return NextResponse.json({ ok, results, fiestaId, campaignId });
+    }
+
+    if (action === "schedule") {
+      const { channels, flyer } = readConfig(body);
+
+      // A schedule must already be a valid publish — same gate as the button.
+      const err = validatePublish(subject, textOnly, hasImage, flyer, channels);
+      if (err) return NextResponse.json({ error: err }, { status: 400 });
+
+      const scheduledFor = String(body.scheduledFor ?? "");
+      const when = new Date(scheduledFor);
+      if (!scheduledFor || Number.isNaN(when.getTime())) {
+        return NextResponse.json({ error: "Pick a valid date and time." }, { status: 400 });
+      }
+      if (when.getTime() <= Date.now()) {
+        return NextResponse.json(
+          { error: "The scheduled time must be in the future." },
+          { status: 400 },
+        );
+      }
+
+      const config = JSON.stringify({ channels, flyer });
+      const whenIso = when.toISOString();
+      const id = String(body.id ?? "");
+
+      if (id) {
+        const rows = (await sql`
+          update campaigns
+          set subject = ${subject}, body = ${html}, publish_config = ${config}::jsonb,
+              status = 'scheduled', scheduled_for = ${whenIso}, sent_at = null
+          where id = ${id} and status in ('draft', 'scheduled')
+          returning id
+        `) as { id: string }[];
+        if (rows.length === 0) {
+          return NextResponse.json(
+            { error: "Campaign not found — it may have already been sent." },
+            { status: 404 },
+          );
+        }
+        return NextResponse.json({ ok: true, id, scheduledFor: whenIso });
+      }
+
+      const rows = (await sql`
+        insert into campaigns
+          (subject, body, audience_count, sent_count, status, sent_at, publish_config, scheduled_for)
+        values (${subject}, ${html}, 0, 0, 'scheduled', null, ${config}::jsonb, ${whenIso})
+        returning id
+      `) as { id: string }[];
+      return NextResponse.json({ ok: true, id: rows[0].id, scheduledFor: whenIso });
+    }
+
+    if (action === "cancel_schedule") {
+      const id = String(body.id ?? "");
+      if (!id) return NextResponse.json({ error: "Missing campaign id." }, { status: 400 });
+      const rows = (await sql`
+        update campaigns set status = 'draft', scheduled_for = null
+        where id = ${id} and status = 'scheduled'
+        returning id
+      `) as { id: string }[];
+      if (rows.length === 0) {
+        return NextResponse.json(
+          { error: "No scheduled campaign found — it may have already been sent." },
+          { status: 404 },
+        );
+      }
+      return NextResponse.json({ ok: true, id });
     }
 
     if (action === "save_draft" || action === "update_draft") {
