@@ -19,6 +19,7 @@ type Row = {
 
 function fmtDateTime(d: string): string {
   return new Date(d).toLocaleString("en-US", {
+    timeZone: "America/Phoenix",
     month: "short",
     day: "numeric",
     hour: "numeric",

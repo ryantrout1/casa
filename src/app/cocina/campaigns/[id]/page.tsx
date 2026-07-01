@@ -40,6 +40,7 @@ type Engaged = {
 
 function fmt(d: string): string {
   return new Date(d).toLocaleString("en-US", {
+    timeZone: "America/Phoenix",
     month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit",
   });
 }

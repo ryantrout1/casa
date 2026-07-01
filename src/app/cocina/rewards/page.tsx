@@ -17,6 +17,7 @@ type Row = {
 
 function fmtDate(d: string): string {
   return new Date(d).toLocaleDateString("en-US", {
+    timeZone: "America/Phoenix",
     month: "short", day: "numeric", year: "numeric",
   });
 }

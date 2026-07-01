@@ -17,13 +17,9 @@ type Row = {
   channels: string | null;
 };
 
+// Timestamps are stored UTC; the server renders in UTC on Vercel, so pin
+// every display to Arizona wall-clock time.
 function fmtDateTime(d: string): string {
-  return new Date(d).toLocaleString("en-US", {
-    month: "short", day: "numeric", hour: "numeric", minute: "2-digit",
-  });
-}
-// Scheduled times are stored UTC and shown as Arizona wall-clock time.
-function fmtPhoenixTime(d: string): string {
   return new Date(d).toLocaleString("en-US", {
     timeZone: "America/Phoenix",
     month: "short", day: "numeric", hour: "numeric", minute: "2-digit",
@@ -180,7 +176,7 @@ export default async function CampaignsPage({
               {scheduled.map((s) => (
                 <tr key={s.id}>
                   <td><Link href={`/cocina/campaigns?draft=${s.id}`}>{s.subject || "(untitled)"}</Link></td>
-                  <td className="muted">{fmtPhoenixTime(s.scheduled_for)}</td>
+                  <td className="muted">{fmtDateTime(s.scheduled_for)}</td>
                 </tr>
               ))}
             </tbody>

@@ -32,6 +32,19 @@ type Reward = {
 function fmtDate(d: string | null): string {
   if (!d) return "—";
   return new Date(d).toLocaleDateString("en-US", {
+    timeZone: "America/Phoenix",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+// visit_date is a DATE column (no time, no zone) — parse its components so the
+// calendar day never shifts.
+function fmtDay(s: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s);
+  if (!m) return fmtDate(s);
+  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -148,7 +161,7 @@ export default async function MemberPage({
             <tbody>
               {visits.map((v) => (
                 <tr key={v.id}>
-                  <td>{fmtDate(v.visit_date)}</td>
+                  <td>{fmtDay(v.visit_date)}</td>
                 </tr>
               ))}
             </tbody>
