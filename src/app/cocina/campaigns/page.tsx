@@ -12,6 +12,7 @@ type Row = {
   sent_at: string;
   opens: number;
   clicks: number;
+  channels: string | null;
 };
 
 function fmtDateTime(d: string): string {
@@ -22,6 +23,22 @@ function fmtDateTime(d: string): string {
 function pct(n: number, d: number): string {
   if (!d) return "—";
   return `${Math.round((n / d) * 100)}%`;
+}
+const CHANNEL_SHORT: Record<string, string> = {
+  email: "Email",
+  hero: "Hero",
+  grid: "Grid",
+  fiestas_page: "Fiestas",
+};
+function fmtChannels(channels: string | null, sentCount: number): string {
+  if (channels) {
+    return channels
+      .split(",")
+      .map((c) => CHANNEL_SHORT[c] ?? c)
+      .join(", ");
+  }
+  // Campaigns from before dispatch tracking were email-only sends.
+  return sentCount > 0 ? "Email" : "—";
 }
 
 export default async function CampaignsPage() {
@@ -41,7 +58,9 @@ export default async function CampaignsPage() {
       (select count(distinct s.id) from email_sends s join email_events e on e.send_id = s.id
         where s.campaign_id = c.id and e.event_type = 'email.opened')::int as opens,
       (select count(distinct s.id) from email_sends s join email_events e on e.send_id = s.id
-        where s.campaign_id = c.id and e.event_type = 'email.clicked')::int as clicks
+        where s.campaign_id = c.id and e.event_type = 'email.clicked')::int as clicks,
+      (select string_agg(d.channel, ',' order by d.channel)
+        from campaign_dispatches d where d.campaign_id = c.id and d.status = 'ok') as channels
     from campaigns c
     order by c.sent_at desc
     limit 20
@@ -66,6 +85,7 @@ export default async function CampaignsPage() {
             <thead>
               <tr>
                 <th>Subject</th>
+                <th>Where</th>
                 <th>Sent</th>
                 <th>Opened</th>
                 <th>Clicked</th>
@@ -76,6 +96,7 @@ export default async function CampaignsPage() {
               {recent.map((c) => (
                 <tr key={c.id}>
                   <td><Link href={`/cocina/campaigns/${c.id}`}>{c.subject}</Link></td>
+                  <td className="muted">{fmtChannels(c.channels, c.sent_count)}</td>
                   <td>{c.sent_count}</td>
                   <td>{c.opens} <span className="muted">· {pct(c.opens, c.sent_count)}</span></td>
                   <td>{c.clicks} <span className="muted">· {pct(c.clicks, c.sent_count)}</span></td>
