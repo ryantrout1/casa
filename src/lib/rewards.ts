@@ -135,6 +135,42 @@ export function rewardLabelDetailed(type: string): string {
   return REWARD_LABELS_DETAILED[type as RewardType] ?? type;
 }
 
+// ── Redeem-queue helpers (admin) ──────────────────────────────────────────
+// Used by /cocina/rewards to give staff milestone context and reward aging at
+// a glance, without changing the guest-facing labels above.
+
+// Humanize an unmapped reward type so the redeem queue never shows a raw
+// snake_case token if a new reward type ships before its label is added above.
+export function humanizeRewardType(type: string): string {
+  return type
+    .split("_")
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
+
+// Label for the redeem queue: detailed milestone context, with a humanized
+// fallback (never raw snake_case) for any type not yet in the map above.
+export function rewardQueueLabel(type: string): string {
+  return REWARD_LABELS_DETAILED[type as RewardType] ?? humanizeRewardType(type);
+}
+
+// A reward is "aged" once it's been waiting more than this many days.
+export const AGED_WAITING_DAYS = 7;
+
+// Whole days a reward has waited, by Phoenix calendar day — so a reward earned
+// late in the evening isn't counted a day early under the server's UTC clock.
+// Reuses the same Phoenix-day anchoring as the birthday-week math below.
+export function daysWaiting(earnedAt: string | Date, ref: Date = new Date()): number {
+  const earned = phoenixDayUTC(typeof earnedAt === "string" ? new Date(earnedAt) : earnedAt);
+  const today = phoenixDayUTC(ref);
+  return Math.max(0, Math.round((today.getTime() - earned.getTime()) / 86_400_000));
+}
+
+export function isAgedWaiting(earnedAt: string | Date, ref: Date = new Date()): boolean {
+  return daysWaiting(earnedAt, ref) > AGED_WAITING_DAYS;
+}
+
 // Label of the reward earned at the next visit from `progress` (dashboard).
 export function nextRewardLabel(progress: number): string {
   const t = rewardForVisit(progress + 1);

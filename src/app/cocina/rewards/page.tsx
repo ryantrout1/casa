@@ -2,7 +2,12 @@ export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 import { db } from "@/lib/db";
-import { rewardLabel } from "@/lib/rewards";
+import {
+  CARD_SIZE,
+  rewardQueueLabel,
+  daysWaiting,
+  isAgedWaiting,
+} from "@/lib/rewards";
 import RedeemButton from "./RedeemButton";
 
 type Row = {
@@ -13,6 +18,8 @@ type Row = {
   name: string | null;
   email: string | null;
   phone: string | null;
+  lifetime_visits: number;
+  punch_progress: number;
 };
 
 function fmtDate(d: string): string {
@@ -27,7 +34,8 @@ export default async function RewardsPage() {
 
   const rows = (await sql`
     select r.id, r.type, r.earned_at,
-           m.id as member_id, m.name, m.email, m.phone
+           m.id as member_id, m.name, m.email, m.phone,
+           m.lifetime_visits, m.punch_progress
     from rewards r
     join members m on m.id = r.member_id
     where r.status = 'earned'
@@ -55,23 +63,46 @@ export default async function RewardsPage() {
               <tr>
                 <th>Member</th>
                 <th>Reward</th>
-                <th>Earned</th>
+                <th>Guest</th>
+                <th>Waiting</th>
                 <th></th>
               </tr>
             </thead>
             <tbody>
-              {rows.map((r) => (
-                <tr key={r.id}>
-                  <td>
-                    <Link href={`/cocina/members/${r.member_id}`}>
-                      {r.name ?? r.email ?? r.phone ?? "(no name)"}
-                    </Link>
-                  </td>
-                  <td><span className="pill good">{rewardLabel(r.type)}</span></td>
-                  <td>{fmtDate(r.earned_at)}</td>
-                  <td style={{ textAlign: "right" }}><RedeemButton rewardId={r.id} /></td>
-                </tr>
-              ))}
+              {rows.map((r) => {
+                const days = daysWaiting(r.earned_at);
+                const aged = isAgedWaiting(r.earned_at);
+                return (
+                  <tr key={r.id}>
+                    <td>
+                      <Link href={`/cocina/members/${r.member_id}`}>
+                        {r.name ?? r.email ?? r.phone ?? "(no name)"}
+                      </Link>
+                    </td>
+                    <td><span className="pill good">{rewardQueueLabel(r.type)}</span></td>
+                    <td>
+                      {r.lifetime_visits === 0 ? (
+                        <>
+                          <span className="pill bad">New signup</span>
+                          <div className="muted">never visited</div>
+                        </>
+                      ) : (
+                        <>
+                          {r.lifetime_visits} visit{r.lifetime_visits === 1 ? "" : "s"}
+                          <div className="muted">punch {r.punch_progress}/{CARD_SIZE}</div>
+                        </>
+                      )}
+                    </td>
+                    <td>
+                      <div>{fmtDate(r.earned_at)}</div>
+                      <span className={aged ? "pill warn" : "muted"}>
+                        {days}d waiting
+                      </span>
+                    </td>
+                    <td style={{ textAlign: "right" }}><RedeemButton rewardId={r.id} /></td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}

@@ -140,6 +140,7 @@ table.t a:hover { text-decoration: underline; }
 .pill { display: inline-block; font-size: 0.75rem; padding: 2px 9px; border-radius: 999px; background: #eef2f7; color: #3B628D; }
 .pill.warn { background: #fdeede; color: #b45309; }
 .pill.good { background: #e7f5ec; color: #1f7a44; }
+.pill.bad { background: #fdecea; color: #b42318; }
 .muted { color: #9aa0ad; }
 
 .search { display: flex; gap: 8px; margin-bottom: 18px; }
