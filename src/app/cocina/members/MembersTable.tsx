@@ -1,8 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { CARD_SIZE } from "@/lib/rewards";
+import {
+  CARD_SIZE,
+  lapseTier,
+  daysSince,
+  oneAwayValues,
+  isBirthdayWeek,
+} from "@/lib/rewards";
 
 export type Member = {
   id: string;
@@ -10,10 +16,13 @@ export type Member = {
   email: string | null;
   phone: string | null;
   punch_progress: number;
+  lifetime_visits: number;
   last_visit_at: string | null;
   birth_month: number | null;
   birth_day: number | null;
 };
+
+const ONE_AWAY = new Set(oneAwayValues());
 
 type SortKey = "name" | "contact" | "card" | "visit" | "bday";
 
@@ -26,10 +35,30 @@ function fmtBirthday(m: number | null, d: number | null): string {
 function fmtDate(d: string | null): string {
   if (!d) return "—";
   return new Date(d).toLocaleDateString("en-US", {
+    timeZone: "America/Phoenix",
     month: "short",
     day: "numeric",
     year: "numeric",
   });
+}
+
+function LastVisit({ at }: { at: string | null }) {
+  if (!at) return <span className="muted">never</span>;
+  const tier = lapseTier(at);
+  const days = daysSince(at);
+  let badge: ReactNode = null;
+  if (tier === "lapsed") {
+    badge = <span className="pill bad">lapsed · {Math.round(days / 30)}mo</span>;
+  } else if (tier === "lapsing") {
+    badge = <span className="pill warn">lapsing · {days}d</span>;
+  } else {
+    badge = <span className="muted"> {days}d ago</span>;
+  }
+  return (
+    <>
+      {fmtDate(at)} {badge}
+    </>
+  );
 }
 
 export default function MembersTable({ members }: { members: Member[] }) {
@@ -191,13 +220,26 @@ export default function MembersTable({ members }: { members: Member[] }) {
               >
                 <td>
                   {m.name ?? <span className="muted">(no name)</span>}
+                  {m.lifetime_visits === 0 ? (
+                    <>{" "}<span className="pill bad">New signup</span></>
+                  ) : null}
                 </td>
                 <td>
                   {m.email ?? m.phone ?? <span className="muted">—</span>}
                 </td>
-                <td>{m.punch_progress} / {CARD_SIZE}</td>
-                <td>{fmtDate(m.last_visit_at)}</td>
-                <td>{fmtBirthday(m.birth_month, m.birth_day)}</td>
+                <td>
+                  {m.punch_progress} / {CARD_SIZE}
+                  {ONE_AWAY.has(m.punch_progress) ? (
+                    <>{" "}<span className="pill">1 away</span></>
+                  ) : null}
+                </td>
+                <td><LastVisit at={m.last_visit_at} /></td>
+                <td>
+                  {fmtBirthday(m.birth_month, m.birth_day)}
+                  {isBirthdayWeek(m.birth_month, m.birth_day) ? (
+                    <>{" "}<span className="pill bday">this week</span></>
+                  ) : null}
+                </td>
               </tr>
             ))}
             {total === 0 ? (

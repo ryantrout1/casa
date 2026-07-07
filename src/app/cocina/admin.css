@@ -141,6 +141,7 @@ table.t a:hover { text-decoration: underline; }
 .pill.warn { background: #fdeede; color: #b45309; }
 .pill.good { background: #e7f5ec; color: #1f7a44; }
 .pill.bad { background: #fdecea; color: #b42318; }
+.pill.bday { background: #f1e9fb; color: #7a3fb0; }
 .muted { color: #9aa0ad; }
 
 .queue-filter { display: inline-flex; align-items: center; gap: 8px; margin-bottom: 14px; font-size: 0.85rem; color: #6b7280; cursor: pointer; }

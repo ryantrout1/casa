@@ -158,17 +158,42 @@ export function rewardQueueLabel(type: string): string {
 // A reward is "aged" once it's been waiting more than this many days.
 export const AGED_WAITING_DAYS = 7;
 
-// Whole days a reward has waited, by Phoenix calendar day — so a reward earned
-// late in the evening isn't counted a day early under the server's UTC clock.
-// Reuses the same Phoenix-day anchoring as the birthday-week math below.
-export function daysWaiting(earnedAt: string | Date, ref: Date = new Date()): number {
-  const earned = phoenixDayUTC(typeof earnedAt === "string" ? new Date(earnedAt) : earnedAt);
+// Whole days between a past timestamp and now, by Phoenix calendar day — so a
+// timestamp late in the evening isn't counted a day early under the server's
+// UTC clock. Shared by the reward queue (days waiting) and the members roster
+// (days since last visit); reuses the Phoenix-day anchoring below.
+export function daysSince(ts: string | Date, ref: Date = new Date()): number {
+  const then = phoenixDayUTC(typeof ts === "string" ? new Date(ts) : ts);
   const today = phoenixDayUTC(ref);
-  return Math.max(0, Math.round((today.getTime() - earned.getTime()) / 86_400_000));
+  return Math.max(0, Math.round((today.getTime() - then.getTime()) / 86_400_000));
+}
+
+export function daysWaiting(earnedAt: string | Date, ref: Date = new Date()): number {
+  return daysSince(earnedAt, ref);
 }
 
 export function isAgedWaiting(earnedAt: string | Date, ref: Date = new Date()): boolean {
   return daysWaiting(earnedAt, ref) > AGED_WAITING_DAYS;
+}
+
+// ── Last-visit recency (members roster) ────────────────────────────────────
+// A member is "lapsing" after LAPSING_DAYS and "lapsed" after LAPSED_DAYS
+// since their last visit. Below LAPSING_DAYS they're "recent"; never-visited
+// (no last_visit_at) has no tier.
+export const LAPSING_DAYS = 30;
+export const LAPSED_DAYS = 60;
+
+export type LapseTier = "recent" | "lapsing" | "lapsed";
+
+export function lapseTier(
+  lastVisitAt: string | Date | null,
+  ref: Date = new Date(),
+): LapseTier | null {
+  if (!lastVisitAt) return null;
+  const d = daysSince(lastVisitAt, ref);
+  if (d > LAPSED_DAYS) return "lapsed";
+  if (d > LAPSING_DAYS) return "lapsing";
+  return "recent";
 }
 
 // Label of the reward earned at the next visit from `progress` (dashboard).
