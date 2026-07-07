@@ -12,6 +12,11 @@ import {
   nextRewardLabel,
   isBirthdayWeek,
   BIRTHDAY_REWARD,
+  rewardQueueLabel,
+  humanizeRewardType,
+  daysWaiting,
+  isAgedWaiting,
+  AGED_WAITING_DAYS,
 } from "./rewards";
 
 // Casa Familia Rewards ladder (Phase 2): agua fresca at the 3rd visit, dessert
@@ -159,5 +164,63 @@ describe("BIRTHDAY_REWARD", () => {
   it("is the birthday treat type with a guest-choice label", () => {
     expect(BIRTHDAY_REWARD).toBe("birthday_treat");
     expect(rewardLabel(BIRTHDAY_REWARD)).toBe("Birthday reward");
+  });
+});
+
+// ── Redeem-queue helpers (admin) ──────────────────────────────────────────
+// Phase 1 of the rewards-queue enrichment: milestone-context labels with a
+// safe fallback, and Phoenix-pinned "days waiting" so aging is read by the
+// restaurant's calendar day, not UTC.
+
+describe("humanizeRewardType", () => {
+  it("turns a snake_case type into Title Case words", () => {
+    expect(humanizeRewardType("some_new_reward")).toBe("Some New Reward");
+  });
+  it("handles a single token", () => {
+    expect(humanizeRewardType("mystery")).toBe("Mystery");
+  });
+});
+
+describe("rewardQueueLabel", () => {
+  it("uses the detailed milestone label for known types", () => {
+    expect(rewardQueueLabel("welcome_chips_queso")).toBe("Chips & queso (welcome)");
+    expect(rewardQueueLabel("punch_dessert")).toBe("Free dessert (5 visits)");
+    expect(rewardQueueLabel("punch_appetizer")).toBe("Free appetizer (10 visits)");
+  });
+  it("humanizes an unmapped type instead of leaking raw snake_case", () => {
+    expect(rewardQueueLabel("punch_mystery")).toBe("Punch Mystery");
+  });
+});
+
+describe("daysWaiting", () => {
+  it("counts whole days by Phoenix calendar day", () => {
+    // Earned 2026-07-05T06:30Z = 2026-07-04 23:30 Phoenix (Jul 4 there).
+    // Ref    2026-07-07T12:00Z = 2026-07-07 05:00 Phoenix (Jul 7 there).
+    const earned = "2026-07-05T06:30:00.000Z";
+    const ref = new Date("2026-07-07T12:00:00.000Z");
+    // Phoenix day count is 3; a naive UTC count would say 2.
+    expect(daysWaiting(earned, ref)).toBe(3);
+  });
+  it("is zero for a reward earned today", () => {
+    const ref = new Date("2026-07-07T18:00:00.000Z");
+    expect(daysWaiting("2026-07-07T16:00:00.000Z", ref)).toBe(0);
+  });
+  it("never goes negative", () => {
+    const ref = new Date("2026-07-01T00:00:00.000Z");
+    expect(daysWaiting("2026-07-05T00:00:00.000Z", ref)).toBe(0);
+  });
+});
+
+describe("isAgedWaiting", () => {
+  it("flags rewards waiting more than the aged threshold", () => {
+    const ref = new Date("2026-07-07T12:00:00.000Z");
+    expect(isAgedWaiting("2026-06-24T12:00:00.000Z", ref)).toBe(true); // 13 days
+  });
+  it("does not flag recent rewards", () => {
+    const ref = new Date("2026-07-07T12:00:00.000Z");
+    expect(isAgedWaiting("2026-07-05T12:00:00.000Z", ref)).toBe(false); // 2 days
+  });
+  it("uses a 7-day threshold", () => {
+    expect(AGED_WAITING_DAYS).toBe(7);
   });
 });
