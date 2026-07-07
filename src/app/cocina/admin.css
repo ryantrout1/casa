@@ -143,6 +143,9 @@ table.t a:hover { text-decoration: underline; }
 .pill.bad { background: #fdecea; color: #b42318; }
 .muted { color: #9aa0ad; }
 
+.queue-filter { display: inline-flex; align-items: center; gap: 8px; margin-bottom: 14px; font-size: 0.85rem; color: #6b7280; cursor: pointer; }
+.queue-filter input { cursor: pointer; }
+
 .search { display: flex; gap: 8px; margin-bottom: 18px; }
 .search input { flex: 1; padding: 9px 12px; border: 1px solid #cfd3da; border-radius: 8px; font-size: 0.95rem; }
 .search button, .actions button { background: #3B628D; color: #fff; border: none; border-radius: 8px; padding: 9px 16px; font-size: 0.9rem; cursor: pointer; }
