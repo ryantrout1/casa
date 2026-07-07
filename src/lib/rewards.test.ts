@@ -17,6 +17,10 @@ import {
   daysWaiting,
   isAgedWaiting,
   AGED_WAITING_DAYS,
+  daysSince,
+  lapseTier,
+  LAPSING_DAYS,
+  LAPSED_DAYS,
 } from "./rewards";
 
 // Casa Familia Rewards ladder (Phase 2): agua fresca at the 3rd visit, dessert
@@ -222,5 +226,44 @@ describe("isAgedWaiting", () => {
   });
   it("uses a 7-day threshold", () => {
     expect(AGED_WAITING_DAYS).toBe(7);
+  });
+});
+
+// ── Last-visit recency (members page grooming) ─────────────────────────────
+// daysSince is the general Phoenix-day gap; lapseTier buckets it for the
+// members roster: recent (<=30d), lapsing (31-60d), lapsed (>60d).
+
+describe("daysSince", () => {
+  it("counts whole days by Phoenix calendar day", () => {
+    // 2026-07-05T06:30Z = 2026-07-04 23:30 Phoenix; ref 2026-07-07 05:00 Phoenix.
+    expect(daysSince("2026-07-05T06:30:00.000Z", new Date("2026-07-07T12:00:00.000Z"))).toBe(3);
+  });
+  it("agrees with daysWaiting (same underlying gap)", () => {
+    const ref = new Date("2026-07-07T12:00:00.000Z");
+    expect(daysSince("2026-06-24T12:00:00.000Z", ref)).toBe(daysWaiting("2026-06-24T12:00:00.000Z", ref));
+  });
+});
+
+describe("lapseTier", () => {
+  const ref = new Date("2026-07-07T12:00:00.000Z");
+  const daysAgo = (n: number) => new Date(ref.getTime() - n * 86_400_000).toISOString();
+  it("returns null for a member who has never visited", () => {
+    expect(lapseTier(null, ref)).toBeNull();
+  });
+  it("is recent up to and including 30 days", () => {
+    expect(lapseTier(daysAgo(2), ref)).toBe("recent");
+    expect(lapseTier(daysAgo(30), ref)).toBe("recent");
+  });
+  it("is lapsing from 31 through 60 days", () => {
+    expect(lapseTier(daysAgo(31), ref)).toBe("lapsing");
+    expect(lapseTier(daysAgo(60), ref)).toBe("lapsing");
+  });
+  it("is lapsed past 60 days", () => {
+    expect(lapseTier(daysAgo(61), ref)).toBe("lapsed");
+    expect(lapseTier(daysAgo(150), ref)).toBe("lapsed");
+  });
+  it("uses 30/60 thresholds", () => {
+    expect(LAPSING_DAYS).toBe(30);
+    expect(LAPSED_DAYS).toBe(60);
   });
 });
