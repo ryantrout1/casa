@@ -1,4 +1,6 @@
 import { describe, it, expect } from "vitest";
+import { existsSync } from "fs";
+import { join } from "path";
 import { SPECIALS, phoenixWeekday, specialForDay } from "./specials";
 
 describe("phoenixWeekday", () => {
@@ -39,5 +41,21 @@ describe("SPECIALS data", () => {
       expect(SPECIALS.filter((s) => s.days.includes(d))).toHaveLength(1);
     }
     expect(SPECIALS.some((s) => s.days.includes(1))).toBe(false);
+  });
+});
+
+describe("specials photos", () => {
+  it("every special has a photo path", () => {
+    for (const s of SPECIALS) {
+      expect(s.photo, s.id).toBeTruthy();
+    }
+  });
+
+  it("every photo file exists in public", () => {
+    for (const s of SPECIALS) {
+      const rel = (s.photo ?? "").replace(/^\//, "");
+      const p = join(process.cwd(), "public", rel);
+      expect(existsSync(p), `${s.id}: ${s.photo}`).toBe(true);
+    }
   });
 });
