@@ -12,6 +12,32 @@ export default function FindUs() {
             </div>
             <p>Entrance on E Butler Ave, between 4th and 5th Street.</p>
             <div className="addr">424 E Monroe Ave, Buckeye, AZ 85326</div>
+            <div className="hrs">
+              <h3>HOURS</h3>
+              <div className="row">
+                <span className="d">Tue &amp; Wed</span>
+                <span className="t">
+                  4:00 &ndash; 8:30 PM
+                  <span className="note">Dinner only</span>
+                </span>
+              </div>
+              <div className="row">
+                <span className="d">Thu &amp; Fri</span>
+                <span className="t">11:00 AM &ndash; 8:30 PM</span>
+              </div>
+              <div className="row">
+                <span className="d">Saturday</span>
+                <span className="t">10:00 AM &ndash; 8:30 PM</span>
+              </div>
+              <div className="row">
+                <span className="d">Sunday</span>
+                <span className="t">10:00 AM &ndash; 3:00 PM</span>
+              </div>
+              <div className="row closed">
+                <span className="d">Monday</span>
+                <span className="t">Closed</span>
+              </div>
+            </div>
             <div className="ctas">
               <a
                 className="btn btn-p"

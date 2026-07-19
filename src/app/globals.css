@@ -175,6 +175,14 @@ a{text-decoration:none;color:inherit}ul{list-style:none}
 .v8 .find .gem{font-family:'Fredoka';font-weight:500;color:var(--orng);margin-bottom:14px;font-size:17px}
 .v8 .find p{color:#42546e;margin-bottom:8px}
 .v8 .find .addr{font-family:'Bangers';font-size:26px;color:var(--navy);margin:14px 0 18px}
+.v8 .find .hrs{margin:16px 0 20px;background:#fff;border:1px solid var(--cream2);border-radius:14px;padding:14px 18px;box-shadow:0 14px 32px -24px rgba(31,58,99,.5);max-width:420px}
+.v8 .find .hrs h3{font-family:'Bangers';font-size:22px;letter-spacing:.5px;color:var(--mag);margin-bottom:8px}
+.v8 .find .hrs .row{display:flex;justify-content:space-between;align-items:baseline;gap:16px;padding:6px 0;border-bottom:1px dashed #ece0c8;font-family:'Fredoka';font-weight:500}
+.v8 .find .hrs .row:last-child{border-bottom:0}
+.v8 .find .hrs .d{color:var(--navy)}
+.v8 .find .hrs .t{color:#42546e;text-align:right;white-space:nowrap}
+.v8 .find .hrs .note{display:block;color:var(--orng);font-size:12px;font-weight:600}
+.v8 .find .hrs .closed .d,.v8 .find .hrs .closed .t{color:var(--terra);font-weight:600}
 .v8 .find .mp{border:8px solid #fff;border-radius:16px;overflow:hidden;box-shadow:0 18px 38px -22px rgba(31,58,99,.5);transform:rotate(1.5deg)}
 .v8 .find .mp img{width:100%;height:340px;object-fit:cover}
 /* footer */
