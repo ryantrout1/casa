@@ -15,14 +15,27 @@ export default function WeeklySpecials() {
         </div>
 
         {today ? (
-          <div className={`featured ${today.accent}`}>
-            <div className="ft-copy">
-              <span className="badge">Today · {today.day}</span>
-              <h3>{today.title}</h3>
-              <div className="blurb">{today.blurb}</div>
+          today.photo ? (
+            <div className={`featured has-photo ${today.accent}`}>
+              <img className="ph-img" src={today.photo} alt={today.title} />
+              <div className="ph-scrim" aria-hidden="true"></div>
+              {today.price && <div className="burst">{today.price}</div>}
+              <div className="ft-copy">
+                <span className="badge">Today · {today.day}</span>
+                <h3>{today.title}</h3>
+                <div className="blurb">{today.blurb}</div>
+              </div>
             </div>
-            {today.price && <div className="price">{today.price}</div>}
-          </div>
+          ) : (
+            <div className={`featured ${today.accent}`}>
+              <div className="ft-copy">
+                <span className="badge">Today · {today.day}</span>
+                <h3>{today.title}</h3>
+                <div className="blurb">{today.blurb}</div>
+              </div>
+              {today.price && <div className="price">{today.price}</div>}
+            </div>
+          )
         ) : (
           <div className="featured closed">
             <div className="ft-copy">
@@ -36,17 +49,33 @@ export default function WeeklySpecials() {
         )}
 
         <div className="rail">
-          {rail.map((s) => (
-            <div key={s.id} className={`rail-item ${s.accent}`}>
-              <div className="day">{s.day}</div>
-              <div className="ttl">{s.title}</div>
-              {s.price ? (
-                <div className="price">{s.price}</div>
-              ) : (
-                <div className="price sm-price">Fan favorite</div>
-              )}
-            </div>
-          ))}
+          {rail.map((s) =>
+            s.photo ? (
+              <div key={s.id} className={`rail-item has-photo ${s.accent}`}>
+                <img className="ph-img" src={s.photo} alt={s.title} />
+                <div className="ph-scrim" aria-hidden="true"></div>
+                <div className="ri-copy">
+                  <div className="day">{s.day}</div>
+                  <div className="ttl">{s.title}</div>
+                  {s.price ? (
+                    <div className="price">{s.price}</div>
+                  ) : (
+                    <div className="price sm-price">Fan favorite</div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div key={s.id} className={`rail-item ${s.accent}`}>
+                <div className="day">{s.day}</div>
+                <div className="ttl">{s.title}</div>
+                {s.price ? (
+                  <div className="price">{s.price}</div>
+                ) : (
+                  <div className="price sm-price">Fan favorite</div>
+                )}
+              </div>
+            ),
+          )}
         </div>
 
         <div className="also">
