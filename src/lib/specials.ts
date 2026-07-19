@@ -9,6 +9,7 @@ export type Special = {
   blurb: string;
   price?: string; // some specials (Molcajete) have no fixed price
   accent: "teal" | "yel" | "orng" | "mag" | "purp"; // brand-token key
+  photo?: string; // /images/... path; falls back to the solid card when unset
   days: number[]; // Phoenix weekday indices this special is featured (0=Sun)
 };
 
@@ -21,7 +22,8 @@ export const SPECIALS: Special[] = [
     blurb: "All-you-can-eat · asada, chicken, al pastor",
     price: "$19.99",
     accent: "teal",
-    days: [2],
+    photo: "/images/SPEC_TACO.jpg",
+        days: [2],
   },
   {
     id: "fajita",
@@ -30,7 +32,8 @@ export const SPECIALS: Special[] = [
     blurb: "Chicken, steak or shrimp",
     price: "$15.99",
     accent: "yel",
-    days: [3],
+    photo: "/images/SPEC_FAJITA.jpg",
+        days: [3],
   },
   {
     id: "enchilada",
@@ -39,7 +42,8 @@ export const SPECIALS: Special[] = [
     blurb: "Enchiladas plate · rice & beans",
     price: "$14.99",
     accent: "orng",
-    days: [4],
+    photo: "/images/SPEC_ENCHILADA.jpg",
+        days: [4],
   },
   {
     id: "seafood",
@@ -48,7 +52,8 @@ export const SPECIALS: Special[] = [
     blurb: "Mexican seafood plate · fresh & bold",
     price: "$16.99",
     accent: "mag",
-    days: [5],
+    photo: "/images/SPEC_SEAFOOD.jpg",
+        days: [5],
   },
   {
     id: "molcajete",
@@ -56,7 +61,8 @@ export const SPECIALS: Special[] = [
     title: "Molcajete Weekends",
     blurb: "The molcajete meant for one, perfect for two",
     accent: "purp",
-    days: [6, 0], // Sat & Sun
+    photo: "/images/SPEC_MOLCAJETE.jpg",
+        days: [6, 0], // Sat & Sun
   },
 ];
 
