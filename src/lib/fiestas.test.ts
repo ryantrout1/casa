@@ -183,7 +183,7 @@ describe("toFlyer", () => {
   it("maps image_url→src, alt→alt, caption→cap", () => {
     expect(
       toFlyer(row({ image_url: "/images/FLY_X.jpg", alt: "Alt", caption: "Cap" })),
-    ).toEqual({ src: "/images/FLY_X.jpg", alt: "Alt", cap: "Cap" });
+    ).toMatchObject({ src: "/images/FLY_X.jpg", alt: "Alt", cap: "Cap" });
   });
   it("omits cap when caption is null", () => {
     expect(toFlyer(row({ caption: null })).cap).toBeUndefined();

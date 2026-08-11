@@ -11,26 +11,67 @@ export type FiestaRow = {
   alt: string;
   caption: string | null;
   event_date: string | null;
+  // ISO-8601 UTC ('YYYY-MM-DDTHH:MM:SSZ'), cast in SQL so the driver can never
+  // hand back a bare local-looking string. Null for undated/evergreen fiestas.
+  starts_at: string | null;
   is_hero: boolean;
   in_grid: boolean;
   on_fiestas_page: boolean;
   is_evergreen: boolean;
+  hero_title: string | null;
+  hero_script: string | null;
+  hero_ribbon: string | null;
+  hero_sub: string | null;
+  hero_lang: HeroLang;
   sort_key: number;
 };
+
+// Which language the *generated* date line is written in. The free-text hero
+// fields are whatever Stephanie's flyer says, so a Spanish date line above an
+// English ribbon is a supported combination, not a bug.
+export type HeroLang = "en" | "es";
 
 // The presentational shape FiestaGallery consumes. Structurally identical to
 // FiestaGallery's FlyerItem; kept separate to avoid importing a client
 // component (and its non-server deps) into this server module.
-export type Flyer = { src: string; alt: string; cap?: string };
+export type Flyer = {
+  src: string;
+  alt: string;
+  cap?: string;
+  startsAt: string | null;
+  eventDate: string | null;
+  heroTitle: string | null;
+  heroScript: string | null;
+  heroRibbon: string | null;
+  heroSub: string | null;
+  heroLang: HeroLang;
+};
 
 // The homepage grid shows at most this many fiestas.
 export const GRID_LIMIT = 6;
 
+// How long a fiesta stays live past its start time. An evening event runs past
+// local midnight, so expiring on the calendar date would pull the hero down
+// mid-event. Six hours covers an 8 PM start through last call.
+export const GRACE_MS = 6 * 60 * 60 * 1000;
+
 // Is this fiesta live for the "upcoming" surfaces (hero + grid)?
-// Evergreen (recurring) and undated fiestas always are; dated ones only until
-// their date passes. The fiestas page ignores this and keeps everything.
-export function isCurrent(f: FiestaRow, today: string): boolean {
+// Evergreen (recurring) and undated fiestas always are. When `starts_at` is
+// known it is authoritative and measured against real elapsed time; otherwise
+// we fall back to the coarser calendar-date comparison. `nowMs` is injectable
+// so the window is testable without faking the clock.
+export function isCurrent(
+  f: FiestaRow,
+  today: string,
+  nowMs: number = Date.now(),
+): boolean {
   if (f.is_evergreen) return true;
+  if (f.starts_at) {
+    const start = Date.parse(f.starts_at);
+    // An unparseable timestamp must not silently drop the fiesta; fall through
+    // to the date comparison below instead.
+    if (Number.isFinite(start)) return nowMs < start + GRACE_MS;
+  }
   if (!f.event_date) return true;
   return f.event_date >= today;
 }
@@ -41,7 +82,104 @@ export function orderFiestas(rows: FiestaRow[]): FiestaRow[] {
 }
 
 export function toFlyer(f: FiestaRow): Flyer {
-  return { src: f.image_url, alt: f.alt, cap: f.caption ?? undefined };
+  return {
+    src: f.image_url,
+    alt: f.alt,
+    cap: f.caption ?? undefined,
+    startsAt: f.starts_at,
+    eventDate: f.event_date,
+    heroTitle: f.hero_title,
+    heroScript: f.hero_script,
+    heroRibbon: f.hero_ribbon,
+    heroSub: f.hero_sub,
+    heroLang: f.hero_lang,
+  };
+}
+
+// --- hero date line -------------------------------------------------------
+// Name tables are spelled out rather than pulled from Intl locale data so the
+// output is identical everywhere and does not depend on which ICU set the
+// runtime shipped with.
+const DAY_NAMES: Record<HeroLang, readonly string[]> = {
+  en: ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"],
+  es: ["DOMINGO", "LUNES", "MARTES", "MIÉRCOLES", "JUEVES", "VIERNES", "SÁBADO"],
+};
+
+const MONTH_NAMES: Record<HeroLang, readonly string[]> = {
+  en: ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY",
+       "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"],
+  es: ["ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", "JULIO",
+       "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"],
+};
+
+export type HeroWhen = { day: string; date: string; time: string | null };
+
+type Parts = { y: number; m: number; d: number; h: number; min: number };
+
+// Project an absolute instant onto the Phoenix wall clock. Formatting through
+// Intl is what makes this timezone-correct; reading getUTC*/getMonth off the
+// Date directly is the day-shift bug.
+function phoenixParts(ms: number): Parts | null {
+  if (!Number.isFinite(ms)) return null;
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Phoenix",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(new Date(ms));
+
+  const get = (t: string) => Number(parts.find((p) => p.type === t)?.value);
+  // Some ICU builds render local midnight as hour "24"; normalise it.
+  const p = { y: get("year"), m: get("month"), d: get("day"), h: get("hour") % 24, min: get("minute") };
+  return Object.values(p).every(Number.isFinite) ? p : null;
+}
+
+// 'YYYY-MM-DD' split into components — never `new Date(str)`, which parses a
+// bare date as UTC midnight and lands on the previous day in Phoenix.
+function dateParts(d: string): Parts | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d);
+  if (!m) return null;
+  const p = { y: +m[1], m: +m[2], d: +m[3], h: 0, min: 0 };
+  if (p.m < 1 || p.m > 12 || p.d < 1 || p.d > 31) return null;
+  return p;
+}
+
+function weekdayIndex({ y, m, d }: Parts): number {
+  return new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+}
+
+function clockLabel({ h, min }: Parts): string {
+  const suffix = h < 12 ? "AM" : "PM";
+  const hour12 = h % 12 === 0 ? 12 : h % 12;
+  return min === 0
+    ? `${hour12} ${suffix}`
+    : `${hour12}:${String(min).padStart(2, "0")} ${suffix}`;
+}
+
+// The hero's date line. Prefers the precise `starts_at` (gives a time), falls
+// back to the date-only `event_date`, and returns null when neither is usable
+// so the caller can render the evergreen hero instead.
+export function heroWhen(
+  startsAt: string | null,
+  eventDate: string | null,
+  lang: HeroLang,
+): HeroWhen | null {
+  const fromStart = startsAt ? phoenixParts(Date.parse(startsAt)) : null;
+  const p = fromStart ?? (eventDate ? dateParts(eventDate) : null);
+  if (!p) return null;
+
+  const day = DAY_NAMES[lang][weekdayIndex(p)];
+  const month = MONTH_NAMES[lang][p.m - 1];
+  if (!day || !month) return null;
+
+  return {
+    day,
+    date: lang === "es" ? `${p.d} DE ${month}` : `${month} ${p.d}`,
+    time: fromStart ? clockLabel(p) : null,
+  };
 }
 
 // Homepage grid: grid-flagged, still current, newest first, capped at 6.
@@ -81,10 +219,16 @@ async function loadFiestas(): Promise<FiestaRow[]> {
         alt,
         caption,
         event_date::text as event_date,
+        to_char(starts_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as starts_at,
         is_hero,
         in_grid,
         on_fiestas_page,
         is_evergreen,
+        hero_title,
+        hero_script,
+        hero_ribbon,
+        hero_sub,
+        hero_lang,
         extract(epoch from coalesce(featured_at, created_at))::float8 as sort_key
       from fiestas
     `) as FiestaRow[];
