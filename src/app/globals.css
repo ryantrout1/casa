@@ -80,6 +80,27 @@ a{text-decoration:none;color:inherit}ul{list-style:none}
 .v8 .hero .photo .sticker{position:absolute;top:-18px;left:-18px;background:var(--yel);color:var(--navy);font-family:'Bangers';font-size:22px;
     width:92px;height:92px;border-radius:50%;display:grid;place-items:center;text-align:center;line-height:.9;transform:rotate(-12deg);box-shadow:0 10px 22px -10px rgba(0,0,0,.4);border:3px solid #fff}
 .v8 .hero .vidnote{position:absolute;bottom:14px;left:0;right:0;justify-content:center;color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.6)}
+/* fiesta takeover hero — replaces the evergreen hero while a dated fiesta is live.
+   The flyer is cropped below its own title block and feathered into the dark
+   field so the live type never competes with type baked into the artwork. */
+.v8 .herofx{position:relative;overflow:hidden;background:#140c06;min-height:540px;display:flex;align-items:center}
+.v8 .herofx .art{position:absolute;right:0;top:0;height:100%;width:60%;object-fit:cover;object-position:center 62%;
+    -webkit-mask-image:linear-gradient(to right,transparent 0,rgba(0,0,0,.55) 32%,#000 72%);
+    mask-image:linear-gradient(to right,transparent 0,rgba(0,0,0,.55) 32%,#000 72%)}
+.v8 .herofx .wrap{position:relative;z-index:2}
+.v8 .herofx .copy{max-width:620px;padding:64px 0}
+.v8 .herofx .when{font-family:'Fredoka',sans-serif;font-weight:600;font-size:clamp(11px,1.5vw,14px);letter-spacing:.24em;color:var(--yel);margin-bottom:10px}
+.v8 .herofx h1{font-family:'Bangers',cursive;font-weight:400;letter-spacing:.02em;line-height:.92;
+    font-size:clamp(40px,7vw,84px);color:#f7ecd4;margin:0}
+.v8 .herofx .scr{font-family:'Pacifico',cursive;font-size:clamp(26px,4vw,46px);color:var(--mag);line-height:1.12;margin-top:-2px}
+.v8 .herofx .ribbon{display:inline-block;background:var(--teal);color:#04342c;font-family:'Fredoka',sans-serif;font-weight:600;
+    font-size:13px;letter-spacing:.14em;padding:7px 20px;margin-top:14px}
+.v8 .herofx .sub{color:#cbbca0;font-size:16px;margin-top:14px;line-height:1.6;max-width:460px}
+.v8 .herofx .ctas{display:flex;gap:12px;flex-wrap:wrap;margin-top:24px}
+.v8 .herofx .btn-y{background:var(--yel);color:#3a2a00}
+.v8 .herofx .btn-y:hover{background:#f0b400}
+.v8 .herofx .btn-ghost{border-color:rgba(247,236,212,.42);color:#f7ecd4}
+.v8 .herofx .btn-ghost:hover{background:rgba(247,236,212,.1)}
 /* weekly specials strip */
   .v8 .week{padding:52px 0 52px}
 .v8 .week .lead{text-align:center;margin-bottom:26px}
@@ -235,6 +256,11 @@ a{text-decoration:none;color:inherit}ul{list-style:none}
 .v8 .navtog:checked ~ .join{display:block}
 .v8 .navtog:checked ~ .hamb::before{content:"\2715"}
 .v8 .hero .grid, .v8 .about .grid, .v8 .find .grid{grid-template-columns:1fr!important}
+.v8 .herofx{min-height:0;flex-direction:column-reverse;align-items:stretch}
+.v8 .herofx .art{position:relative;width:100%;height:240px;object-position:center 55%;
+    -webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 58%);
+    mask-image:linear-gradient(to bottom,transparent 0,#000 58%)}
+.v8 .herofx .copy{padding:22px 0 46px;max-width:none}
 .v8 .wgrid, .v8 .fcards, .v8 .rgrid{grid-template-columns:1fr 1fr!important}
 .v8 .gallery{grid-template-columns:repeat(2,1fr)}
 .v8 .revs .marquee{-webkit-mask:none;mask:none;overflow-x:auto;-webkit-overflow-scrolling:touch}
