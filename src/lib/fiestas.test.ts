@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   GRID_LIMIT,
+  heroWhen,
   isCurrent,
   orderFiestas,
   selectGrid,
@@ -24,14 +25,27 @@ function row(overrides: Partial<FiestaRow> = {}): FiestaRow {
     alt: "A flyer",
     caption: "A caption",
     event_date: null,
+    starts_at: null,
     is_hero: false,
     in_grid: true,
     on_fiestas_page: true,
     is_evergreen: false,
+    hero_title: null,
+    hero_script: null,
+    hero_ribbon: null,
+    hero_sub: null,
+    hero_lang: "en",
     sort_key: 0,
     ...overrides,
   };
 }
+
+// Palomazo: Saturday 29 Aug 2026, 8:00 PM Phoenix. America/Phoenix has no DST,
+// so it is a fixed UTC-7 — 8 PM local is 03:00Z the following calendar day.
+// That offset is the whole point of these fixtures: a naive UTC read reports
+// the wrong date and the wrong day name.
+const PALOMAZO_START = "2026-08-30T03:00:00Z";
+const phx = (iso: string) => Date.parse(iso);
 
 describe("GRID_LIMIT", () => {
   it("is 6", () => {
@@ -173,5 +187,136 @@ describe("toFlyer", () => {
   });
   it("omits cap when caption is null", () => {
     expect(toFlyer(row({ caption: null })).cap).toBeUndefined();
+  });
+});
+
+describe("isCurrent — starts_at grace window", () => {
+  // The bug this replaces: gating on `event_date >= today` flips the hero at
+  // Phoenix midnight, which for an 8 PM event lands mid-party. The grace window
+  // measures from the actual start instead.
+  const ev = row({ event_date: "2026-08-29", starts_at: PALOMAZO_START });
+
+  it("keeps the event live during it (11 PM local, 3h in)", () => {
+    expect(isCurrent(ev, "2026-08-29", phx("2026-08-30T06:00:00Z"))).toBe(true);
+  });
+
+  it("keeps the event live past local midnight (1 AM local, 5h in)", () => {
+    expect(isCurrent(ev, "2026-08-30", phx("2026-08-30T08:00:00Z"))).toBe(true);
+  });
+
+  it("drops the event once the 6h grace expires (3 AM local, 7h in)", () => {
+    expect(isCurrent(ev, "2026-08-30", phx("2026-08-30T10:00:00Z"))).toBe(false);
+  });
+
+  it("keeps the event before it starts", () => {
+    expect(isCurrent(ev, "2026-08-01", phx("2026-08-01T12:00:00Z"))).toBe(true);
+  });
+
+  it("ignores event_date entirely when starts_at is set", () => {
+    // event_date is stale/wrong here; starts_at must win.
+    const stale = row({ event_date: "2020-01-01", starts_at: PALOMAZO_START });
+    expect(isCurrent(stale, "2026-08-29", phx("2026-08-30T06:00:00Z"))).toBe(true);
+  });
+
+  it("still honours evergreen ahead of starts_at", () => {
+    const forever = row({ starts_at: PALOMAZO_START, is_evergreen: true });
+    expect(isCurrent(forever, "2027-01-01", phx("2027-01-01T00:00:00Z"))).toBe(true);
+  });
+
+  it("falls back to event_date when starts_at is null", () => {
+    expect(isCurrent(row({ event_date: "2026-08-29" }), "2026-08-30")).toBe(false);
+    expect(isCurrent(row({ event_date: "2026-08-29" }), "2026-08-29")).toBe(true);
+  });
+});
+
+describe("heroWhen", () => {
+  it("formats a Spanish event from starts_at", () => {
+    expect(heroWhen(PALOMAZO_START, "2026-08-29", "es")).toEqual({
+      day: "SÁBADO",
+      date: "29 DE AGOSTO",
+      time: "8 PM",
+    });
+  });
+
+  it("formats an English event with month-first word order", () => {
+    expect(heroWhen(PALOMAZO_START, "2026-08-29", "en")).toEqual({
+      day: "SATURDAY",
+      date: "AUGUST 29",
+      time: "8 PM",
+    });
+  });
+
+  it("does not day-shift across the UTC boundary", () => {
+    // 03:00Z on the 30th is still the 29th in Phoenix. A naive UTC read would
+    // say SUNDAY / 30 — that is the failure this pins.
+    const w = heroWhen(PALOMAZO_START, null, "es");
+    expect(w?.day).toBe("SÁBADO");
+    expect(w?.date).toBe("29 DE AGOSTO");
+  });
+
+  it("includes minutes only when non-zero", () => {
+    // 6:30 PM Phoenix = 01:30Z next day.
+    expect(heroWhen("2026-06-25T01:30:00Z", null, "en")?.time).toBe("6:30 PM");
+  });
+
+  it("renders local midnight as 12 AM", () => {
+    expect(heroWhen("2026-06-25T07:00:00Z", null, "en")?.time).toBe("12 AM");
+  });
+
+  it("renders local noon as 12 PM", () => {
+    expect(heroWhen("2026-06-25T19:00:00Z", null, "en")?.time).toBe("12 PM");
+  });
+
+  it("falls back to event_date with no time when starts_at is null", () => {
+    expect(heroWhen(null, "2026-08-29", "es")).toEqual({
+      day: "SÁBADO",
+      date: "29 DE AGOSTO",
+      time: null,
+    });
+  });
+
+  it("component-parses the event_date fallback without shifting", () => {
+    // new Date("2026-08-01") is UTC midnight, which is 31 July in Phoenix.
+    // Component parsing must keep it on the 1st.
+    expect(heroWhen(null, "2026-08-01", "es")?.date).toBe("1 DE AGOSTO");
+    expect(heroWhen(null, "2026-08-01", "en")?.day).toBe("SATURDAY");
+  });
+
+  it("returns null when there is no date at all", () => {
+    expect(heroWhen(null, null, "es")).toBeNull();
+  });
+
+  it("returns null for an unparseable value rather than throwing", () => {
+    expect(heroWhen("not-a-date", null, "en")).toBeNull();
+    expect(heroWhen(null, "2026-13", "en")).toBeNull();
+  });
+});
+
+describe("toFlyer — hero copy passthrough", () => {
+  it("carries starts_at and the hero copy fields", () => {
+    const f = toFlyer(
+      row({
+        starts_at: PALOMAZO_START,
+        event_date: "2026-08-29",
+        hero_title: "EL PALOMAZO",
+        hero_script: "en Casa",
+        hero_ribbon: "UNA NOCHE DE KARAOKE MEXICANO",
+        hero_sub: "Canta los éxitos de tus ídolos",
+        hero_lang: "es",
+      }),
+    );
+    expect(f.startsAt).toBe(PALOMAZO_START);
+    expect(f.eventDate).toBe("2026-08-29");
+    expect(f.heroTitle).toBe("EL PALOMAZO");
+    expect(f.heroScript).toBe("en Casa");
+    expect(f.heroRibbon).toBe("UNA NOCHE DE KARAOKE MEXICANO");
+    expect(f.heroSub).toBe("Canta los éxitos de tus ídolos");
+    expect(f.heroLang).toBe("es");
+  });
+
+  it("leaves hero copy undefined when unset", () => {
+    const f = toFlyer(row());
+    expect(f.startsAt).toBeNull();
+    expect(f.heroTitle).toBeNull();
   });
 });
