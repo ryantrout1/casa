@@ -29,17 +29,27 @@ import type { HeroFormState } from "./heroForm";
 export const FLYER_SCHEMA = {
   type: "object" as const,
   properties: {
-    title: { type: ["string", "null"], description: "Main headline, verbatim" },
-    script: { type: ["string", "null"], description: "Secondary script/cursive line, verbatim" },
+    title: {
+      type: ["string", "null"],
+      description: "Event name, largest type. Excludes any cursive continuation.",
+    },
+    script: {
+      type: ["string", "null"],
+      description: "The cursive continuation of the title lockup, if any.",
+    },
     ribbon: { type: ["string", "null"], description: "Banner or tagline strip, verbatim" },
     sub: {
       type: ["string", "null"],
       description:
-        "One short supporting line — address or details. Must NOT repeat the headline, script, or ribbon.",
+        "One short supporting line, usually the address. Must NOT repeat title, script, or ribbon.",
     },
-    caption: { type: ["string", "null"], description: "Short caption for a listing page" },
+    caption: { type: ["string", "null"], description: "Short one-line label for a listing page" },
     alt: { type: ["string", "null"], description: "Accessibility description of the artwork" },
-    lang: { type: "string", enum: ["en", "es"], description: "Dominant language of the poster" },
+    lang: {
+      type: "string",
+      enum: ["en", "es"],
+      description: "Language the DATE is printed in on the poster, not the poster's overall language",
+    },
     month: { type: ["integer", "null"], description: "Event month, 1-12" },
     day: { type: ["integer", "null"], description: "Event day of month, 1-31" },
     year: { type: ["integer", "null"], description: "Only if the poster prints it. Else null." },

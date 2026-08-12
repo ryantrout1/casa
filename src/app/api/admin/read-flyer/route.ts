@@ -38,26 +38,53 @@ const SUPPORTED = new Set(["image/jpeg", "image/png", "image/gif", "image/webp"]
 // indefinitely — better to fail and let the admin type.
 const TIMEOUT_MS = 30_000;
 
-const PROMPT = `This is a promotional flyer for a Mexican restaurant's event.
+const PROMPT = `This is a promotional flyer for a Mexican restaurant's event. Its text is
+going to be re-typeset into a website hero banner, so read it as a set of
+layout slots rather than as one block of copy.
 
-Read the DESIGN and the TEXT. Report only what is printed on the poster or
+Read the DESIGN and the TEXT. Report only what is printed on the poster or is
 visibly part of its artwork. Do not identify, name, or describe any person
 depicted — you are reading a layout, not the people in it.
 
-Rules:
-- Copy text verbatim, including accents and punctuation. Do not translate.
-- title: the largest headline. script: a secondary line in cursive/script.
-  ribbon: a banner or strip of tagline text.
-- sub: ONE short supporting line, usually the address or a detail. It must NOT
-  repeat anything already in title, script, or ribbon — if the poster has
-  nothing else to say, return null.
-- Date and time: report the parts you can actually read. Set year to null
-  unless the poster prints a year. Convert any clock time to a 24-hour hour
-  and minute.
-- Colours: bg is the dominant background, accent is the brightest signature
-  colour used for emphasis, ink is the headline's own text colour. Give the
-  colours a designer would name from the artwork, not an average of pixels.
-- Anything the poster does not say: null. Never guess.`;
+THE SLOTS, in the order they will be stacked on the page:
+
+- title — the event's name, set as the largest and boldest type on the poster.
+  If the name's lockup continues into a smaller decorative or cursive word,
+  that continuation is NOT part of title.
+- script — that continuation: the smaller cursive or handwritten-looking part
+  of the title lockup. Null if the lockup is a single weight.
+- ribbon — a short banner, strip, or tagline sitting under the title.
+- sub — ONE short supporting line, usually the address or a practical detail.
+  It must NOT repeat anything already in title, script, or ribbon. If the
+  poster has nothing left to say, return null.
+
+Worked example. A poster whose top line reads "CASA DE LEYVA PRESENTA", below
+which "El Palomazo" is set huge with "en Casa" flowing off it in script,
+above a banner reading "UNA NOCHE DE KARAOKE MEXICANO":
+  title  = "El Palomazo"
+  script = "en Casa"
+  ribbon = "UNA NOCHE DE KARAOKE MEXICANO"
+and "CASA DE LEYVA PRESENTA" is discarded — see below.
+
+DISCARD, never assign to a slot: presenter and host lines ("X presents",
+"presentado por"), the venue's own name and logo, sponsor credits, social
+handles, and website addresses. The page already knows whose site it is.
+
+OTHER FIELDS:
+
+- caption — a short label for a listing page. One line, not a summary.
+- alt — an accessibility description of the artwork.
+- lang — the language the DATE should be written in on the website. Match how
+  this poster prints its own date: "SATURDAY AUGUST 29" is en, "SÁBADO 29 DE
+  AGOSTO" is es. This is not a judgement about the poster's overall language.
+- Date and time — report only what you can actually read. Set year to null
+  unless the poster prints a year. Convert any clock time to 24-hour parts.
+- Colours — bg is the dominant background, accent is the brightest signature
+  colour used for emphasis, ink is the headline's own text colour. Name the
+  colours a designer would pick out of the artwork, not an average of pixels.
+
+Copy slot text verbatim, including accents and punctuation. Do not translate.
+Anything the poster does not say: null. Never guess.`;
 
 export async function POST(req: Request) {
   try {
