@@ -24,6 +24,19 @@ export type FiestaRow = {
   hero_ribbon: string | null;
   hero_sub: string | null;
   hero_lang: HeroLang;
+  // Crop position for the flyer, 0–100. The cover window's height varies with
+  // viewport (fluid art width against a fixed hero height), so the right crop
+  // depends on where the faces sit in each individual flyer. Null → 50%.
+  hero_focus: number | null;
+  // When the takeover starts showing. Null → immediately, which is what every
+  // row published before this column existed does. Distinct from starts_at
+  // (the event) and from the campaign's scheduled_for (the email send).
+  hero_live_at: string | null;
+  // Section colours sampled from the flyer. Null → the CSS fallbacks, i.e.
+  // exactly what the hero looked like before this column existed.
+  hero_bg: string | null;
+  hero_accent: string | null;
+  hero_ink: string | null;
   sort_key: number;
 };
 
@@ -47,6 +60,11 @@ export type Flyer = {
   heroRibbon: string | null;
   heroSub: string | null;
   heroLang: HeroLang;
+  heroFocus: number | null;
+  heroLiveAt: string | null;
+  heroBg: string | null;
+  heroAccent: string | null;
+  heroInk: string | null;
 };
 
 // The homepage grid shows at most this many fiestas.
@@ -95,6 +113,11 @@ export function toFlyer(f: FiestaRow): Flyer {
     heroRibbon: f.hero_ribbon,
     heroSub: f.hero_sub,
     heroLang: f.hero_lang,
+    heroFocus: f.hero_focus,
+    heroLiveAt: f.hero_live_at,
+    heroBg: f.hero_bg,
+    heroAccent: f.hero_accent,
+    heroInk: f.hero_ink,
   };
 }
 
@@ -196,11 +219,40 @@ export function selectAll(rows: FiestaRow[]): FiestaRow[] {
   return orderFiestas(rows.filter((f) => f.on_fiestas_page));
 }
 
-// Hero: the single current hero (highest sort_key if more than one is flagged,
-// which the DB's partial unique index normally prevents).
-export function selectHero(rows: FiestaRow[], today: string): FiestaRow | null {
+// Has this fiesta's takeover window opened? Null means "live immediately",
+// which is how every row published before hero_live_at existed behaves — so
+// adding the column changes nothing for them.
+//
+// An unparseable value resolves to live, matching isCurrent's posture: a bad
+// timestamp must not silently blank a takeover the admin thinks they
+// published. Failing visible beats failing invisible.
+export function isHeroLive(f: FiestaRow, nowMs: number = Date.now()): boolean {
+  if (!f.hero_live_at) return true;
+  const opens = Date.parse(f.hero_live_at);
+  if (!Number.isFinite(opens)) return true;
+  return nowMs >= opens;
+}
+
+// The object-position the flyer should be cropped at. Clamped and rounded here
+// rather than trusted from the row, because this value lands in an inline
+// style — the DB CHECK is the other half of the same guard.
+export function heroFocusCss(focus: number | null): string {
+  if (focus === null || !Number.isFinite(focus)) return "center 50%";
+  const pct = Math.min(100, Math.max(0, Math.round(focus)));
+  return `center ${pct}%`;
+}
+
+// Hero: the single fiesta that is flagged, still current, and whose go-live
+// window has opened. More than one row can be flagged (a queued takeover
+// alongside a live one), so the highest sort_key among the *eligible* rows
+// wins — the filter runs before the tie-break, not after.
+export function selectHero(
+  rows: FiestaRow[],
+  today: string,
+  nowMs: number = Date.now(),
+): FiestaRow | null {
   const heroes = orderFiestas(
-    rows.filter((f) => f.is_hero && isCurrent(f, today)),
+    rows.filter((f) => f.is_hero && isCurrent(f, today, nowMs) && isHeroLive(f, nowMs)),
   );
   return heroes[0] ?? null;
 }
@@ -231,6 +283,11 @@ async function loadFiestas(): Promise<FiestaRow[]> {
         hero_ribbon,
         hero_sub,
         hero_lang,
+        hero_focus,
+        to_char(hero_live_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as hero_live_at,
+        hero_bg,
+        hero_accent,
+        hero_ink,
         extract(epoch from coalesce(featured_at, created_at))::float8 as sort_key
       from fiestas
     `) as FiestaRow[];

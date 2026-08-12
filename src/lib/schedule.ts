@@ -14,6 +14,14 @@ export type HeroCopy = {
   ribbon?: string;
   sub?: string;
   lang?: HeroLang;
+  /** Flyer crop position, 0–100. Clamped on parse. */
+  focus?: number;
+  /** When the takeover starts showing. Distinct from the email send time. */
+  liveAt?: string;
+  /** Section colours sampled from the flyer. 6-digit hex, lowercased. */
+  bg?: string;
+  accent?: string;
+  ink?: string;
 };
 
 export type DraftFlyer = {
@@ -33,6 +41,33 @@ function str(v: unknown): string | undefined {
   return typeof v === "string" && v.length > 0 ? v : undefined;
 }
 
+// Focus needs its own parser: str() drops falsy values, and 0 is a legitimate
+// crop (top of the flyer), not an absence. Form inputs arrive as strings, so
+// numeric strings are accepted and coerced. Out-of-range values are clamped
+// rather than dropped — the DB CHECK would reject them and fail the whole
+// publish, and a clamped crop is better than a lost one.
+function pct(v: unknown): number | undefined {
+  const n = typeof v === "number" ? v : typeof v === "string" && v.trim() !== "" ? Number(v) : NaN;
+  if (!Number.isFinite(n)) return undefined;
+  return Math.min(100, Math.max(0, Math.round(n)));
+}
+
+// Colours must match the hero_colors_hex CHECK exactly, or the insert fails.
+// Anything else degrades to "no colour", which renders the CSS fallback.
+const HEX_RE = /^#[0-9a-fA-F]{6}$/;
+function hex(v: unknown): string | undefined {
+  return typeof v === "string" && HEX_RE.test(v) ? v.toLowerCase() : undefined;
+}
+
+// Timestamps land in timestamptz columns, so an unparseable string does not
+// degrade gracefully — it throws on INSERT and takes the whole publish with
+// it. The cron drain has no user to show that error to, so validate here and
+// drop what cannot be stored.
+function ts(v: unknown): string | undefined {
+  if (typeof v !== "string" || v.length === 0) return undefined;
+  return Number.isFinite(Date.parse(v)) ? v : undefined;
+}
+
 // Turn an arbitrary blob into safe hero copy, or undefined when there is
 // nothing usable. Total by contract — the cron drain has no user to show an
 // error to, so a malformed blob must degrade to "no hero copy", never throw.
@@ -42,12 +77,18 @@ export function parseHeroCopy(raw: unknown): HeroCopy | undefined {
   if (!raw || typeof raw !== "object") return undefined;
   const o = raw as Record<string, unknown>;
   const out: HeroCopy = {};
-  if (str(o.startsAt)) out.startsAt = str(o.startsAt);
+  if (ts(o.startsAt)) out.startsAt = ts(o.startsAt);
   if (str(o.title)) out.title = str(o.title);
   if (str(o.script)) out.script = str(o.script);
   if (str(o.ribbon)) out.ribbon = str(o.ribbon);
   if (str(o.sub)) out.sub = str(o.sub);
   if (o.lang === "en" || o.lang === "es") out.lang = o.lang;
+  const focus = pct(o.focus);
+  if (focus !== undefined) out.focus = focus;
+  if (ts(o.liveAt)) out.liveAt = ts(o.liveAt);
+  if (hex(o.bg)) out.bg = hex(o.bg);
+  if (hex(o.accent)) out.accent = hex(o.accent);
+  if (hex(o.ink)) out.ink = hex(o.ink);
   return Object.keys(out).length > 0 ? out : undefined;
 }
 

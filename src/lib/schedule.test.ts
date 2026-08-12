@@ -269,3 +269,33 @@ describe("parseDraftConfig — Phase 2 fields survive the round trip", () => {
     expect(parsed.flyer.hero).toEqual({ focus: 38, bg: "#1a1008" });
   });
 });
+
+describe("parseHeroCopy — timestamps must be storable", () => {
+  // startsAt and liveAt land in timestamptz columns. An unparseable string
+  // throws on INSERT and takes the whole publish down — and the cron drain has
+  // no user to show that error to. Drop what cannot be stored.
+  const junk = ["not a date", "2026-13-45", "tomorrow", "  "];
+
+  it("drops an unparseable liveAt", () => {
+    for (const j of junk) expect(parseHeroCopy({ liveAt: j })).toBeUndefined();
+  });
+
+  it("drops an unparseable startsAt", () => {
+    for (const j of junk) expect(parseHeroCopy({ startsAt: j })).toBeUndefined();
+  });
+
+  it("keeps a valid ISO timestamp", () => {
+    expect(parseHeroCopy({ liveAt: "2026-08-25T07:00:00Z" })).toEqual({
+      liveAt: "2026-08-25T07:00:00Z",
+    });
+    expect(parseHeroCopy({ startsAt: "2026-08-30T03:00:00Z" })).toEqual({
+      startsAt: "2026-08-30T03:00:00Z",
+    });
+  });
+
+  it("keeps the rest of the blob when only the timestamp is bad", () => {
+    expect(parseHeroCopy({ liveAt: "nope", title: "EL PALOMAZO" })).toEqual({
+      title: "EL PALOMAZO",
+    });
+  });
+});
