@@ -221,3 +221,15 @@ table.t a:hover { text-decoration: underline; }
 .redeem-btn{background:var(--orng);color:#fff;border:none;border-radius:8px;padding:7px 16px;font-size:0.85rem;font-weight:700;cursor:pointer}
 .redeem-btn:hover{filter:brightness(.95)}
 .redeem-btn:disabled{opacity:.6;cursor:default}
+
+/* Destination configuration panels in the campaign composer. Each is shown
+   only while its checkbox is ticked, so an email-only campaign never renders
+   flyer fields. The left rule is what makes a panel read as belonging to the
+   destination above it rather than as another loose form row. */
+.compose .dest-panel {
+  border-left: 3px solid #e6e9ee;
+  padding-left: 14px;
+}
+.compose .dest-panel > label {
+  font-weight: 700;
+}

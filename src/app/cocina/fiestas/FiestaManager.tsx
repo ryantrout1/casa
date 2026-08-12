@@ -3,6 +3,7 @@
 import { Fragment, useState } from "react";
 import { CHANNEL_LABEL, liveSurfaces, type ChannelId, type SurfaceFlags } from "@/lib/publish";
 import { heroWhen, toPhoenixFields } from "@/lib/heroDates";
+import { utcToPhoenixLocalInput } from "@/lib/schedule";
 import type { HeroLang } from "@/lib/publish";
 
 export type FiestaAdminRow = {
@@ -20,6 +21,11 @@ export type FiestaAdminRow = {
   hero_ribbon: string | null;
   hero_sub: string | null;
   hero_lang: HeroLang;
+  hero_focus: number | null;
+  hero_live_at: string | null;
+  hero_bg: string | null;
+  hero_accent: string | null;
+  hero_ink: string | null;
 };
 
 // The editable hero fields, as the form holds them.
@@ -31,6 +37,11 @@ type HeroDraft = {
   heroRibbon: string;
   heroSub: string;
   heroLang: HeroLang;
+  heroFocus: string;
+  heroLiveLocal: string;
+  heroBg: string;
+  heroAccent: string;
+  heroInk: string;
 };
 
 function draftOf(r: FiestaAdminRow): HeroDraft {
@@ -43,6 +54,11 @@ function draftOf(r: FiestaAdminRow): HeroDraft {
     heroRibbon: r.hero_ribbon ?? "",
     heroSub: r.hero_sub ?? "",
     heroLang: r.hero_lang,
+    heroFocus: r.hero_focus === null ? "" : String(r.hero_focus),
+    heroLiveLocal: r.hero_live_at ? utcToPhoenixLocalInput(r.hero_live_at) : "",
+    heroBg: r.hero_bg ?? "",
+    heroAccent: r.hero_accent ?? "",
+    heroInk: r.hero_ink ?? "",
   };
 }
 
@@ -124,6 +140,13 @@ export default function FiestaManager({ fiestas }: { fiestas: FiestaAdminRow[] }
                 hero_ribbon: draft.heroRibbon.trim() || null,
                 hero_sub: draft.heroSub.trim() || null,
                 hero_lang: draft.heroLang,
+                // Mirror what the server stored, not what was typed — a bad
+                // colour or crop is dropped server-side rather than rejected.
+                hero_focus: d.heroFocus ?? null,
+                hero_live_at: d.heroLiveAt ?? null,
+                hero_bg: d.heroBg ?? null,
+                hero_accent: d.heroAccent ?? null,
+                hero_ink: d.heroInk ?? null,
               }
             : r,
         ),
@@ -404,6 +427,82 @@ export default function FiestaManager({ fiestas }: { fiestas: FiestaAdminRow[] }
                               onChange={(e) => setField("heroSub", e.target.value)}
                             />
                           </label>
+                          <label style={{ display: "grid", gap: 4, fontSize: 13 }}>
+                            Takeover goes live (Arizona) — blank means immediately
+                            <input
+                              type="datetime-local"
+                              value={draft.heroLiveLocal}
+                              onChange={(e) => setField("heroLiveLocal", e.target.value)}
+                            />
+                          </label>
+                          <label
+                            style={{ display: "flex", gap: 10, alignItems: "center", fontSize: 13 }}
+                          >
+                            Flyer crop
+                            <input
+                              type="range"
+                              min={0}
+                              max={100}
+                              step={1}
+                              value={draft.heroFocus === "" ? 50 : Number(draft.heroFocus)}
+                              onChange={(e) => setField("heroFocus", e.target.value)}
+                              style={{ flex: 1, maxWidth: 220 }}
+                            />
+                            <span style={{ minWidth: 40 }}>
+                              {draft.heroFocus === "" ? "50" : draft.heroFocus}%
+                            </span>
+                            {draft.heroFocus !== "" ? (
+                              <button
+                                type="button"
+                                className="ghost"
+                                onClick={() => setField("heroFocus", "")}
+                              >
+                                Reset
+                              </button>
+                            ) : null}
+                          </label>
+                          <div style={{ display: "flex", gap: 14, flexWrap: "wrap", fontSize: 13 }}>
+                            {(
+                              [
+                                ["heroBg", "Background"],
+                                ["heroAccent", "Accent"],
+                                ["heroInk", "Text"],
+                              ] as const
+                            ).map(([key, label]) => (
+                              <label key={key} style={{ display: "grid", gap: 3 }}>
+                                {label}
+                                <span style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                                  <input
+                                    type="color"
+                                    value={draft[key] || "#140c06"}
+                                    onChange={(e) => setField(key, e.target.value)}
+                                    style={{ width: 36, height: 28, padding: 0 }}
+                                  />
+                                  <input
+                                    type="text"
+                                    value={draft[key]}
+                                    onChange={(e) => setField(key, e.target.value)}
+                                    placeholder="#000000"
+                                    style={{ width: 92 }}
+                                  />
+                                  {draft[key] ? (
+                                    <button
+                                      type="button"
+                                      className="ghost"
+                                      onClick={() => setField(key, "")}
+                                    >
+                                      Clear
+                                    </button>
+                                  ) : null}
+                                </span>
+                              </label>
+                            ))}
+                          </div>
+                          <p className="hint" style={{ margin: 0 }}>
+                            Leave the colours blank for the standard dark hero. Text colour is
+                            derived from the background when blank, and always checked for
+                            readability.
+                          </p>
                           <div>
                             <button
                               type="button"

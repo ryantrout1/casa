@@ -1,0 +1,204 @@
+"use client";
+
+import type { Palette } from "@/lib/palette";
+import type { HeroFormState } from "@/lib/heroForm";
+import type { HeroLang } from "@/lib/publish";
+import HeroPreview from "./HeroPreview";
+
+// The Hero destination panel. Everything it renders is controlled by the
+// parent's HeroFormState, so the panel itself holds no state — which keeps the
+// preview, the payload, and the form in lockstep by construction.
+
+type Slot = "bg" | "accent" | "ink";
+const SLOTS: { key: Slot; label: string; hint: string }[] = [
+  { key: "bg", label: "Background", hint: "The section behind everything" },
+  { key: "accent", label: "Accent", hint: "Eyebrow, script line, ribbon, button" },
+  { key: "ink", label: "Text", hint: "Headline — leave blank to derive it" },
+];
+
+export default function HeroPanel({
+  value,
+  onChange,
+  flyerUrl,
+  palette,
+  dateLine,
+}: {
+  value: HeroFormState;
+  onChange: (patch: Partial<HeroFormState>) => void;
+  flyerUrl: string;
+  palette: Palette | null;
+  dateLine: string;
+}) {
+  const set = <K extends keyof HeroFormState>(k: K, v: HeroFormState[K]) => onChange({ [k]: v });
+
+  return (
+    <div style={{ display: "grid", gap: 12 }}>
+      <p className="hint" style={{ margin: 0 }}>
+        Fills the homepage hero takeover. Leave the headline blank to keep the standard
+        ¡Bienvenidos! hero. You can edit all of this later in Fiestas.
+      </p>
+
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+        <label className="hint" style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          Event starts (Arizona)
+          <input
+            type="datetime-local"
+            value={value.startLocal}
+            onChange={(e) => set("startLocal", e.target.value)}
+          />
+        </label>
+        <label className="hint" style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          Takeover goes live (Arizona)
+          <input
+            type="datetime-local"
+            value={value.liveLocal}
+            onChange={(e) => set("liveLocal", e.target.value)}
+          />
+        </label>
+        <label className="hint" style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          Language
+          <select value={value.lang} onChange={(e) => set("lang", e.target.value as HeroLang)}>
+            <option value="en">English</option>
+            <option value="es">Español</option>
+          </select>
+        </label>
+      </div>
+      <p className="hint" style={{ margin: "-4px 0 0" }}>
+        Leave <strong>goes live</strong> blank to show the takeover as soon as you publish. The
+        hero comes down on its own about six hours after the event starts.
+      </p>
+
+      <input
+        type="text"
+        value={value.title}
+        onChange={(e) => set("title", e.target.value)}
+        placeholder="Headline — e.g. EL PALOMAZO"
+      />
+      <input
+        type="text"
+        value={value.script}
+        onChange={(e) => set("script", e.target.value)}
+        placeholder="Script line — e.g. en Casa"
+      />
+      <input
+        type="text"
+        value={value.ribbon}
+        onChange={(e) => set("ribbon", e.target.value)}
+        placeholder="Ribbon — e.g. UNA NOCHE DE KARAOKE MEXICANO"
+      />
+      <input
+        type="text"
+        value={value.sub}
+        onChange={(e) => set("sub", e.target.value)}
+        placeholder="Sub-line — address, specials, anything the flyer doesn't already say"
+      />
+
+      <div>
+        <label className="hint" style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          Flyer crop
+          <input
+            type="range"
+            min={0}
+            max={100}
+            step={1}
+            value={value.focus === "" ? 50 : Number(value.focus)}
+            onChange={(e) => set("focus", e.target.value)}
+            style={{ flex: 1, maxWidth: 260 }}
+          />
+          <span style={{ minWidth: 42 }}>{value.focus === "" ? "50" : value.focus}%</span>
+          {value.focus !== "" ? (
+            <button type="button" className="ghost" onClick={() => set("focus", "")}>
+              Reset
+            </button>
+          ) : null}
+        </label>
+        <p className="hint" style={{ margin: "2px 0 0" }}>
+          Lower shows more of the top of the flyer. Watch the preview — the aim is to keep faces
+          out of the top edge.
+        </p>
+      </div>
+
+      <div>
+        <div className="hint" style={{ marginBottom: 6 }}>
+          Colours from the flyer
+          {palette ? null : (
+            <span> — upload a flyer to sample them, or type hex values below.</span>
+          )}
+        </div>
+        {palette ? (
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+            {palette.swatches.map((hex) => (
+              <button
+                key={hex}
+                type="button"
+                title={`${hex} — click to use as background, shift-click for accent`}
+                onClick={(e) =>
+                  e.shiftKey ? set("accent", hex) : set("bg", hex)
+                }
+                style={{
+                  width: 34,
+                  height: 34,
+                  borderRadius: 8,
+                  background: hex,
+                  border:
+                    value.bg === hex || value.accent === hex
+                      ? "3px solid #1f3a63"
+                      : "1px solid #cfd3da",
+                  cursor: "pointer",
+                }}
+              />
+            ))}
+            <button
+              type="button"
+              className="ghost"
+              onClick={() =>
+                onChange({ bg: palette.bg, accent: palette.accent, ink: "" })
+              }
+            >
+              Use suggested
+            </button>
+          </div>
+        ) : null}
+
+        <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
+          {SLOTS.map(({ key, label, hint }) => (
+            <label key={key} className="hint" style={{ display: "grid", gap: 3 }}>
+              <span>
+                {label} <span className="muted">— {hint}</span>
+              </span>
+              <span style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                <input
+                  type="color"
+                  value={value[key] || "#140c06"}
+                  onChange={(e) => set(key, e.target.value)}
+                  style={{ width: 38, height: 30, padding: 0, border: "1px solid #cfd3da" }}
+                />
+                <input
+                  type="text"
+                  value={value[key]}
+                  onChange={(e) => set(key, e.target.value)}
+                  placeholder="#000000"
+                  style={{ width: 96 }}
+                />
+                {value[key] ? (
+                  <button type="button" className="ghost" onClick={() => set(key, "")}>
+                    Clear
+                  </button>
+                ) : null}
+              </span>
+            </label>
+          ))}
+        </div>
+        <p className="hint" style={{ margin: "6px 0 0" }}>
+          Leave all three blank for the standard dark hero. Text colour is derived from the
+          background when blank, and always checked for readability.
+        </p>
+      </div>
+
+      <div>
+        <div className="hint" style={{ marginBottom: 6 }}>Preview</div>
+        <HeroPreview hero={value} flyerUrl={flyerUrl} dateLine={dateLine} />
+      </div>
+    </div>
+  );
+}

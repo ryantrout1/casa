@@ -8,7 +8,6 @@ import {
   CHANNEL_LABEL,
   resultEntries,
   type ChannelId,
-  type HeroLang,
   type PublishResults,
 } from "@/lib/publish";
 import {
@@ -16,6 +15,11 @@ import {
   utcToPhoenixLocalInput,
   type DraftFlyer,
 } from "@/lib/schedule";
+import { heroPayloadFrom, EMPTY_HERO_FORM, type HeroFormState } from "@/lib/heroForm";
+import { heroWhen } from "@/lib/heroDates";
+import { paletteFromFile } from "@/lib/paletteFromFile";
+import type { Palette } from "@/lib/palette";
+import HeroPanel from "./HeroPanel";
 
 type InitialDraft = {
   id: string;
@@ -43,6 +47,31 @@ function channelsRecord(list: ChannelId[] | undefined): Record<ChannelId, boolea
     grid: list.includes("grid"),
     fiestas_page: list.includes("fiestas_page"),
   };
+}
+
+// A destination's configuration, shown only while that destination is ticked.
+// Values are KEPT when it is unticked rather than cleared, so unticking to
+// look at something and re-ticking does not silently discard work; the payload
+// is built from the selected channels, so hidden values are never published.
+function Panel({
+  on,
+  title,
+  note,
+  children,
+}: {
+  on: boolean;
+  title: string;
+  note: string;
+  children: React.ReactNode;
+}) {
+  if (!on) return null;
+  return (
+    <div className="field-c dest-panel">
+      <label>{title}</label>
+      <p className="hint" style={{ margin: "0 0 10px" }}>{note}</p>
+      {children}
+    </div>
+  );
 }
 
 export default function Compose({
@@ -75,15 +104,25 @@ export default function Compose({
   // datetime-local convention as the schedule field below, so the two date
   // controls in this form behave identically.
   const initialHero = initialDraft?.flyer.hero;
-  const [heroOpen, setHeroOpen] = useState(Boolean(initialHero));
-  const [heroStart, setHeroStart] = useState(
-    initialHero?.startsAt ? utcToPhoenixLocalInput(initialHero.startsAt) : "",
-  );
-  const [heroTitle, setHeroTitle] = useState(initialHero?.title ?? "");
-  const [heroScript, setHeroScript] = useState(initialHero?.script ?? "");
-  const [heroRibbon, setHeroRibbon] = useState(initialHero?.ribbon ?? "");
-  const [heroSub, setHeroSub] = useState(initialHero?.sub ?? "");
-  const [heroLang, setHeroLang] = useState<HeroLang>(initialHero?.lang ?? "en");
+  const [hero, setHero] = useState<HeroFormState>({
+    ...EMPTY_HERO_FORM,
+    startLocal: initialHero?.startsAt ? utcToPhoenixLocalInput(initialHero.startsAt) : "",
+    liveLocal: initialHero?.liveAt ? utcToPhoenixLocalInput(initialHero.liveAt) : "",
+    title: initialHero?.title ?? "",
+    script: initialHero?.script ?? "",
+    ribbon: initialHero?.ribbon ?? "",
+    sub: initialHero?.sub ?? "",
+    lang: initialHero?.lang ?? "en",
+    focus: initialHero?.focus === undefined ? "" : String(initialHero.focus),
+    bg: initialHero?.bg ?? "",
+    accent: initialHero?.accent ?? "",
+    ink: initialHero?.ink ?? "",
+  });
+  // Swatches sampled from the uploaded flyer. Null until a flyer is picked, or
+  // when the browser could not decode it — either way the panel just hides the
+  // strip and the admin can still type hex values.
+  const [palette, setPalette] = useState<Palette | null>(null);
+  const patchHero = (patch: Partial<HeroFormState>) => setHero((h) => ({ ...h, ...patch }));
 
   // Destinations. Default to the full fan-out; email locks after it sends.
   const [channels, setChannels] = useState<Record<ChannelId, boolean>>(
@@ -103,30 +142,13 @@ export default function Compose({
     setChannels((c) => ({ ...c, [key]: !c[key] }));
   }
 
-  function heroPayload() {
-    // Omit entirely when nothing is filled in, so an untouched form saves the
-    // same draft shape it always did.
-    const startsAt = heroStart ? phoenixLocalToUtcISO(heroStart) : null;
-    const filled =
-      startsAt || heroTitle.trim() || heroScript.trim() || heroRibbon.trim() || heroSub.trim();
-    if (!filled) return undefined;
-    return {
-      startsAt,
-      title: heroTitle.trim() || undefined,
-      script: heroScript.trim() || undefined,
-      ribbon: heroRibbon.trim() || undefined,
-      sub: heroSub.trim() || undefined,
-      lang: heroLang,
-    };
-  }
-
   function flyerPayload() {
     return {
       imageUrl: flyerUrl,
       caption: flyerCaption,
       alt: flyerAlt,
       eventDate: flyerDate || undefined,
-      hero: heroPayload(),
+      hero: heroPayloadFrom(hero),
     };
   }
 
@@ -143,6 +165,10 @@ export default function Compose({
       setFlyerUploading(true);
       setMsg("");
       setErr(false);
+      // Sample the palette from the File we already hold. Deliberately not
+      // awaited before the upload and deliberately not allowed to fail it —
+      // swatches are a convenience, publishing is not.
+      void paletteFromFile(f).then(setPalette);
       try {
         const fd = new FormData();
         fd.append("file", f);
@@ -389,6 +415,17 @@ export default function Compose({
     }
   }
 
+  const anyWebsite = channels.hero || channels.grid || channels.fiestas_page;
+  // The date line the live hero would render, so the preview shows the real
+  // string rather than a placeholder.
+  const previewHeroStart = hero.startLocal ? phoenixLocalToUtcISO(hero.startLocal) : null;
+  const previewWhen = previewHeroStart
+    ? heroWhen(previewHeroStart, flyerDate || null, hero.lang)
+    : heroWhen(null, flyerDate || null, hero.lang);
+  const previewDateLine = previewWhen
+    ? [`${previewWhen.day} ${previewWhen.date}`, previewWhen.time].filter(Boolean).join(" · ")
+    : "";
+
   const anyBusy = busy || uploading || flyerUploading;
 
   return (
@@ -432,8 +469,11 @@ export default function Compose({
         </p>
       </div>
 
-      <div className="field-c">
-        <label>Fiesta flyer (for the website)</label>
+      <Panel
+        on={anyWebsite}
+        title="Website flyer"
+        note="Shared by the hero, the homepage grid, and the Fiestas page."
+      >
         <div style={{ display: "flex", gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}>
           <div>
             <button
@@ -444,15 +484,10 @@ export default function Compose({
             >
               {flyerUploading ? "Uploading…" : flyerUrl ? "Replace flyer" : "Upload flyer"}
             </button>
-            <input
-              ref={flyerFileRef}
-              type="file"
-              accept="image/*"
-              hidden
-              onChange={onPickFlyer}
-            />
+            <input ref={flyerFileRef} type="file" accept="image/*" hidden onChange={onPickFlyer} />
           </div>
           {flyerUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={flyerUrl}
               alt="Flyer preview"
@@ -477,70 +512,22 @@ export default function Compose({
             Event date (optional — leave blank for recurring/ongoing)
             <input type="date" value={flyerDate} onChange={(e) => setFlyerDate(e.target.value)} />
           </label>
-
-          <div style={{ borderTop: "1px solid #e6e9ee", paddingTop: 10, marginTop: 2 }}>
-            <button
-              type="button"
-              onClick={() => setHeroOpen((v) => !v)}
-              className="pill"
-              style={{ cursor: "pointer", border: "1px solid #cfd3da", background: "transparent" }}
-            >
-              {heroOpen ? "− " : "+ "}Hero copy (optional)
-            </button>
-            {heroOpen ? (
-              <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
-                <p className="hint" style={{ margin: 0 }}>
-                  Fills the homepage hero takeover when this fiesta is the hero. Leave the
-                  headline blank to keep the standard ¡Bienvenidos! hero. You can also edit
-                  all of this later in Fiestas.
-                </p>
-                <label className="hint" style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                  Starts (Arizona time)
-                  <input
-                    type="datetime-local"
-                    value={heroStart}
-                    onChange={(e) => setHeroStart(e.target.value)}
-                  />
-                </label>
-                <label className="hint" style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                  Date line language
-                  <select
-                    value={heroLang}
-                    onChange={(e) => setHeroLang(e.target.value as HeroLang)}
-                  >
-                    <option value="en">English</option>
-                    <option value="es">Español</option>
-                  </select>
-                </label>
-                <input
-                  type="text"
-                  value={heroTitle}
-                  onChange={(e) => setHeroTitle(e.target.value)}
-                  placeholder="Headline — e.g. EL PALOMAZO"
-                />
-                <input
-                  type="text"
-                  value={heroScript}
-                  onChange={(e) => setHeroScript(e.target.value)}
-                  placeholder="Script line — e.g. en Casa"
-                />
-                <input
-                  type="text"
-                  value={heroRibbon}
-                  onChange={(e) => setHeroRibbon(e.target.value)}
-                  placeholder="Ribbon — e.g. UNA NOCHE DE KARAOKE MEXICANO"
-                />
-                <input
-                  type="text"
-                  value={heroSub}
-                  onChange={(e) => setHeroSub(e.target.value)}
-                  placeholder="Sub line — e.g. Canta los éxitos de tus ídolos"
-                />
-              </div>
-            ) : null}
-          </div>
         </div>
-      </div>
+      </Panel>
+
+      <Panel
+        on={channels.hero}
+        title="Hero takeover"
+        note="Replaces the homepage hero until the event is over."
+      >
+        <HeroPanel
+          value={hero}
+          onChange={patchHero}
+          flyerUrl={flyerUrl}
+          palette={palette}
+          dateLine={previewDateLine}
+        />
+      </Panel>
 
       <div className="field-c">
         <label>Publish to</label>
