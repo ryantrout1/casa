@@ -430,7 +430,7 @@ export default function Menu() {
       <section className="mn-closing sec">
         <div className="wrap">
           <h2>¿Listos para comer?</h2>
-          <p>Walk in, or call ahead — we&apos;ll have a table waiting.</p>
+          <p>Come on in — first come, first served.</p>
           <div className="ctas">
             <a className="btn btn-o" href="tel:6233062386">
               Call 623-306-2386

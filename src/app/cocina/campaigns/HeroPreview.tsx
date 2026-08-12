@@ -155,7 +155,7 @@ export default function HeroPreview({
                 borderRadius: 999,
               }}
             >
-              Reserve Your Table
+              Get Directions
             </span>
             <span
               style={{

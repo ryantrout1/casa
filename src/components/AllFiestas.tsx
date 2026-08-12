@@ -34,8 +34,7 @@ export default async function AllFiestas() {
         <div className="wrap">
           <h2>NEVER MISS A FIESTA</h2>
           <p>
-            Follow us for the latest, or call to reserve your table for the next
-            one.
+            Follow us for the latest, or call with any questions.
           </p>
           <div className="ctas">
             <a
