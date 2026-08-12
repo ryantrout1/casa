@@ -7,7 +7,9 @@ export default async function FiestasAdmin() {
   const sql = db();
   const rows = (await sql`
     select id, image_url, caption, event_date::text as event_date,
-           is_hero, in_grid, on_fiestas_page, is_evergreen
+           to_char(starts_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as starts_at,
+           is_hero, in_grid, on_fiestas_page, is_evergreen,
+           hero_title, hero_script, hero_ribbon, hero_sub, hero_lang
     from fiestas
     order by featured_at desc nulls last, created_at desc
   `) as FiestaAdminRow[];

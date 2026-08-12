@@ -238,6 +238,45 @@ async function loadFiestas(): Promise<FiestaRow[]> {
   }
 }
 
+// --- admin form round-trip ------------------------------------------------
+// The admin thinks in Phoenix wall-clock ("29 Aug, 8:00 PM"); the column is
+// timestamptz. These two convert between the pair of form fields and the stored
+// instant. America/Phoenix observes no DST, so the -07:00 offset is fixed and
+// safe to hardcode — this is NOT true of a generic timezone.
+const PHOENIX_OFFSET = "-07:00";
+
+// Stored instant → the two <input> values. Empty strings when unset, which is
+// what an uncontrolled-to-controlled React input needs.
+export function toPhoenixFields(startsAt: string | null): { date: string; time: string } {
+  const p = startsAt ? phoenixParts(Date.parse(startsAt)) : null;
+  if (!p) return { date: "", time: "" };
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return {
+    date: `${p.y}-${pad(p.m)}-${pad(p.d)}`,
+    time: `${pad(p.h)}:${pad(p.min)}`,
+  };
+}
+
+// The two <input> values → an ISO UTC instant for storage. Returns null when
+// either field is blank (meaning "no start time") or malformed, so a typo
+// clears the time rather than writing a garbage instant.
+export function fromPhoenixFields(date: string, time: string): string | null {
+  if (!date || !time) return null;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^\d{2}:\d{2}$/.test(time)) return null;
+  if (!dateParts(date)) return null;
+  const [h, min] = time.split(":").map(Number);
+  if (h > 23 || min > 59) return null;
+  const ms = Date.parse(`${date}T${time}:00${PHOENIX_OFFSET}`);
+  return Number.isFinite(ms) ? new Date(ms).toISOString().replace(/\.\d{3}Z$/, "Z") : null;
+}
+
+// The Phoenix calendar date an instant falls on. Keeps `event_date` (which
+// drives grid ordering and the admin's date column) consistent with a
+// `starts_at` set through the admin form.
+export function phoenixDateOf(startsAt: string | null): string | null {
+  return toPhoenixFields(startsAt).date || null;
+}
+
 export async function getGridFiestas(): Promise<Flyer[]> {
   const rows = await loadFiestas();
   return selectGrid(rows, phoenixToday()).map(toFlyer);

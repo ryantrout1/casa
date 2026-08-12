@@ -2,6 +2,9 @@ import { describe, it, expect } from "vitest";
 import {
   GRID_LIMIT,
   heroWhen,
+  toPhoenixFields,
+  fromPhoenixFields,
+  phoenixDateOf,
   isCurrent,
   orderFiestas,
   selectGrid,
@@ -318,5 +321,47 @@ describe("toFlyer — hero copy passthrough", () => {
     const f = toFlyer(row());
     expect(f.startsAt).toBeNull();
     expect(f.heroTitle).toBeNull();
+  });
+});
+
+describe("Phoenix admin field round-trip", () => {
+  it("splits a stored instant into Phoenix date and time fields", () => {
+    expect(toPhoenixFields(PALOMAZO_START)).toEqual({
+      date: "2026-08-29",
+      time: "20:00",
+    });
+  });
+
+  it("returns empty fields when there is no start time", () => {
+    expect(toPhoenixFields(null)).toEqual({ date: "", time: "" });
+    expect(toPhoenixFields("nonsense")).toEqual({ date: "", time: "" });
+  });
+
+  it("builds a UTC instant from Phoenix form fields", () => {
+    expect(fromPhoenixFields("2026-08-29", "20:00")).toBe(PALOMAZO_START);
+  });
+
+  it("round-trips without drift", () => {
+    const f = toPhoenixFields(PALOMAZO_START);
+    expect(fromPhoenixFields(f.date, f.time)).toBe(PALOMAZO_START);
+  });
+
+  it("handles a morning time that stays on the same UTC day", () => {
+    expect(fromPhoenixFields("2026-08-29", "09:30")).toBe("2026-08-29T16:30:00Z");
+  });
+
+  it("returns null for blank or malformed input", () => {
+    expect(fromPhoenixFields("", "20:00")).toBeNull();
+    expect(fromPhoenixFields("2026-08-29", "")).toBeNull();
+    expect(fromPhoenixFields("29-08-2026", "20:00")).toBeNull();
+    expect(fromPhoenixFields("2026-08-29", "8pm")).toBeNull();
+    expect(fromPhoenixFields("2026-13-01", "20:00")).toBeNull();
+    expect(fromPhoenixFields("2026-08-29", "25:00")).toBeNull();
+  });
+
+  it("derives the Phoenix calendar date, not the UTC one", () => {
+    // The instant is 30 Aug in UTC but 29 Aug in Phoenix.
+    expect(phoenixDateOf(PALOMAZO_START)).toBe("2026-08-29");
+    expect(phoenixDateOf(null)).toBeNull();
   });
 });

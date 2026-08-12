@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { OWNED_SURFACES, type ChannelId } from "@/lib/publish";
+import { fromPhoenixFields, phoenixDateOf } from "@/lib/fiestas";
 
 export const dynamic = "force-dynamic";
 
@@ -50,6 +51,40 @@ export async function POST(req: Request) {
       revalidatePath("/");
       revalidatePath("/fiestas");
       return NextResponse.json({ ok: true });
+    }
+
+    if (action === "sethero") {
+      // Hero copy + start time. Blank strings become NULL so clearing a field
+      // in the form actually clears it (and a null hero_title is the signal
+      // Hero.tsx uses to fall back to the evergreen hero).
+      const blank = (v: unknown) => {
+        const s = typeof v === "string" ? v.trim() : "";
+        return s === "" ? null : s;
+      };
+      const lang = body.heroLang === "es" ? "es" : "en";
+      const startsAt = fromPhoenixFields(
+        String(body.startDate ?? ""),
+        String(body.startTime ?? ""),
+      );
+      // Keep event_date consistent with the instant the admin just set, so the
+      // date column and the grid ordering don't disagree with the hero.
+      const eventDate = phoenixDateOf(startsAt);
+
+      await sql`
+        update fiestas set
+          starts_at   = ${startsAt},
+          event_date  = coalesce(${eventDate}::date, event_date),
+          hero_title  = ${blank(body.heroTitle)},
+          hero_script = ${blank(body.heroScript)},
+          hero_ribbon = ${blank(body.heroRibbon)},
+          hero_sub    = ${blank(body.heroSub)},
+          hero_lang   = ${lang}
+        where id = ${id}
+      `;
+
+      revalidatePath("/");
+      revalidatePath("/fiestas");
+      return NextResponse.json({ ok: true, startsAt, eventDate });
     }
 
     return NextResponse.json({ error: "Unknown action." }, { status: 400 });
