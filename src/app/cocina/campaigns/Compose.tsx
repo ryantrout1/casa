@@ -41,7 +41,11 @@ function fmtPhoenix(iso: string): string {
 }
 
 function channelsRecord(list: ChannelId[] | undefined): Record<ChannelId, boolean> {
-  if (!list) return { email: true, hero: true, grid: true, fiestas_page: true };
+  // A new campaign defaults to the website surfaces only. Email is off because
+  // it is the one destination that cannot be undone — the flyer can be edited
+  // or pulled after publishing, but a send is a send. Opting in beats opting
+  // out for that. A saved draft restores whatever it was saved with.
+  if (!list) return { email: false, hero: true, grid: true, fiestas_page: true };
   return {
     email: list.includes("email"),
     hero: list.includes("hero"),
@@ -210,7 +214,8 @@ export default function Compose({
     }
   }
 
-  // Destinations. Default to the full fan-out; email locks after it sends.
+  // Destinations. New campaigns default to the website surfaces; email is
+  // opt-in because a send cannot be undone. Email also locks after it sends.
   const [channels, setChannels] = useState<Record<ChannelId, boolean>>(
     channelsRecord(initialDraft?.channels),
   );
