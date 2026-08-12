@@ -157,3 +157,22 @@ describe("liveSurfaces", () => {
     expect(liveSurfaces(flags(false, false, false))).toEqual([]);
   });
 });
+
+// Hero copy is optional by design: publishing to the hero surface without it
+// must still succeed, and the homepage falls back to the evergreen hero. A
+// blocking rule here would break every draft saved before the field existed.
+describe("validatePublish — hero copy stays optional", () => {
+  it("allows a hero publish with no hero copy at all", () => {
+    expect(validatePublish("Subj", "msg", false, FULL_FLYER, ["hero"])).toBeNull();
+  });
+
+  it("allows a hero publish with partial hero copy", () => {
+    const flyer = { ...FULL_FLYER, hero: { title: "EL PALOMAZO" } };
+    expect(validatePublish("Subj", "msg", false, flyer, ["hero"])).toBeNull();
+  });
+
+  it("still requires the flyer image and caption for owned surfaces", () => {
+    const noCaption = { ...FULL_FLYER, caption: "", hero: { title: "X" } };
+    expect(validatePublish("Subj", "msg", false, noCaption, ["hero"])).toMatch(/caption/i);
+  });
+});

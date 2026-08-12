@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   parseDraftConfig,
+  parseHeroCopy,
   isDraftEmpty,
   phoenixLocalToUtcISO,
   utcToPhoenixLocalInput,
@@ -110,5 +111,82 @@ describe("utcToPhoenixLocalInput", () => {
   it("round-trips with phoenixLocalToUtcISO", () => {
     const local = "2026-07-04T18:00";
     expect(utcToPhoenixLocalInput(phoenixLocalToUtcISO(local)!)).toBe(local);
+  });
+});
+
+// Hero copy rides along inside the flyer blob. Two publish paths read it —
+// the immediate route and the cron drain — so the parser is the single seam
+// that keeps them from disagreeing.
+describe("parseHeroCopy", () => {
+  const FULL = {
+    startsAt: "2026-08-30T03:00:00Z",
+    title: "EL PALOMAZO",
+    script: "en Casa",
+    ribbon: "UNA NOCHE DE KARAOKE MEXICANO",
+    sub: "Canta los éxitos de tus ídolos",
+    lang: "es",
+  };
+
+  it("round-trips a complete hero copy block", () => {
+    expect(parseHeroCopy(FULL)).toEqual(FULL);
+  });
+
+  it("returns undefined when there is nothing to carry", () => {
+    expect(parseHeroCopy(undefined)).toBeUndefined();
+    expect(parseHeroCopy(null)).toBeUndefined();
+    expect(parseHeroCopy("nonsense")).toBeUndefined();
+    expect(parseHeroCopy({})).toBeUndefined();
+  });
+
+  it("keeps a partial block", () => {
+    expect(parseHeroCopy({ title: "LOTERÍA NIGHT" })).toEqual({ title: "LOTERÍA NIGHT" });
+  });
+
+  it("drops an invalid language rather than passing it to the CHECK constraint", () => {
+    expect(parseHeroCopy({ title: "X", lang: "fr" })).toEqual({ title: "X" });
+    expect(parseHeroCopy({ title: "X", lang: 7 })).toEqual({ title: "X" });
+  });
+
+  it("keeps both valid languages", () => {
+    expect(parseHeroCopy({ title: "X", lang: "en" })?.lang).toBe("en");
+    expect(parseHeroCopy({ title: "X", lang: "es" })?.lang).toBe("es");
+  });
+
+  it("ignores non-string fields", () => {
+    expect(parseHeroCopy({ title: 42, ribbon: "OK" })).toEqual({ ribbon: "OK" });
+  });
+});
+
+describe("parseDraftConfig — hero copy", () => {
+  it("carries hero copy through the scheduled path", () => {
+    const cfg = parseDraftConfig({
+      channels: ["hero"],
+      flyer: {
+        imageUrl: "/api/img/x",
+        caption: "Palomazo",
+        hero: { title: "EL PALOMAZO", lang: "es", startsAt: "2026-08-30T03:00:00Z" },
+      },
+    });
+    expect(cfg.flyer.hero).toEqual({
+      title: "EL PALOMAZO",
+      lang: "es",
+      startsAt: "2026-08-30T03:00:00Z",
+    });
+  });
+
+  it("leaves hero undefined on a legacy draft saved before this field existed", () => {
+    const cfg = parseDraftConfig({
+      channels: ["grid"],
+      flyer: { imageUrl: "/api/img/x", caption: "Old", eventDate: "2026-07-30" },
+    });
+    expect(cfg.flyer.hero).toBeUndefined();
+    expect(cfg.flyer.caption).toBe("Old");
+  });
+
+  it("stays total when hero is garbage", () => {
+    expect(() =>
+      parseDraftConfig({ channels: [], flyer: { hero: "not-an-object" } }),
+    ).not.toThrow();
+    expect(parseDraftConfig({ channels: [], flyer: { hero: 42 } }).flyer.hero).toBeUndefined();
   });
 });
