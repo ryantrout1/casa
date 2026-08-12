@@ -13,8 +13,10 @@ import {
   toFlyer,
   isHeroLive,
   heroFocusCss,
+  heroStyleVars,
   type FiestaRow,
 } from "./fiestas";
+import { contrastRatio, relativeLuminance } from "./palette";
 
 // Fiestas → Neon (Phase 1). These cover the pure selection logic that drives
 // the three website surfaces: hero (one), homepage grid (six, newest-first),
@@ -494,5 +496,62 @@ describe("toFlyer — Phase 2 field passthrough", () => {
     expect(f.heroBg).toBeNull();
     expect(f.heroAccent).toBeNull();
     expect(f.heroInk).toBeNull();
+  });
+});
+
+// --- Phase 3: hero theming ---------------------------------------------------
+// heroStyleVars produces the CSS custom properties the takeover section carries.
+// The contract that matters most: a row with no colours must emit NOTHING, so
+// the stylesheet's fallbacks render exactly what shipped before this existed.
+
+describe("heroStyleVars", () => {
+  const vars = (o: Partial<FiestaRow> = {}) => heroStyleVars(toFlyer(row(o)));
+
+  it("emits no properties when the row carries no colours", () => {
+    expect(vars()).toEqual({});
+  });
+
+  it("sets the ground and derives a readable ink from it", () => {
+    const v = vars({ hero_bg: "#1a1008" });
+    expect(v["--fx-bg"]).toBe("#1a1008");
+    expect(contrastRatio(v["--fx-ink"]!, "#1a1008")).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("derives navy ink on a light ground", () => {
+    const v = vars({ hero_bg: "#fdf4e3" });
+    expect(contrastRatio(v["--fx-ink"]!, "#fdf4e3")).toBeGreaterThanOrEqual(4.5);
+    expect(relativeLuminance(v["--fx-ink"]!)).toBeLessThan(0.3);
+  });
+
+  it("prefers a stored ink over the derived one", () => {
+    expect(vars({ hero_bg: "#1a1008", hero_ink: "#ffffff" })["--fx-ink"]).toBe("#ffffff");
+  });
+
+  it("gives the accent its own readable text colour", () => {
+    // The ribbon and the primary button are FILLED with the accent and carry
+    // text on top. A single accent value cannot also be that text.
+    const v = vars({ hero_bg: "#fdf4e3", hero_accent: "#1f3a63" });
+    expect(v["--fx-accent"]).toBe("#1f3a63");
+    expect(contrastRatio(v["--fx-accent-ink"]!, "#1f3a63")).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("ignores colours that are not 6-digit hex", () => {
+    expect(vars({ hero_bg: "red" })).toEqual({});
+    expect(vars({ hero_bg: "#fff" })).toEqual({});
+  });
+
+  it("keeps the valid half when one colour is malformed", () => {
+    const v = vars({ hero_bg: "#1a1008", hero_accent: "nope" });
+    expect(v["--fx-bg"]).toBe("#1a1008");
+    expect(v["--fx-accent"]).toBeUndefined();
+  });
+
+  it("handles an accent with no background", () => {
+    // Ground falls back to the stylesheet's #140c06, so the accent still needs
+    // its own fill-text colour computed.
+    const v = vars({ hero_accent: "#ffbf1f" });
+    expect(v["--fx-bg"]).toBeUndefined();
+    expect(v["--fx-accent"]).toBe("#ffbf1f");
+    expect(contrastRatio(v["--fx-accent-ink"]!, "#ffbf1f")).toBeGreaterThanOrEqual(4.5);
   });
 });

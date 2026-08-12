@@ -12,6 +12,7 @@ import {
   type ChannelId,
   type PublishResults,
   type SurfaceFlags,
+  heroColumns,
 } from "./publish";
 
 // Campaign fan-out (Phase 2). One publish targets any mix of destinations:
@@ -174,5 +175,63 @@ describe("validatePublish — hero copy stays optional", () => {
   it("still requires the flyer image and caption for owned surfaces", () => {
     const noCaption = { ...FULL_FLYER, caption: "", hero: { title: "X" } };
     expect(validatePublish("Subj", "msg", false, noCaption, ["hero"])).toMatch(/caption/i);
+  });
+});
+
+// --- Phase 3: the fiesta insert contract ------------------------------------
+// heroColumns is the single place that decides what lands in each hero column.
+// Both publish paths bind its output, so they cannot drift apart.
+
+describe("heroColumns", () => {
+  it("returns all-null defaults (plus lang 'en') for no hero copy", () => {
+    expect(heroColumns(undefined)).toEqual({
+      starts_at: null,
+      hero_title: null,
+      hero_script: null,
+      hero_ribbon: null,
+      hero_sub: null,
+      hero_lang: "en",
+      hero_focus: null,
+      hero_live_at: null,
+      hero_bg: null,
+      hero_accent: null,
+      hero_ink: null,
+    });
+  });
+
+  it("is identical for an empty object and for undefined", () => {
+    expect(heroColumns({})).toEqual(heroColumns(undefined));
+  });
+
+  it("binds every Phase 2 field", () => {
+    const cols = heroColumns({
+      startsAt: "2026-08-30T03:00:00Z",
+      title: "EL PALOMAZO",
+      script: "en Casa",
+      ribbon: "KARAOKE",
+      sub: "424 E Monroe Ave",
+      lang: "es",
+      focus: 38,
+      liveAt: "2026-08-25T07:00:00Z",
+      bg: "#1a1008",
+      accent: "#ffbf1f",
+      ink: "#f7ecd4",
+    });
+    expect(cols.hero_focus).toBe(38);
+    expect(cols.hero_live_at).toBe("2026-08-25T07:00:00Z");
+    expect(cols.hero_bg).toBe("#1a1008");
+    expect(cols.hero_accent).toBe("#ffbf1f");
+    expect(cols.hero_ink).toBe("#f7ecd4");
+    expect(cols.hero_lang).toBe("es");
+  });
+
+  it("keeps focus 0 rather than collapsing it to null", () => {
+    expect(heroColumns({ focus: 0 }).hero_focus).toBe(0);
+  });
+
+  it("never emits undefined — every value is bindable by the driver", () => {
+    for (const v of Object.values(heroColumns({ title: "X" }))) {
+      expect(v).not.toBeUndefined();
+    }
   });
 });
