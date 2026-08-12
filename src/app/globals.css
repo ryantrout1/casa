@@ -84,7 +84,10 @@ a{text-decoration:none;color:inherit}ul{list-style:none}
    The flyer is cropped below its own title block and feathered into the dark
    field so the live type never competes with type baked into the artwork. */
 .v8 .herofx{position:relative;overflow:hidden;background:#140c06;min-height:540px;display:flex;align-items:center}
-.v8 .herofx .art{position:absolute;right:0;top:0;height:100%;width:60%;object-fit:cover;object-position:center 62%;
+/* object-position Y is tuned per flyer: the cover window's height varies with
+   viewport (fluid width x fixed 540px hero), so this value clears the Palomazo
+   hat crowns from ~1800px up. A per-fiesta hero_focus column is the real fix. */
+.v8 .herofx .art{position:absolute;right:0;top:0;height:100%;width:60%;object-fit:cover;object-position:center 50%;
     -webkit-mask-image:linear-gradient(to right,transparent 0,rgba(0,0,0,.55) 32%,#000 72%);
     mask-image:linear-gradient(to right,transparent 0,rgba(0,0,0,.55) 32%,#000 72%)}
 /* .herofx is the only section that makes .wrap a flex item; without an explicit
