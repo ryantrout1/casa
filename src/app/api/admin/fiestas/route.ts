@@ -26,13 +26,10 @@ export async function POST(req: Request) {
       }
 
       if (surface === "hero") {
-        if (value) {
-          // Single-hero invariant: demote the current hero before promoting this one.
-          await sql`update fiestas set is_hero = false where is_hero = true`;
-          await sql`update fiestas set is_hero = true where id = ${id}`;
-        } else {
-          await sql`update fiestas set is_hero = false where id = ${id}`;
-        }
+        // No demote. is_hero means "hero-eligible" — several fiestas can be
+        // queued with staggered go-live windows and selectHero renders exactly
+        // one. Demoting here would un-queue everything else with one click.
+        await sql`update fiestas set is_hero = ${value} where id = ${id}`;
       } else if (surface === "grid") {
         await sql`update fiestas set in_grid = ${value} where id = ${id}`;
       } else {

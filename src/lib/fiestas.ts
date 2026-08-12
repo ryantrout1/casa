@@ -97,8 +97,17 @@ export function isCurrent(
 }
 
 // Newest-announced first: higher sort_key leads. Pure, non-mutating.
+//
+// The id tiebreaker matters more than it looks. loadFiestas has no ORDER BY,
+// so equal sort_keys would otherwise resolve to whatever order Postgres
+// returned rows in — stable in practice, guaranteed by nothing. While
+// only_one_hero existed a tie between two heroes was impossible; without it,
+// two rows sharing a featured_at (or both falling back to the same created_at)
+// would make the rendered hero depend on the query plan.
 export function orderFiestas(rows: FiestaRow[]): FiestaRow[] {
-  return [...rows].sort((a, b) => b.sort_key - a.sort_key);
+  return [...rows].sort(
+    (a, b) => b.sort_key - a.sort_key || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
+  );
 }
 
 export function toFlyer(f: FiestaRow): Flyer {

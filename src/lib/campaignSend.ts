@@ -116,10 +116,10 @@ export async function runPublish(
   // 1) Owned surfaces — one fiesta row carries the placement flags.
   if (anyOwned) {
     try {
-      if (flags.is_hero) {
-        // Single-hero invariant: demote the current hero before promoting this one.
-        await sql`update fiestas set is_hero = false where is_hero = true`;
-      }
+      // No demote here. is_hero means "hero-eligible", not "is the hero":
+      // selectHero picks the single row that is flagged, current, and past its
+      // go-live window, so several takeovers can be queued at once. Demoting
+      // would silently un-queue whatever was already lined up.
       const hero = heroColumns(flyer.hero);
       const frows = (await sql`
         insert into fiestas

@@ -488,3 +488,77 @@ describe("heroTheme re-export", () => {
     expect(heroStyleVars(toFlyer(row()))).toEqual({});
   });
 });
+
+// --- Phase 5: the hero queue -------------------------------------------------
+// The only_one_hero unique index is gone, so is_hero now means "hero-eligible"
+// rather than "is the hero". More than one row can carry the flag and the
+// one-visible-hero guarantee lives here, in selectHero, instead of in Postgres.
+// These pin that guarantee, because nothing else does any more.
+
+describe("selectHero — queue", () => {
+  const AUG23 = Date.parse("2026-08-23T12:00:00Z");
+  const AUG26 = Date.parse("2026-08-26T12:00:00Z");
+  const SEP02 = Date.parse("2026-09-02T12:00:00Z");
+
+  // Two takeovers set up in one sitting: Palomazo live now, Lotería queued.
+  const palomazo = () =>
+    row({ id: "palomazo", is_hero: true, event_date: "2026-08-29", hero_live_at: null, sort_key: 1 });
+  const loteria = () =>
+    row({
+      id: "loteria",
+      is_hero: true,
+      event_date: "2026-09-05",
+      hero_live_at: "2026-08-30T07:00:00Z",
+      sort_key: 9,
+    });
+
+  it("shows only the live one while the next is queued", () => {
+    const rows = [palomazo(), loteria()];
+    expect(selectHero(rows, "2026-08-23", AUG23)?.id).toBe("palomazo");
+  });
+
+  it("still shows the live one right up to the queued one's window", () => {
+    expect(selectHero([palomazo(), loteria()], "2026-08-26", AUG26)?.id).toBe("palomazo");
+  });
+
+  it("hands over once the queued window opens and the first has expired", () => {
+    expect(selectHero([palomazo(), loteria()], "2026-09-02", SEP02)?.id).toBe("loteria");
+  });
+
+  it("prefers the newest when two are both live and both current", () => {
+    // No demote happens on publish any more, so an older flagged row can still
+    // be current when a new one lands. featured_at (sort_key) breaks the tie.
+    const rows = [
+      row({ id: "older", is_hero: true, event_date: "2026-09-05", sort_key: 1 }),
+      row({ id: "newer", is_hero: true, event_date: "2026-09-05", sort_key: 9 }),
+    ];
+    expect(selectHero(rows, "2026-08-23", AUG23)?.id).toBe("newer");
+  });
+
+  it("an expired flagged row never blocks a live one, whatever its sort_key", () => {
+    // Expired heroes are no longer demoted, so they accumulate. A stale row
+    // with the highest sort_key must not win.
+    const rows = [
+      row({ id: "stale", is_hero: true, event_date: "2026-06-01", sort_key: 99 }),
+      row({ id: "live", is_hero: true, event_date: "2026-09-05", sort_key: 2 }),
+    ];
+    expect(selectHero(rows, "2026-08-23", AUG23)?.id).toBe("live");
+  });
+
+  it("returns null when every flagged row is expired or not yet live", () => {
+    const rows = [
+      row({ id: "stale", is_hero: true, event_date: "2026-06-01" }),
+      row({ id: "queued", is_hero: true, event_date: "2026-12-01", hero_live_at: "2026-11-01T07:00:00Z" }),
+    ];
+    expect(selectHero(rows, "2026-08-23", AUG23)).toBeNull();
+  });
+
+  it("is deterministic when two eligible rows tie on sort_key", () => {
+    const rows = [
+      row({ id: "a", is_hero: true, event_date: "2026-09-05", sort_key: 5 }),
+      row({ id: "b", is_hero: true, event_date: "2026-09-05", sort_key: 5 }),
+    ];
+    const first = selectHero(rows, "2026-08-23", AUG23)?.id;
+    expect(selectHero([...rows].reverse(), "2026-08-23", AUG23)?.id).toBe(first);
+  });
+});
