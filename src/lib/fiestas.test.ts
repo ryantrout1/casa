@@ -46,6 +46,10 @@ function row(overrides: Partial<FiestaRow> = {}): FiestaRow {
     hero_bg: null,
     hero_accent: null,
     hero_ink: null,
+    hero_title_alt: null,
+    hero_script_alt: null,
+    hero_ribbon_alt: null,
+    hero_sub_alt: null,
     sort_key: 0,
     ...overrides,
   };

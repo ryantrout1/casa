@@ -37,6 +37,13 @@ export type FiestaRow = {
   hero_bg: string | null;
   hero_accent: string | null;
   hero_ink: string | null;
+  // The same four copy fields in the other language. Null on every row
+  // published before bilingual heroes existed, which is what keeps them
+  // rendering statically.
+  hero_title_alt: string | null;
+  hero_script_alt: string | null;
+  hero_ribbon_alt: string | null;
+  hero_sub_alt: string | null;
   sort_key: number;
 };
 
@@ -65,6 +72,10 @@ export type Flyer = {
   heroBg: string | null;
   heroAccent: string | null;
   heroInk: string | null;
+  heroTitleAlt: string | null;
+  heroScriptAlt: string | null;
+  heroRibbonAlt: string | null;
+  heroSubAlt: string | null;
 };
 
 // The homepage grid shows at most this many fiestas.
@@ -127,6 +138,10 @@ export function toFlyer(f: FiestaRow): Flyer {
     heroBg: f.hero_bg,
     heroAccent: f.hero_accent,
     heroInk: f.hero_ink,
+    heroTitleAlt: f.hero_title_alt,
+    heroScriptAlt: f.hero_script_alt,
+    heroRibbonAlt: f.hero_ribbon_alt,
+    heroSubAlt: f.hero_sub_alt,
   };
 }
 
@@ -208,6 +223,10 @@ async function loadFiestas(): Promise<FiestaRow[]> {
         hero_bg,
         hero_accent,
         hero_ink,
+        hero_title_alt,
+        hero_script_alt,
+        hero_ribbon_alt,
+        hero_sub_alt,
         extract(epoch from coalesce(featured_at, created_at))::float8 as sort_key
       from fiestas
     `) as FiestaRow[];

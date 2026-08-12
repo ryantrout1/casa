@@ -22,6 +22,11 @@ export type HeroCopy = {
   bg?: string;
   accent?: string;
   ink?: string;
+  /** The same copy in the other language, for the rotating bilingual hero. */
+  titleAlt?: string;
+  scriptAlt?: string;
+  ribbonAlt?: string;
+  subAlt?: string;
 };
 
 export type DraftFlyer = {
@@ -89,6 +94,10 @@ export function parseHeroCopy(raw: unknown): HeroCopy | undefined {
   if (hex(o.bg)) out.bg = hex(o.bg);
   if (hex(o.accent)) out.accent = hex(o.accent);
   if (hex(o.ink)) out.ink = hex(o.ink);
+  if (str(o.titleAlt)) out.titleAlt = str(o.titleAlt);
+  if (str(o.scriptAlt)) out.scriptAlt = str(o.scriptAlt);
+  if (str(o.ribbonAlt)) out.ribbonAlt = str(o.ribbonAlt);
+  if (str(o.subAlt)) out.subAlt = str(o.subAlt);
   return Object.keys(out).length > 0 ? out : undefined;
 }
 

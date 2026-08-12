@@ -196,6 +196,10 @@ describe("heroColumns", () => {
       hero_bg: null,
       hero_accent: null,
       hero_ink: null,
+      hero_title_alt: null,
+      hero_script_alt: null,
+      hero_ribbon_alt: null,
+      hero_sub_alt: null,
     });
   });
 
@@ -223,6 +227,17 @@ describe("heroColumns", () => {
     expect(cols.hero_accent).toBe("#ffbf1f");
     expect(cols.hero_ink).toBe("#f7ecd4");
     expect(cols.hero_lang).toBe("es");
+  });
+
+  it("binds the alternate-language copy", () => {
+    const cols = heroColumns({
+      titleAlt: "EL PALOMAZO",
+      scriptAlt: "en Casa",
+      ribbonAlt: "A NIGHT OF MEXICAN KARAOKE",
+      subAlt: "424 E Monroe Ave., Buckeye, AZ",
+    });
+    expect(cols.hero_title_alt).toBe("EL PALOMAZO");
+    expect(cols.hero_ribbon_alt).toBe("A NIGHT OF MEXICAN KARAOKE");
   });
 
   it("keeps focus 0 rather than collapsing it to null", () => {

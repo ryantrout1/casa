@@ -115,6 +115,10 @@ export function heroColumns(hero: HeroCopy | undefined): {
   hero_bg: string | null;
   hero_accent: string | null;
   hero_ink: string | null;
+  hero_title_alt: string | null;
+  hero_script_alt: string | null;
+  hero_ribbon_alt: string | null;
+  hero_sub_alt: string | null;
 } {
   const h = hero ?? {};
   return {
@@ -130,6 +134,10 @@ export function heroColumns(hero: HeroCopy | undefined): {
     hero_bg: h.bg ?? null,
     hero_accent: h.accent ?? null,
     hero_ink: h.ink ?? null,
+    hero_title_alt: h.titleAlt ?? null,
+    hero_script_alt: h.scriptAlt ?? null,
+    hero_ribbon_alt: h.ribbonAlt ?? null,
+    hero_sub_alt: h.subAlt ?? null,
   };
 }
 
