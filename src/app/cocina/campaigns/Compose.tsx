@@ -8,6 +8,7 @@ import {
   CHANNEL_LABEL,
   resultEntries,
   type ChannelId,
+  type HeroLang,
   type PublishResults,
 } from "@/lib/publish";
 import {
@@ -70,6 +71,20 @@ export default function Compose({
   const [flyerAlt, setFlyerAlt] = useState(initialDraft?.flyer.alt ?? "");
   const [flyerUploading, setFlyerUploading] = useState(false);
 
+  // Takeover hero copy (optional). Start time uses the same Phoenix
+  // datetime-local convention as the schedule field below, so the two date
+  // controls in this form behave identically.
+  const initialHero = initialDraft?.flyer.hero;
+  const [heroOpen, setHeroOpen] = useState(Boolean(initialHero));
+  const [heroStart, setHeroStart] = useState(
+    initialHero?.startsAt ? utcToPhoenixLocalInput(initialHero.startsAt) : "",
+  );
+  const [heroTitle, setHeroTitle] = useState(initialHero?.title ?? "");
+  const [heroScript, setHeroScript] = useState(initialHero?.script ?? "");
+  const [heroRibbon, setHeroRibbon] = useState(initialHero?.ribbon ?? "");
+  const [heroSub, setHeroSub] = useState(initialHero?.sub ?? "");
+  const [heroLang, setHeroLang] = useState<HeroLang>(initialHero?.lang ?? "en");
+
   // Destinations. Default to the full fan-out; email locks after it sends.
   const [channels, setChannels] = useState<Record<ChannelId, boolean>>(
     channelsRecord(initialDraft?.channels),
@@ -88,12 +103,30 @@ export default function Compose({
     setChannels((c) => ({ ...c, [key]: !c[key] }));
   }
 
+  function heroPayload() {
+    // Omit entirely when nothing is filled in, so an untouched form saves the
+    // same draft shape it always did.
+    const startsAt = heroStart ? phoenixLocalToUtcISO(heroStart) : null;
+    const filled =
+      startsAt || heroTitle.trim() || heroScript.trim() || heroRibbon.trim() || heroSub.trim();
+    if (!filled) return undefined;
+    return {
+      startsAt,
+      title: heroTitle.trim() || undefined,
+      script: heroScript.trim() || undefined,
+      ribbon: heroRibbon.trim() || undefined,
+      sub: heroSub.trim() || undefined,
+      lang: heroLang,
+    };
+  }
+
   function flyerPayload() {
     return {
       imageUrl: flyerUrl,
       caption: flyerCaption,
       alt: flyerAlt,
       eventDate: flyerDate || undefined,
+      hero: heroPayload(),
     };
   }
 
@@ -444,6 +477,68 @@ export default function Compose({
             Event date (optional — leave blank for recurring/ongoing)
             <input type="date" value={flyerDate} onChange={(e) => setFlyerDate(e.target.value)} />
           </label>
+
+          <div style={{ borderTop: "1px solid #e6e9ee", paddingTop: 10, marginTop: 2 }}>
+            <button
+              type="button"
+              onClick={() => setHeroOpen((v) => !v)}
+              className="pill"
+              style={{ cursor: "pointer", border: "1px solid #cfd3da", background: "transparent" }}
+            >
+              {heroOpen ? "− " : "+ "}Hero copy (optional)
+            </button>
+            {heroOpen ? (
+              <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
+                <p className="hint" style={{ margin: 0 }}>
+                  Fills the homepage hero takeover when this fiesta is the hero. Leave the
+                  headline blank to keep the standard ¡Bienvenidos! hero. You can also edit
+                  all of this later in Fiestas.
+                </p>
+                <label className="hint" style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  Starts (Arizona time)
+                  <input
+                    type="datetime-local"
+                    value={heroStart}
+                    onChange={(e) => setHeroStart(e.target.value)}
+                  />
+                </label>
+                <label className="hint" style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  Date line language
+                  <select
+                    value={heroLang}
+                    onChange={(e) => setHeroLang(e.target.value as HeroLang)}
+                  >
+                    <option value="en">English</option>
+                    <option value="es">Español</option>
+                  </select>
+                </label>
+                <input
+                  type="text"
+                  value={heroTitle}
+                  onChange={(e) => setHeroTitle(e.target.value)}
+                  placeholder="Headline — e.g. EL PALOMAZO"
+                />
+                <input
+                  type="text"
+                  value={heroScript}
+                  onChange={(e) => setHeroScript(e.target.value)}
+                  placeholder="Script line — e.g. en Casa"
+                />
+                <input
+                  type="text"
+                  value={heroRibbon}
+                  onChange={(e) => setHeroRibbon(e.target.value)}
+                  placeholder="Ribbon — e.g. UNA NOCHE DE KARAOKE MEXICANO"
+                />
+                <input
+                  type="text"
+                  value={heroSub}
+                  onChange={(e) => setHeroSub(e.target.value)}
+                  placeholder="Sub line — e.g. Canta los éxitos de tus ídolos"
+                />
+              </div>
+            ) : null}
+          </div>
         </div>
       </div>
 
