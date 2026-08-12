@@ -1,5 +1,4 @@
 import { db } from "./db";
-import { isHex, pickInk } from "./palette";
 import type { HeroLang } from "./publish";
 
 // A fiesta row as read from Neon. `sort_key` is derived at query time
@@ -234,54 +233,11 @@ export function isHeroLive(f: FiestaRow, nowMs: number = Date.now()): boolean {
   return nowMs >= opens;
 }
 
-// The object-position the flyer should be cropped at. Clamped and rounded here
-// rather than trusted from the row, because this value lands in an inline
-// style — the DB CHECK is the other half of the same guard.
-export function heroFocusCss(focus: number | null): string {
-  if (focus === null || !Number.isFinite(focus)) return "center 50%";
-  const pct = Math.min(100, Math.max(0, Math.round(focus)));
-  return `center ${pct}%`;
-}
-
-// The CSS custom properties the takeover section carries. Emitting nothing
-// when a row has no colours is the load-bearing contract: the stylesheet's
-// fallbacks then render exactly what shipped before this column existed, so
-// every fiesta published to date is untouched.
-//
-// Two inks, not one. `--fx-ink` is text ON the section ground. `--fx-accent-ink`
-// is text ON the accent, because the ribbon and the primary button are *filled*
-// with the accent and carry copy on top — a single accent value cannot also be
-// its own legible text. Both are derived when not stored, so a colour chosen
-// for looks can never produce unreadable type.
-export function heroStyleVars(f: {
-  heroBg: string | null;
-  heroAccent: string | null;
-  heroInk: string | null;
-}): Record<string, string> {
-  const out: Record<string, string> = {};
-  const bg = f.heroBg && isHex(f.heroBg) ? f.heroBg : null;
-  const accent = f.heroAccent && isHex(f.heroAccent) ? f.heroAccent : null;
-  const ink = f.heroInk && isHex(f.heroInk) ? f.heroInk : null;
-
-  if (bg) {
-    out["--fx-bg"] = bg;
-    out["--fx-ink"] = ink ?? pickInk(bg);
-  } else if (ink) {
-    out["--fx-ink"] = ink;
-  }
-
-  // The sub-line is deliberately quieter than the headline. Unthemed it uses a
-  // hand-picked muted brown; themed it has to derive that from whatever ink we
-  // landed on, so it is expressed as opacity rather than a fifth colour.
-  if (out["--fx-ink"]) out["--fx-sub-op"] = "0.82";
-
-  if (accent) {
-    out["--fx-accent"] = accent;
-    out["--fx-accent-ink"] = pickInk(accent);
-  }
-
-  return out;
-}
+// Hero presentation helpers live in lib/heroTheme (pure, client-safe) so the
+// composer's live preview can import them without pulling the Neon driver into
+// the browser bundle. Re-exported here because every server-side caller — and
+// every existing test — imports them from this module.
+export { heroFocusCss, heroStyleVars } from "./heroTheme";
 
 // Hero: the single fiesta that is flagged, still current, and whose go-live
 // window has opened. More than one row can be flagged (a queued takeover
