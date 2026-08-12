@@ -12,6 +12,14 @@ import type { HeroFormState } from "@/lib/heroForm";
 // classes: those are sized for a 540px-tall full-bleed section and would need
 // a transform hack to fit here, which introduces its own drift.
 
+// The desktop width this preview represents, and the hero's height in
+// globals.css (.herofx min-height). Together they give the preview the same
+// art-box ratio the live hero has at that width, which is what makes the crop
+// slider mean the same thing in both places. If .herofx min-height changes,
+// change HERO_HEIGHT with it.
+const PREVIEW_VIEWPORT = 1440;
+const HERO_HEIGHT = 540;
+
 export default function HeroPreview({
   hero,
   flyerUrl,
@@ -44,7 +52,18 @@ export default function HeroPreview({
           overflow: "hidden",
           background: bg,
           borderRadius: 10,
-          height: 200,
+          // The flyer is cropped with object-fit:cover, so what shows depends
+          // on the SHAPE of this box, not its size. A fixed height made the
+          // preview 2.90:1 against the hero's 1.60:1 at 1440px — it showed 26%
+          // of the flyer's height where the page showed 47%, so a crop tuned
+          // here did not survive to the page.
+          //
+          // PREVIEW_VIEWPORT is the width this stands in for. The hero's own
+          // ratio is 60% of the viewport by 540px, so it changes as the window
+          // does; pinning the preview to one representative desktop width
+          // gives a stable target to tune against instead of a box that
+          // reshapes when the admin resizes their browser.
+          aspectRatio: `${PREVIEW_VIEWPORT} / ${HERO_HEIGHT}`,
           display: "flex",
           alignItems: "center",
           border: "1px solid #dfe3ea",
@@ -153,7 +172,8 @@ export default function HeroPreview({
         </div>
       </div>
       <p className="hint" style={{ marginTop: 6 }}>
-        Desktop crop. Phones use their own fixed crop — the slider does not affect them.
+        Shown at {PREVIEW_VIEWPORT}px desktop width — the crop matches the live hero at that size.
+        Phones use their own fixed crop, which the slider does not affect.
       </p>
     </div>
   );
