@@ -49,6 +49,23 @@ describe("FLYER_SCHEMA", () => {
   it("disallows extra properties", () => {
     expect(FLYER_SCHEMA.additionalProperties).toBe(false);
   });
+
+  it("stays within the structured-output complexity budget", () => {
+    // Two documented per-request limits apply to constrained decoding:
+    // at most 24 optional parameters, and at most 16 using union types.
+    // Every nullable field here is a type array, which counts as a union — so
+    // the schema sits close enough to the ceiling that adding fields casually
+    // would start returning 400 "schema is too complex" at runtime rather
+    // than failing here.
+    const props = Object.values(FLYER_SCHEMA.properties) as { type: unknown }[];
+    const unions = props.filter((p) => Array.isArray(p.type)).length;
+    const optional = Object.keys(FLYER_SCHEMA.properties).length - FLYER_SCHEMA.required.length;
+
+    expect(unions).toBeLessThanOrEqual(16);
+    expect(optional).toBeLessThanOrEqual(24);
+    // Pin the actual count so growth is a deliberate, visible decision.
+    expect(unions).toBe(14);
+  });
 });
 
 describe("parseFlyerResponse — failure shapes", () => {
