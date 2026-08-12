@@ -1,4 +1,11 @@
-import { getHeroFiesta, heroWhen, type Flyer, type HeroWhen } from "@/lib/fiestas";
+import {
+  getHeroFiesta,
+  heroWhen,
+  heroFocusCss,
+  heroStyleVars,
+  type Flyer,
+  type HeroWhen,
+} from "@/lib/fiestas";
 
 const PHONE = "623-306-2386";
 
@@ -9,7 +16,10 @@ function FiestaHero({ hero, when }: { hero: Flyer; when: HeroWhen }) {
   const line = [`${when.day} ${when.date}`, when.time].filter(Boolean).join(" · ");
 
   return (
-    <section className="herofx sec">
+    <section
+      className="herofx sec"
+      style={{ ...heroStyleVars(hero), "--fx-art-pos": heroFocusCss(hero.heroFocus) } as React.CSSProperties}
+    >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img className="art" src={hero.src} alt={hero.alt || hero.cap || ""} />
       <div className="wrap">

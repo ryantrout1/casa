@@ -11,6 +11,7 @@ import {
   OWNED_SURFACES,
   flagsForChannels,
   hasOwnedSurface,
+  heroColumns,
   overallOk,
   type ChannelId,
   type FlyerInput,
@@ -119,16 +120,19 @@ export async function runPublish(
         // Single-hero invariant: demote the current hero before promoting this one.
         await sql`update fiestas set is_hero = false where is_hero = true`;
       }
-      const hero = flyer.hero ?? {};
+      const hero = heroColumns(flyer.hero);
       const frows = (await sql`
         insert into fiestas
           (image_url, alt, caption, event_date, is_hero, in_grid, on_fiestas_page, is_evergreen, featured_at,
-           starts_at, hero_title, hero_script, hero_ribbon, hero_sub, hero_lang)
+           starts_at, hero_title, hero_script, hero_ribbon, hero_sub, hero_lang,
+           hero_focus, hero_live_at, hero_bg, hero_accent, hero_ink)
         values
           (${flyer.imageUrl}, ${flyer.alt ?? ""}, ${flyer.caption ?? null}, ${flyer.eventDate || null},
            ${flags.is_hero}, ${flags.in_grid}, ${flags.on_fiestas_page}, false, now(),
-           ${hero.startsAt ?? null}, ${hero.title ?? null}, ${hero.script ?? null},
-           ${hero.ribbon ?? null}, ${hero.sub ?? null}, ${hero.lang ?? "en"})
+           ${hero.starts_at}, ${hero.hero_title}, ${hero.hero_script},
+           ${hero.hero_ribbon}, ${hero.hero_sub}, ${hero.hero_lang},
+           ${hero.hero_focus}, ${hero.hero_live_at}, ${hero.hero_bg},
+           ${hero.hero_accent}, ${hero.hero_ink})
         returning id
       `) as { id: string }[];
       fiestaId = frows[0].id;

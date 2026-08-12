@@ -535,6 +535,13 @@ describe("heroStyleVars", () => {
     expect(contrastRatio(v["--fx-accent-ink"]!, "#1f3a63")).toBeGreaterThanOrEqual(4.5);
   });
 
+  it("mutes the sub-line whenever an ink is emitted", () => {
+    expect(vars({ hero_bg: "#1a1008" })["--fx-sub-op"]).toBe("0.82");
+    // ...and leaves it alone when unthemed, so the hand-picked muted brown in
+    // the stylesheet renders at full strength exactly as it does today.
+    expect(vars()["--fx-sub-op"]).toBeUndefined();
+  });
+
   it("ignores colours that are not 6-digit hex", () => {
     expect(vars({ hero_bg: "red" })).toEqual({});
     expect(vars({ hero_bg: "#fff" })).toEqual({});

@@ -98,6 +98,41 @@ export function validatePublish(
   return null;
 }
 
+// The single place that decides what lands in each hero column on a fiesta
+// insert. Both publish paths — the immediate route and the cron drain — bind
+// this object's values, so they cannot drift apart. Every field is explicitly
+// null rather than undefined: the driver binds null, but undefined would be
+// bound as the string "undefined" or throw depending on the column type.
+export function heroColumns(hero: HeroCopy | undefined): {
+  starts_at: string | null;
+  hero_title: string | null;
+  hero_script: string | null;
+  hero_ribbon: string | null;
+  hero_sub: string | null;
+  hero_lang: HeroLang;
+  hero_focus: number | null;
+  hero_live_at: string | null;
+  hero_bg: string | null;
+  hero_accent: string | null;
+  hero_ink: string | null;
+} {
+  const h = hero ?? {};
+  return {
+    starts_at: h.startsAt ?? null,
+    hero_title: h.title ?? null,
+    hero_script: h.script ?? null,
+    hero_ribbon: h.ribbon ?? null,
+    hero_sub: h.sub ?? null,
+    hero_lang: h.lang ?? "en",
+    // ?? not || — focus 0 is a real crop (top of the flyer), not an absence.
+    hero_focus: h.focus ?? null,
+    hero_live_at: h.liveAt ?? null,
+    hero_bg: h.bg ?? null,
+    hero_accent: h.accent ?? null,
+    hero_ink: h.ink ?? null,
+  };
+}
+
 // Email re-send guard: has an email already gone out for this campaign?
 export type PriorDispatch = { channel: string; status: string };
 export function emailAlreadySent(prior: PriorDispatch[]): boolean {
