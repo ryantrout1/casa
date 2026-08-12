@@ -9,8 +9,10 @@ import { fitWithin, paletteFromFile, SAMPLE_EDGE } from "./paletteFromFile";
 // The contract that matters: extraction is a nicety, and a failure must NEVER
 // block the upload. Every failure path returns null and the caller carries on.
 
-type G = typeof globalThis & Record<string, unknown>;
-const g = globalThis as G;
+// Cast through unknown: the DOM lib types for createImageBitmap and
+// OffscreenCanvas are far richer than the slice this module uses, and the
+// stubs only need to satisfy that slice.
+const g = globalThis as unknown as Record<string, unknown>;
 
 const original = {
   createImageBitmap: g.createImageBitmap,
@@ -33,10 +35,17 @@ function solid(rgb: [number, number, number], count: number): Uint8ClampedArray 
   return new Uint8ClampedArray(out);
 }
 
+// Records the size every canvas is constructed at, so a test can prove the
+// module sampled a thumbnail rather than the full-resolution flyer.
+const sizes: { w: number; h: number }[] = [];
+
 function stubCanvas(pixels: Uint8ClampedArray, w: number, h: number, ctx: unknown = undefined) {
+  sizes.length = 0;
   g.createImageBitmap = vi.fn(async () => ({ width: 1119, height: 1477, close: vi.fn() }));
   g.OffscreenCanvas = class {
-    constructor(public width: number, public height: number) {}
+    constructor(width: number, height: number) {
+      sizes.push({ w: width, h: height });
+    }
     getContext() {
       return ctx === undefined
         ? { drawImage: vi.fn(), getImageData: () => ({ data: pixels, width: w, height: h }) }
@@ -86,10 +95,11 @@ describe("paletteFromFile", () => {
   it("downsamples rather than reading the full flyer", async () => {
     stubCanvas(solid([26, 16, 8], 64), 8, 8);
     await paletteFromFile(fakeFile());
-    // The canvas is built at the fitted size, not the source size.
-    const made = (g.OffscreenCanvas as unknown as { lastSize?: unknown }) && true;
-    expect(made).toBe(true);
-    expect(SAMPLE_EDGE).toBeLessThanOrEqual(256);
+    // The stubbed bitmap reports the real Palomazo dimensions; the canvas must
+    // be built at the fitted thumbnail size, not 1119x1477.
+    expect(sizes).toHaveLength(1);
+    expect(Math.max(sizes[0].w, sizes[0].h)).toBe(SAMPLE_EDGE);
+    expect(sizes[0]).toEqual({ w: 73, h: 96 });
   });
 
   it("returns null when the browser has no createImageBitmap", async () => {
