@@ -2,7 +2,8 @@
 
 import { Fragment, useState } from "react";
 import { CHANNEL_LABEL, liveSurfaces, type ChannelId, type SurfaceFlags } from "@/lib/publish";
-import { heroWhen, toPhoenixFields, type HeroLang } from "@/lib/fiestas";
+import { heroWhen, toPhoenixFields } from "@/lib/heroDates";
+import type { HeroLang } from "@/lib/publish";
 
 export type FiestaAdminRow = {
   id: string;

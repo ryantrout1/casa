@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { OWNED_SURFACES, type ChannelId } from "@/lib/publish";
-import { fromPhoenixFields, phoenixDateOf } from "@/lib/fiestas";
+import { fromPhoenixFields, phoenixDateOf } from "@/lib/heroDates";
 
 export const dynamic = "force-dynamic";
 
