@@ -18,6 +18,7 @@ import {
 import { heroPayloadFrom, EMPTY_HERO_FORM, type HeroFormState } from "@/lib/heroForm";
 import { heroWhen } from "@/lib/heroDates";
 import { paletteFromFile } from "@/lib/paletteFromFile";
+import { mergeSuggestions, type FlyerSuggestion } from "@/lib/flyerRead";
 import type { Palette } from "@/lib/palette";
 import HeroPanel from "./HeroPanel";
 
@@ -122,7 +123,92 @@ export default function Compose({
   // when the browser could not decode it — either way the panel just hides the
   // strip and the admin can still type hex values.
   const [palette, setPalette] = useState<Palette | null>(null);
-  const patchHero = (patch: Partial<HeroFormState>) => setHero((h) => ({ ...h, ...patch }));
+  // Fields filled by reading the flyer. Tracked so the panel can mark them as
+  // suggestions and so editing one silently promotes it to the admin's own.
+  const [suggested, setSuggested] = useState<Set<string>>(new Set());
+  const [reading, setReading] = useState(false);
+  const [readNote, setReadNote] = useState("");
+
+  // The read finishes seconds after the upload begins, and the admin may well
+  // have started typing in the meantime. Merging against the `hero` captured
+  // when onPickFlyer ran would silently overwrite whatever they wrote, so the
+  // read reads the live value instead.
+  const heroRef = useRef(hero);
+  heroRef.current = hero;
+
+  const patchHero = (patch: Partial<HeroFormState>) => {
+    setHero((h) => ({ ...h, ...patch }));
+    // Anything the admin touches stops being a suggestion, so the "suggested"
+    // tag never lingers on a value they wrote themselves.
+    const keys = Object.keys(patch);
+    setSuggested((prev) => {
+      if (!keys.some((k) => prev.has(k))) return prev;
+      const next = new Set(prev);
+      for (const k of keys) next.delete(k);
+      return next;
+    });
+  };
+
+  function clearSuggestions() {
+    setHero((h) => {
+      const next = { ...h };
+      for (const k of suggested) {
+        if (k === "lang") next.lang = "en";
+        else next[k as "title"] = "";
+      }
+      return next;
+    });
+    setSuggested(new Set());
+    setReadNote("");
+  }
+
+  // Ask the server to read the uploaded flyer and propose field values.
+  // Everything about this is best-effort: it fills blanks only, it never
+  // writes to the database, and any failure leaves the form untouched.
+  async function readFlyer(imageUrl: string) {
+    const imageId = imageUrl.split("/").pop() ?? "";
+    if (!imageId) return;
+    setReading(true);
+    setReadNote("");
+    try {
+      const res = await fetch("/api/admin/read-flyer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageId }),
+      });
+      const data = (await res.json()) as { ok?: boolean; suggestion?: FlyerSuggestion };
+      if (!data?.ok || !data.suggestion) {
+        setReadNote("Couldn't read the flyer — fill the fields in yourself.");
+        return;
+      }
+      const s = data.suggestion;
+      const { form: nextForm, suggested: filled } = mergeSuggestions(heroRef.current, s, Date.now());
+      setHero(nextForm);
+      setSuggested(new Set(filled));
+
+      // Caption, alt, and the event date live outside the hero form. Same
+      // rule: fill blanks only.
+      if (s.caption) setFlyerCaption((c) => c || s.caption!);
+      if (s.alt) setFlyerAlt((a) => a || s.alt!);
+      if (nextForm.startLocal) setFlyerDate((d) => d || nextForm.startLocal.slice(0, 10));
+
+      // Colours read off the design beat colours counted off the pixels: a
+      // dark poster's background dominates by sheer area, which is why the
+      // sampled strip comes back as five near-identical browns.
+      if (s.bg && s.accent && s.ink) {
+        setPalette({ swatches: [s.bg, s.accent, s.ink], bg: s.bg, accent: s.accent, ink: s.ink });
+      }
+      setReadNote(
+        filled.size > 0
+          ? "Read from your flyer — check each field before publishing."
+          : "Read the flyer, but everything was already filled in.",
+      );
+    } catch {
+      setReadNote("Couldn't read the flyer — fill the fields in yourself.");
+    } finally {
+      setReading(false);
+    }
+  }
 
   // Destinations. Default to the full fan-out; email locks after it sends.
   const [channels, setChannels] = useState<Record<ChannelId, boolean>>(
@@ -179,6 +265,7 @@ export default function Compose({
           setMsg(data?.error ?? "Flyer upload failed.");
         } else {
           setFlyerUrl(data.url);
+          void readFlyer(data.url);
         }
       } catch {
         setErr(true);
@@ -526,6 +613,10 @@ export default function Compose({
           flyerUrl={flyerUrl}
           palette={palette}
           dateLine={previewDateLine}
+          suggested={suggested}
+          reading={reading}
+          readNote={readNote}
+          onClearSuggestions={clearSuggestions}
         />
       </Panel>
 

@@ -16,18 +16,80 @@ const SLOTS: { key: Slot; label: string; hint: string }[] = [
   { key: "ink", label: "Text", hint: "Headline — leave blank to derive it" },
 ];
 
+// A small marker on any field whose value came from reading the flyer rather
+// than from the admin. It disappears the moment they edit that field, so the
+// form never claims authorship of something they wrote.
+function Tag() {
+  return (
+    <span
+      style={{
+        fontSize: 10,
+        letterSpacing: ".06em",
+        background: "#eef2f7",
+        color: "#4a6180",
+        borderRadius: 999,
+        padding: "2px 8px",
+        marginLeft: 8,
+        whiteSpace: "nowrap",
+      }}
+    >
+      suggested
+    </span>
+  );
+}
+
+// An input plus its "suggested" marker, so every field reads the same way.
+//
+// Defined at module scope, NOT inside HeroPanel. A component declared inside a
+// render body is a new type on every render, so React unmounts and remounts it
+// — which would drop focus after every single keystroke.
+function Row({
+  k,
+  placeholder,
+  value,
+  suggested,
+  onChange,
+}: {
+  k: "title" | "script" | "ribbon" | "sub";
+  placeholder: string;
+  value: HeroFormState;
+  suggested: Set<string>;
+  onChange: (patch: Partial<HeroFormState>) => void;
+}) {
+  return (
+    <div style={{ display: "flex", alignItems: "center" }}>
+      <input
+        type="text"
+        value={value[k]}
+        onChange={(e) => onChange({ [k]: e.target.value })}
+        placeholder={placeholder}
+        style={{ flex: 1 }}
+      />
+      {suggested.has(k) ? <Tag /> : null}
+    </div>
+  );
+}
+
 export default function HeroPanel({
   value,
   onChange,
   flyerUrl,
   palette,
   dateLine,
+  suggested,
+  reading,
+  readNote,
+  onClearSuggestions,
 }: {
   value: HeroFormState;
   onChange: (patch: Partial<HeroFormState>) => void;
   flyerUrl: string;
   palette: Palette | null;
   dateLine: string;
+  suggested: Set<string>;
+  reading: boolean;
+  readNote: string;
+  onClearSuggestions: () => void;
 }) {
   const set = <K extends keyof HeroFormState>(k: K, v: HeroFormState[K]) => onChange({ [k]: v });
 
@@ -38,6 +100,22 @@ export default function HeroPanel({
         ¡Bienvenidos! hero. You can edit all of this later in Fiestas.
       </p>
 
+      {reading ? (
+        <p className="hint" style={{ margin: 0 }}>Reading the flyer…</p>
+      ) : readNote ? (
+        <p
+          className="hint"
+          style={{ margin: 0, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}
+        >
+          <strong>{readNote}</strong>
+          {suggested.size > 0 ? (
+            <button type="button" className="ghost" onClick={onClearSuggestions}>
+              Clear suggestions
+            </button>
+          ) : null}
+        </p>
+      ) : null}
+
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
         <label className="hint" style={{ display: "flex", gap: 8, alignItems: "center" }}>
           Event starts (Arizona)
@@ -46,6 +124,7 @@ export default function HeroPanel({
             value={value.startLocal}
             onChange={(e) => set("startLocal", e.target.value)}
           />
+          {suggested.has("startLocal") ? <Tag /> : null}
         </label>
         <label className="hint" style={{ display: "flex", gap: 8, alignItems: "center" }}>
           Takeover goes live (Arizona)
@@ -68,30 +147,10 @@ export default function HeroPanel({
         hero comes down on its own about six hours after the event starts.
       </p>
 
-      <input
-        type="text"
-        value={value.title}
-        onChange={(e) => set("title", e.target.value)}
-        placeholder="Headline — e.g. EL PALOMAZO"
-      />
-      <input
-        type="text"
-        value={value.script}
-        onChange={(e) => set("script", e.target.value)}
-        placeholder="Script line — e.g. en Casa"
-      />
-      <input
-        type="text"
-        value={value.ribbon}
-        onChange={(e) => set("ribbon", e.target.value)}
-        placeholder="Ribbon — e.g. UNA NOCHE DE KARAOKE MEXICANO"
-      />
-      <input
-        type="text"
-        value={value.sub}
-        onChange={(e) => set("sub", e.target.value)}
-        placeholder="Sub-line — address, specials, anything the flyer doesn't already say"
-      />
+      <Row k="title" placeholder="Headline — e.g. EL PALOMAZO" value={value} suggested={suggested} onChange={onChange} />
+      <Row k="script" placeholder="Script line — e.g. en Casa" value={value} suggested={suggested} onChange={onChange} />
+      <Row k="ribbon" placeholder="Ribbon — e.g. UNA NOCHE DE KARAOKE MEXICANO" value={value} suggested={suggested} onChange={onChange} />
+      <Row k="sub" placeholder="Sub-line — address, specials, anything the flyer doesn't already say" value={value} suggested={suggested} onChange={onChange} />
 
       <div>
         <label className="hint" style={{ display: "flex", gap: 10, alignItems: "center" }}>
@@ -121,6 +180,7 @@ export default function HeroPanel({
       <div>
         <div className="hint" style={{ marginBottom: 6 }}>
           Colours from the flyer
+          {suggested.has("bg") || suggested.has("accent") ? <Tag /> : null}
           {palette ? null : (
             <span> — upload a flyer to sample them, or type hex values below.</span>
           )}
