@@ -190,3 +190,82 @@ describe("parseDraftConfig — hero copy", () => {
     expect(parseDraftConfig({ channels: [], flyer: { hero: 42 } }).flyer.hero).toBeUndefined();
   });
 });
+
+// --- Phase 2: hero focus, go-live, and colours in the draft blob ------------
+// These ride inside HeroCopy so both publish paths — the immediate route and
+// the cron drain — parse them through parseHeroCopy and cannot end up
+// supporting different subsets.
+
+describe("parseHeroCopy — Phase 2 fields", () => {
+  it("carries focus, liveAt, and the three colours", () => {
+    expect(
+      parseHeroCopy({
+        focus: 38,
+        liveAt: "2026-08-25T07:00:00Z",
+        bg: "#1a1008",
+        accent: "#ffbf1f",
+        ink: "#f7ecd4",
+      }),
+    ).toEqual({
+      focus: 38,
+      liveAt: "2026-08-25T07:00:00Z",
+      bg: "#1a1008",
+      accent: "#ffbf1f",
+      ink: "#f7ecd4",
+    });
+  });
+
+  it("keeps focus 0 — it is a real value, not an absence", () => {
+    // The falsy trap: the existing str() helper drops empty/zero values, and
+    // reusing it here would silently discard a top-of-flyer crop.
+    expect(parseHeroCopy({ focus: 0 })).toEqual({ focus: 0 });
+  });
+
+  it("accepts a numeric string from the form input", () => {
+    expect(parseHeroCopy({ focus: "38" })).toEqual({ focus: 38 });
+  });
+
+  it("clamps out-of-range focus rather than failing the DB CHECK", () => {
+    expect(parseHeroCopy({ focus: 250 })).toEqual({ focus: 100 });
+    expect(parseHeroCopy({ focus: -5 })).toEqual({ focus: 0 });
+  });
+
+  it("drops a non-numeric focus", () => {
+    expect(parseHeroCopy({ focus: "abc" })).toBeUndefined();
+    expect(parseHeroCopy({ focus: null })).toBeUndefined();
+  });
+
+  it("drops colours that are not 6-digit hex", () => {
+    // hero_colors_hex would reject these at insert time and fail the whole
+    // publish; dropping them here degrades to the CSS fallback instead.
+    expect(parseHeroCopy({ bg: "red" })).toBeUndefined();
+    expect(parseHeroCopy({ bg: "#fff" })).toBeUndefined();
+    expect(parseHeroCopy({ accent: "e0218a" })).toBeUndefined();
+    expect(parseHeroCopy({ ink: "#gggggg" })).toBeUndefined();
+  });
+
+  it("normalises hex to lowercase", () => {
+    expect(parseHeroCopy({ bg: "#1A1008" })).toEqual({ bg: "#1a1008" });
+  });
+
+  it("keeps valid fields when a sibling is invalid", () => {
+    expect(parseHeroCopy({ bg: "#1a1008", accent: "nope", focus: 40 })).toEqual({
+      bg: "#1a1008",
+      focus: 40,
+    });
+  });
+
+  it("still returns undefined for a blob with nothing usable", () => {
+    expect(parseHeroCopy({ focus: "abc", bg: "red" })).toBeUndefined();
+  });
+});
+
+describe("parseDraftConfig — Phase 2 fields survive the round trip", () => {
+  it("carries the new hero fields through the draft blob", () => {
+    const parsed = parseDraftConfig({
+      channels: ["hero"],
+      flyer: { imageUrl: "/api/img/x", hero: { focus: 38, bg: "#1a1008" } },
+    });
+    expect(parsed.flyer.hero).toEqual({ focus: 38, bg: "#1a1008" });
+  });
+});

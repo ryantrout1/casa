@@ -11,6 +11,8 @@ import {
   selectAll,
   selectHero,
   toFlyer,
+  isHeroLive,
+  heroFocusCss,
   type FiestaRow,
 } from "./fiestas";
 
@@ -38,6 +40,11 @@ function row(overrides: Partial<FiestaRow> = {}): FiestaRow {
     hero_ribbon: null,
     hero_sub: null,
     hero_lang: "en",
+    hero_focus: null,
+    hero_live_at: null,
+    hero_bg: null,
+    hero_accent: null,
+    hero_ink: null,
     sort_key: 0,
     ...overrides,
   };
@@ -363,5 +370,129 @@ describe("Phoenix admin field round-trip", () => {
     // The instant is 30 Aug in UTC but 29 Aug in Phoenix.
     expect(phoenixDateOf(PALOMAZO_START)).toBe("2026-08-29");
     expect(phoenixDateOf(null)).toBeNull();
+  });
+});
+
+// --- Phase 2: hero go-live window + per-fiesta crop -------------------------
+// The email send time and the hero go-live are deliberately different things.
+// Email is an event (it happens once, at an instant); the hero is a state (a
+// flag read at render time). So the hero carries a window, not a dispatch.
+
+describe("isHeroLive", () => {
+  const AUG25 = "2026-08-25T07:00:00Z"; // 25 Aug, midnight Phoenix
+  const AUG23 = Date.parse("2026-08-23T12:00:00Z");
+  const AUG26 = Date.parse("2026-08-26T12:00:00Z");
+
+  it("is live when hero_live_at is null (today's behaviour, unchanged)", () => {
+    expect(isHeroLive(row({ hero_live_at: null }), AUG23)).toBe(true);
+  });
+
+  it("is not live before the window opens", () => {
+    expect(isHeroLive(row({ hero_live_at: AUG25 }), AUG23)).toBe(false);
+  });
+
+  it("is live once the window opens", () => {
+    expect(isHeroLive(row({ hero_live_at: AUG25 }), AUG26)).toBe(true);
+  });
+
+  it("is live exactly at the boundary instant", () => {
+    expect(isHeroLive(row({ hero_live_at: AUG25 }), Date.parse(AUG25))).toBe(true);
+  });
+
+  it("treats an unparseable timestamp as live rather than hiding the hero", () => {
+    // Same posture as isCurrent: a bad value must not silently blank the
+    // takeover the admin thinks they published.
+    expect(isHeroLive(row({ hero_live_at: "not a date" }), AUG23)).toBe(true);
+  });
+});
+
+describe("selectHero — go-live window", () => {
+  const AUG23 = Date.parse("2026-08-23T12:00:00Z");
+  const AUG26 = Date.parse("2026-08-26T12:00:00Z");
+  const live = { is_hero: true, event_date: "2026-08-29" };
+
+  it("hides a hero whose window has not opened", () => {
+    const rows = [row({ id: "queued", ...live, hero_live_at: "2026-08-25T07:00:00Z" })];
+    expect(selectHero(rows, TODAY, AUG23)).toBeNull();
+  });
+
+  it("shows it once the window opens", () => {
+    const rows = [row({ id: "queued", ...live, hero_live_at: "2026-08-25T07:00:00Z" })];
+    expect(selectHero(rows, TODAY, AUG26)?.id).toBe("queued");
+  });
+
+  it("picks the live one when a second is still queued", () => {
+    // Phase 5 drops the single-hero index; the selection has to be right
+    // before the database stops enforcing it.
+    const rows = [
+      row({ id: "now", ...live, hero_live_at: null, sort_key: 1 }),
+      row({ id: "later", ...live, hero_live_at: "2026-08-25T07:00:00Z", sort_key: 9 }),
+    ];
+    expect(selectHero(rows, TODAY, AUG23)?.id).toBe("now");
+  });
+
+  it("still applies the event-expiry filter inside the window", () => {
+    const rows = [
+      row({ id: "past", is_hero: true, event_date: "2026-06-01", hero_live_at: null }),
+    ];
+    expect(selectHero(rows, TODAY, AUG26)).toBeNull();
+  });
+
+  it("defaults to the current clock when nowMs is omitted", () => {
+    const rows = [row({ id: "h", is_hero: true, event_date: "2099-01-01" })];
+    expect(selectHero(rows, TODAY)?.id).toBe("h");
+  });
+});
+
+describe("heroFocusCss", () => {
+  it("defaults to 50% when unset", () => {
+    expect(heroFocusCss(null)).toBe("center 50%");
+  });
+
+  it("uses the stored value", () => {
+    expect(heroFocusCss(38)).toBe("center 38%");
+    expect(heroFocusCss(0)).toBe("center 0%");
+    expect(heroFocusCss(100)).toBe("center 100%");
+  });
+
+  it("clamps out-of-range values rather than emitting invalid CSS", () => {
+    expect(heroFocusCss(-20)).toBe("center 0%");
+    expect(heroFocusCss(180)).toBe("center 100%");
+  });
+
+  it("rounds fractional values", () => {
+    expect(heroFocusCss(37.6)).toBe("center 38%");
+  });
+
+  it("falls back to 50% for NaN", () => {
+    expect(heroFocusCss(Number.NaN)).toBe("center 50%");
+  });
+});
+
+describe("toFlyer — Phase 2 field passthrough", () => {
+  it("carries focus, live-at, and the three colours", () => {
+    const f = toFlyer(
+      row({
+        hero_focus: 38,
+        hero_live_at: "2026-08-25T07:00:00Z",
+        hero_bg: "#1a1008",
+        hero_accent: "#ffbf1f",
+        hero_ink: "#f7ecd4",
+      }),
+    );
+    expect(f.heroFocus).toBe(38);
+    expect(f.heroLiveAt).toBe("2026-08-25T07:00:00Z");
+    expect(f.heroBg).toBe("#1a1008");
+    expect(f.heroAccent).toBe("#ffbf1f");
+    expect(f.heroInk).toBe("#f7ecd4");
+  });
+
+  it("leaves them null when unset", () => {
+    const f = toFlyer(row());
+    expect(f.heroFocus).toBeNull();
+    expect(f.heroLiveAt).toBeNull();
+    expect(f.heroBg).toBeNull();
+    expect(f.heroAccent).toBeNull();
+    expect(f.heroInk).toBeNull();
   });
 });
