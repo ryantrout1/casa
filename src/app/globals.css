@@ -103,11 +103,15 @@ a{text-decoration:none;color:inherit}ul{list-style:none}
 .v8 .herofx h1{font-family:'Bangers',cursive;font-weight:400;letter-spacing:.02em;line-height:.92;
     font-size:clamp(40px,7vw,84px);color:var(--fx-ink,#f7ecd4);margin:0}
 .v8 .herofx .scr{font-family:'Pacifico',cursive;font-size:clamp(26px,4vw,46px);color:var(--fx-accent,var(--mag));line-height:1.12;margin-top:-2px}
-.v8 .herofx .ribbon{display:inline-block;background:var(--fx-accent,var(--teal));color:var(--fx-accent-ink,#04342c);font-family:'Fredoka',sans-serif;font-weight:600;
+/* Ribbon and primary button keep Casa's teal and yellow on every fiesta. The
+   flyer sets the ground and the script line; the furniture is the brand's, not
+   the event's. Both carry their own baked-in text colour, so neither can be
+   made unreadable by whatever the poster happens to be. */
+.v8 .herofx .ribbon{display:inline-block;background:var(--teal);color:#04342c;font-family:'Fredoka',sans-serif;font-weight:600;
     font-size:13px;letter-spacing:.14em;padding:7px 20px;margin-top:14px}
 .v8 .herofx .sub{color:var(--fx-ink,#cbbca0);opacity:var(--fx-sub-op,1);font-size:16px;margin-top:14px;line-height:1.6;max-width:460px}
 .v8 .herofx .ctas{display:flex;gap:12px;flex-wrap:wrap;margin-top:24px}
-.v8 .herofx .btn-y{background:var(--fx-accent,var(--yel));color:var(--fx-accent-ink,#3a2a00)}
+.v8 .herofx .btn-y{background:var(--yel);color:#3a2a00}
 .v8 .herofx .btn-y:hover{background:#f0b400}
 .v8 .herofx .btn-ghost{border-color:color-mix(in srgb,var(--fx-ink,#f7ecd4) 42%,transparent);color:var(--fx-ink,#f7ecd4)}
 .v8 .herofx .btn-ghost:hover{background:rgba(247,236,212,.1)}

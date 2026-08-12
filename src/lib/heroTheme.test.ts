@@ -58,12 +58,24 @@ describe("heroStyleVars", () => {
     expect(vars({ heroBg: "#1a1008", heroInk: "#ffffff" })["--fx-ink"]).toBe("#ffffff");
   });
 
-  it("gives the accent its own readable text colour", () => {
-    // The ribbon and the primary button are FILLED with the accent and carry
-    // text on top. A single accent value cannot also be that text.
+  it("keeps an accent that reads against the ground", () => {
     const v = vars({ heroBg: "#fdf4e3", heroAccent: "#1f3a63" });
     expect(v["--fx-accent"]).toBe("#1f3a63");
-    expect(contrastRatio(v["--fx-accent-ink"]!, "#1f3a63")).toBeGreaterThanOrEqual(AA);
+    expect(contrastRatio(v["--fx-accent"]!, "#fdf4e3")).toBeGreaterThanOrEqual(AA);
+  });
+
+  it("drops an accent that cannot be read as text on the ground", () => {
+    // The accent colours the eyebrow and the script line — both text. A
+    // magenta that looks great as a ribbon fill is ~3.4:1 on cream, so it is
+    // dropped and the stylesheet falls back to the brand colour.
+    const v = vars({ heroBg: "#fdf4e3", heroAccent: "#e0218a" });
+    expect(contrastRatio("#e0218a", "#fdf4e3")).toBeLessThan(AA);
+    expect(v["--fx-accent"]).toBeUndefined();
+    expect(v["--fx-bg"]).toBe("#fdf4e3");
+  });
+
+  it("never emits an accent-specific ink — the accent is not a fill", () => {
+    expect(vars({ heroBg: "#1a1008", heroAccent: "#ffbf1f" })["--fx-accent-ink"]).toBeUndefined();
   });
 
   it("mutes the sub-line whenever an ink is emitted", () => {
@@ -82,12 +94,9 @@ describe("heroStyleVars", () => {
     expect(v["--fx-accent"]).toBeUndefined();
   });
 
-  it("handles an accent with no background", () => {
-    // Ground falls back to the stylesheet's #140c06, so the accent still needs
-    // its own fill-text colour computed.
+  it("checks an accent against the stylesheet default when no ground is set", () => {
     const v = vars({ heroAccent: "#ffbf1f" });
     expect(v["--fx-bg"]).toBeUndefined();
     expect(v["--fx-accent"]).toBe("#ffbf1f");
-    expect(contrastRatio(v["--fx-accent-ink"]!, "#ffbf1f")).toBeGreaterThanOrEqual(AA);
   });
 });

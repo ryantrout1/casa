@@ -5,7 +5,7 @@
 //
 // lib/fiestas re-exports both functions, so server-side callers are unaffected.
 
-import { isHex, pickInk } from "./palette";
+import { AA_CONTRAST, FALLBACK_BG, contrastRatio, isHex, pickInk } from "./palette";
 
 // The object-position the flyer should be cropped at. Clamped and rounded here
 // rather than trusted from the row, because this value reaches the page as a
@@ -16,16 +16,16 @@ export function heroFocusCss(focus: number | null): string {
   return `center ${pct}%`;
 }
 
-// The CSS custom properties the takeover section carries. Emitting nothing
-// when a row has no colours is the load-bearing contract: the stylesheet's
-// fallbacks then render exactly what shipped before this column existed, so
-// every fiesta published to date is untouched.
+// Two colours, not four. `--fx-bg` is the section ground and `--fx-ink` is the
+// text on it, derived when not stored. `--fx-accent` colours the eyebrow and
+// the script line — both TEXT on that ground, which is why it is gated on
+// contrast rather than paired with its own ink.
 //
-// Two inks, not one. `--fx-ink` is text ON the section ground. `--fx-accent-ink`
-// is text ON the accent, because the ribbon and the primary button are *filled*
-// with the accent and carry copy on top — a single accent value cannot also be
-// its own legible text. Both are derived when not stored, so a colour chosen
-// for looks can never produce unreadable type.
+// The ribbon and the primary button deliberately do not read any of this. They
+// stay Casa's teal and yellow on every fiesta, with their own baked-in text
+// colours: the flyer sets the ground and the script, the furniture belongs to
+// the brand. One accent tinting the script, the ribbon AND the button turned
+// every poster into two colours.
 export function heroStyleVars(f: {
   heroBg: string | null;
   heroAccent: string | null;
@@ -48,9 +48,12 @@ export function heroStyleVars(f: {
   // landed on, so it is expressed as opacity rather than a fifth colour.
   if (out["--fx-ink"]) out["--fx-sub-op"] = "0.82";
 
+  // An accent that cannot be read against the ground is not usable as text.
+  // Dropping it lets the stylesheet fall back to the brand yellow and magenta,
+  // which is a better outcome than an unreadable eyebrow.
   if (accent) {
-    out["--fx-accent"] = accent;
-    out["--fx-accent-ink"] = pickInk(accent);
+    const ground = bg ?? FALLBACK_BG;
+    if (contrastRatio(accent, ground) >= AA_CONTRAST) out["--fx-accent"] = accent;
   }
 
   return out;

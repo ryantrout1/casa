@@ -288,3 +288,24 @@ describe("mergeSuggestions", () => {
     expect(original.title).toBe("");
   });
 });
+
+describe("mergeSuggestions — the headline colour is derived, not read", () => {
+  const NOW = Date.parse("2026-08-12T19:00:00Z");
+  const withInk = parseFlyerResponse(reply(FULL))!;
+
+  it("never fills ink from the read", () => {
+    // The poster sets its own title in gold, which goes muddy on the brown
+    // ground. Deriving cream from the background reads better, and
+    // heroStyleVars already does that when ink is blank.
+    expect(withInk.ink).toBe("#f7ecd4");
+    const { form: next, suggested } = mergeSuggestions(form(), withInk, NOW);
+    expect(next.ink).toBe("");
+    expect(suggested.has("ink" as never)).toBe(false);
+  });
+
+  it("still fills the ground and the accent", () => {
+    const { form: next } = mergeSuggestions(form(), withInk, NOW);
+    expect(next.bg).toBe("#1a1008");
+    expect(next.accent).toBe("#ffbf1f");
+  });
+});

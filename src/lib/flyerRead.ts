@@ -281,7 +281,10 @@ export function mergeSuggestions(
   fill("sub", suggestion.sub);
   fill("bg", suggestion.bg);
   fill("accent", suggestion.accent);
-  fill("ink", suggestion.ink);
+  // `ink` is deliberately NOT suggested. The headline reads better as cream
+  // derived from the ground than as whatever colour the poster set its own
+  // title in — on the Palomazo flyer that is a gold which goes muddy against
+  // the brown. The field stays editable; it just is not filled from a read.
 
   // A date without a time cannot make a datetime-local value, and inventing
   // midnight would put a wrong time on the homepage. Both parts or neither.
