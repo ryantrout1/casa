@@ -87,7 +87,10 @@ a{text-decoration:none;color:inherit}ul{list-style:none}
 .v8 .herofx .art{position:absolute;right:0;top:0;height:100%;width:60%;object-fit:cover;object-position:center 62%;
     -webkit-mask-image:linear-gradient(to right,transparent 0,rgba(0,0,0,.55) 32%,#000 72%);
     mask-image:linear-gradient(to right,transparent 0,rgba(0,0,0,.55) 32%,#000 72%)}
-.v8 .herofx .wrap{position:relative;z-index:2}
+/* .herofx is the only section that makes .wrap a flex item; without an explicit
+   width the item shrink-wraps its content and the inherited margin:0 auto then
+   centers that narrow box instead of honouring the 1200px container gutter. */
+.v8 .herofx .wrap{position:relative;z-index:2;width:100%}
 .v8 .herofx .copy{max-width:620px;padding:64px 0}
 .v8 .herofx .when{font-family:'Fredoka',sans-serif;font-weight:600;font-size:clamp(11px,1.5vw,14px);letter-spacing:.24em;color:var(--yel);margin-bottom:10px}
 .v8 .herofx h1{font-family:'Bangers',cursive;font-weight:400;letter-spacing:.02em;line-height:.92;
