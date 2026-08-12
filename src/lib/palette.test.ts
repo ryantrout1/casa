@@ -4,6 +4,7 @@ import {
   relativeLuminance,
   contrastRatio,
   pickInk,
+  isHex,
   CREAM,
   NAVY,
   FALLBACK_BG,
@@ -67,6 +68,30 @@ describe("contrastRatio", () => {
     // Cream on the existing #140c06 ground — the fallback must not be a
     // regression from what ships today.
     expect(contrastRatio(CREAM, FALLBACK_BG)).toBeGreaterThanOrEqual(AA);
+  });
+});
+
+describe("malformed input is fail-safe", () => {
+  const junk = ["", "#fff", "e0218a", "#gggggg", "red", "#e0218a00"];
+
+  it("isHex accepts 6-digit hex and rejects everything else", () => {
+    expect(isHex("#e0218a")).toBe(true);
+    expect(isHex("#E0218A")).toBe(true);
+    for (const j of junk) expect(isHex(j)).toBe(false);
+  });
+
+  it("contrastRatio returns the worst ratio rather than NaN", () => {
+    // A NaN would make every `>= AA` comparison silently false — same visible
+    // outcome by luck, but it would also make `< AA` false, so a guard written
+    // the other way round would pass junk straight through.
+    for (const j of junk) {
+      expect(contrastRatio(j, "#ffffff")).toBe(1);
+      expect(contrastRatio("#ffffff", j)).toBe(1);
+    }
+  });
+
+  it("pickInk returns the shipped ink for an unusable background", () => {
+    for (const j of junk) expect(pickInk(j)).toBe(CREAM);
   });
 });
 
@@ -166,6 +191,17 @@ describe("extractPalette", () => {
     ]);
     const p = extractPalette(buf, 2, 2);
     expect(p.bg).toBe("#e0218a");
+  });
+
+  it("offers the flyer's vivid colours as swatches even when they fail AA", () => {
+    // Magenta on cream is ~3.4:1 — too weak for body text, but a perfectly
+    // good ribbon fill. The AA gate governs the accent default, not what the
+    // admin is allowed to pick.
+    const p = extractPalette(px([[253, 244, 227], 400], [[224, 33, 138], 120]), 16, 32);
+    expect(p.swatches).toContain("#e0218a");
+    expect(contrastRatio("#e0218a", p.bg)).toBeLessThan(AA);
+    // ...but the chosen accent still clears it.
+    expect(contrastRatio(p.accent, p.bg)).toBeGreaterThanOrEqual(AA);
   });
 
   it("is deterministic — same pixels, same palette", () => {
