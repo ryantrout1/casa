@@ -9,7 +9,7 @@ import {
   type ChannelId,
   type FlyerInput,
 } from "@/lib/publish";
-import { isDraftEmpty } from "@/lib/schedule";
+import { isDraftEmpty, parseHeroCopy } from "@/lib/schedule";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +24,9 @@ function readConfig(body: Record<string, unknown>): { channels: ChannelId[]; fly
     caption: f.caption ? String(f.caption) : undefined,
     alt: f.alt ? String(f.alt) : undefined,
     eventDate: f.eventDate ? String(f.eventDate) : null,
+    // Same parser the cron drain uses, so the immediate and scheduled paths
+    // cannot support different subsets of the hero fields.
+    hero: parseHeroCopy(f.hero),
   };
   return { channels, flyer };
 }

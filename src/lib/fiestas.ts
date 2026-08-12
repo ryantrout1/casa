@@ -1,4 +1,5 @@
 import { db } from "./db";
+import type { HeroLang } from "./publish";
 
 // A fiesta row as read from Neon. `sort_key` is derived at query time
 // (epoch of featured_at, falling back to created_at) so ordering is a plain
@@ -28,8 +29,9 @@ export type FiestaRow = {
 
 // Which language the *generated* date line is written in. The free-text hero
 // fields are whatever Stephanie's flyer says, so a Spanish date line above an
-// English ribbon is a supported combination, not a bug.
-export type HeroLang = "en" | "es";
+// English ribbon is a supported combination, not a bug. Declared in lib/publish
+// (client-safe) and re-exported here for callers already importing it.
+export type { HeroLang };
 
 // The presentational shape FiestaGallery consumes. Structurally identical to
 // FiestaGallery's FlyerItem; kept separate to avoid importing a client

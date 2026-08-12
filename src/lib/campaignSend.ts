@@ -119,12 +119,16 @@ export async function runPublish(
         // Single-hero invariant: demote the current hero before promoting this one.
         await sql`update fiestas set is_hero = false where is_hero = true`;
       }
+      const hero = flyer.hero ?? {};
       const frows = (await sql`
         insert into fiestas
-          (image_url, alt, caption, event_date, is_hero, in_grid, on_fiestas_page, is_evergreen, featured_at)
+          (image_url, alt, caption, event_date, is_hero, in_grid, on_fiestas_page, is_evergreen, featured_at,
+           starts_at, hero_title, hero_script, hero_ribbon, hero_sub, hero_lang)
         values
           (${flyer.imageUrl}, ${flyer.alt ?? ""}, ${flyer.caption ?? null}, ${flyer.eventDate || null},
-           ${flags.is_hero}, ${flags.in_grid}, ${flags.on_fiestas_page}, false, now())
+           ${flags.is_hero}, ${flags.in_grid}, ${flags.on_fiestas_page}, false, now(),
+           ${hero.startsAt ?? null}, ${hero.title ?? null}, ${hero.script ?? null},
+           ${hero.ribbon ?? null}, ${hero.sub ?? null}, ${hero.lang ?? "en"})
         returning id
       `) as { id: string }[];
       fiestaId = frows[0].id;

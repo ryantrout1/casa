@@ -1,13 +1,27 @@
 // Campaign draft & schedule lifecycle helpers (pure, client-safe). Phase 1
 // covers drafts; Phase 2 will add the scheduling (timezone + due-check) helpers.
 
-import { ALL_CHANNELS, type ChannelId } from "./publish";
+import { ALL_CHANNELS, type ChannelId, type HeroLang } from "./publish";
+
+// Takeover hero copy, carried inside the flyer blob. Nested as one object
+// rather than six sibling fields so both publish paths — the immediate route
+// and the cron drain — parse it through the same function and cannot end up
+// supporting different subsets.
+export type HeroCopy = {
+  startsAt?: string | null;
+  title?: string;
+  script?: string;
+  ribbon?: string;
+  sub?: string;
+  lang?: HeroLang;
+};
 
 export type DraftFlyer = {
   imageUrl?: string;
   caption?: string;
   alt?: string;
   eventDate?: string | null;
+  hero?: HeroCopy;
 };
 
 export type DraftConfig = {
@@ -17,6 +31,24 @@ export type DraftConfig = {
 
 function str(v: unknown): string | undefined {
   return typeof v === "string" && v.length > 0 ? v : undefined;
+}
+
+// Turn an arbitrary blob into safe hero copy, or undefined when there is
+// nothing usable. Total by contract — the cron drain has no user to show an
+// error to, so a malformed blob must degrade to "no hero copy", never throw.
+// An unrecognised language is dropped rather than forwarded, because the
+// column carries a CHECK constraint that would fail the whole insert.
+export function parseHeroCopy(raw: unknown): HeroCopy | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const o = raw as Record<string, unknown>;
+  const out: HeroCopy = {};
+  if (str(o.startsAt)) out.startsAt = str(o.startsAt);
+  if (str(o.title)) out.title = str(o.title);
+  if (str(o.script)) out.script = str(o.script);
+  if (str(o.ribbon)) out.ribbon = str(o.ribbon);
+  if (str(o.sub)) out.sub = str(o.sub);
+  if (o.lang === "en" || o.lang === "es") out.lang = o.lang;
+  return Object.keys(out).length > 0 ? out : undefined;
 }
 
 // Turn a stored publish_config blob (or anything) into a safe, typed DraftConfig.
@@ -35,6 +67,8 @@ export function parseDraftConfig(raw: unknown): DraftConfig {
   if (str(rawFlyer.caption)) flyer.caption = str(rawFlyer.caption);
   if (str(rawFlyer.alt)) flyer.alt = str(rawFlyer.alt);
   if (str(rawFlyer.eventDate)) flyer.eventDate = str(rawFlyer.eventDate);
+  const hero = parseHeroCopy(rawFlyer.hero);
+  if (hero) flyer.hero = hero;
 
   return { channels, flyer };
 }

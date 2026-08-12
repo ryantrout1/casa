@@ -5,6 +5,15 @@
 
 export type ChannelId = "email" | "hero" | "grid" | "fiestas_page";
 
+// Type-only import — erased at compile, so this does not create a runtime
+// cycle with schedule.ts (which imports ALL_CHANNELS from here).
+import type { HeroCopy } from "./schedule";
+
+// Which language the generated hero date line is written in. Declared here
+// rather than in lib/fiestas so client-safe modules (schedule, the composer)
+// can reference it without pulling in the database module.
+export type HeroLang = "en" | "es";
+
 // Owned website surfaces — placement flags on a single fiesta row.
 export const OWNED_SURFACES: ChannelId[] = ["hero", "grid", "fiestas_page"];
 
@@ -53,6 +62,9 @@ export type FlyerInput = {
   caption?: string;
   alt?: string;
   eventDate?: string | null;
+  // Optional by design — a hero publish without copy renders the evergreen
+  // hero rather than failing validation.
+  hero?: HeroCopy;
 };
 
 // Validate a publish request against the selected channels. Returns an error
