@@ -44,6 +44,12 @@ describe("heroPayloadFrom — what counts as touched", () => {
     ["a background", { bg: "#1a1008" }],
     ["an accent", { accent: "#ffbf1f" }],
     ["an ink", { ink: "#f7ecd4" }],
+    // Alt copy alone is a real edit: the admin may be adding the translation
+    // to a fiesta whose primary copy is already stored.
+    ["an alt headline", { titleAlt: "LOTERÍA" }],
+    ["an alt script line", { scriptAlt: "¡Noche de!" }],
+    ["an alt ribbon", { ribbonAlt: "¡DIVERSIÓN!" }],
+    ["an alt sub-line", { subAlt: "Para toda la familia" }],
   ];
 
   for (const [label, patch] of cases) {
@@ -113,5 +119,62 @@ describe("heroPayloadFrom — survives the wire", () => {
       }),
     );
     expect(parseHeroCopy(p)).toEqual(p);
+  });
+});
+
+describe("heroPayloadFrom — the other language", () => {
+  // The four _alt fields carry the translation the rotating hero alternates
+  // to. They ride the same payload as the primary copy so both publish paths
+  // — the immediate route and the cron drain — parse them through the one
+  // parseHeroCopy, and cannot end up supporting different subsets.
+
+  it("carries all four alt fields into the payload", () => {
+    const p = heroPayloadFrom(
+      form({
+        title: "LOTERÍA",
+        script: "Night!",
+        ribbon: "FUN! ★ PRIZES! ★ COMMUNITY!",
+        sub: "All ages",
+        titleAlt: "LOTERÍA",
+        scriptAlt: "¡Noche de!",
+        ribbonAlt: "¡DIVERSIÓN! ★ ¡PREMIOS! ★ ¡COMUNIDAD!",
+        subAlt: "Para toda la familia",
+      }),
+    );
+    expect(p?.titleAlt).toBe("LOTERÍA");
+    expect(p?.scriptAlt).toBe("¡Noche de!");
+    expect(p?.ribbonAlt).toBe("¡DIVERSIÓN! ★ ¡PREMIOS! ★ ¡COMUNIDAD!");
+    expect(p?.subAlt).toBe("Para toda la familia");
+  });
+
+  it("trims alt copy the way it trims the primary", () => {
+    const p = heroPayloadFrom(form({ titleAlt: "  LOTERÍA  " }));
+    expect(p?.titleAlt).toBe("LOTERÍA");
+  });
+
+  it("omits blank alt fields rather than sending empty strings", () => {
+    // An empty string would be stored as an empty string, and heroAlt treats
+    // absent and blank alike — but the payload should not carry noise.
+    const p = heroPayloadFrom(form({ title: "LOTERÍA", scriptAlt: "   " }));
+    expect(p).toBeDefined();
+    expect(p).not.toHaveProperty("scriptAlt");
+  });
+
+  it("still returns undefined when only whitespace alt copy is present", () => {
+    // The untouched-form contract has to survive four new fields.
+    expect(
+      heroPayloadFrom(form({ titleAlt: " ", scriptAlt: "\t", ribbonAlt: "", subAlt: "  " })),
+    ).toBeUndefined();
+  });
+
+  it("produces alt copy parseHeroCopy accepts unchanged", () => {
+    // The round-trip that matters: what the form emits has to survive the
+    // publish_config blob and come back identical.
+    const p = heroPayloadFrom(
+      form({ title: "LOTERÍA", titleAlt: "LOTERÍA", ribbonAlt: "¡DIVERSIÓN!" }),
+    );
+    const parsed = parseHeroCopy(JSON.parse(JSON.stringify(p)));
+    expect(parsed?.titleAlt).toBe("LOTERÍA");
+    expect(parsed?.ribbonAlt).toBe("¡DIVERSIÓN!");
   });
 });
