@@ -6,6 +6,7 @@ import Editor, { type EditorHandle } from "./Editor";
 import {
   ALL_CHANNELS,
   CHANNEL_LABEL,
+  flyerMissingFromEmail,
   resultEntries,
   type ChannelId,
   type PublishResults,
@@ -193,7 +194,12 @@ export default function Compose({
       // Caption, alt, and the event date live outside the hero form. Same
       // rule: fill blanks only.
       if (s.caption) setFlyerCaption((c) => c || s.caption!);
-      if (s.alt) setFlyerAlt((a) => a || s.alt!);
+      if (s.alt) {
+        setFlyerAlt((a) => a || s.alt!);
+        // The seeded body image went in before this read returned, so it has no
+        // alt yet. Same fill-blanks-only rule as the field above.
+        editorRef.current?.setImageAlt(imageUrl, s.alt);
+      }
       if (nextForm.startLocal) setFlyerDate((d) => d || nextForm.startLocal.slice(0, 10));
 
       // Colours read off the design beat colours counted off the pixels: a
@@ -233,6 +239,15 @@ export default function Compose({
     setChannels((c) => ({ ...c, [key]: !c[key] }));
   }
 
+  // Backstop for the case seeding cannot cover: the flyer is uploaded but the
+  // message has no image, because it was deleted after seeding or the flyer
+  // came from a draft saved before this behaviour existed.
+  function confirmNoFlyer(): boolean {
+    return window.confirm(
+      "Your email message has no image, but a flyer is attached for the website. Send the email without the flyer?",
+    );
+  }
+
   function flyerPayload() {
     return {
       imageUrl: flyerUrl,
@@ -270,6 +285,16 @@ export default function Compose({
           setMsg(data?.error ?? "Flyer upload failed.");
         } else {
           setFlyerUrl(data.url);
+          // One upload, both destinations. The flyer field and the message
+          // editor are separate inputs writing to separate columns, and an
+          // admin who uploads once reasonably expects the flyer in the email
+          // too — the August Loteria send went out with copy and no flyer for
+          // exactly this reason. Seed it only into a body that has no image of
+          // its own, so a deliberate choice of message art is never overwritten
+          // and replacing the flyer never stacks a second copy.
+          if (!editorRef.current?.hasImage()) {
+            editorRef.current?.appendImage(data.url, flyerAlt);
+          }
           void readFlyer(data.url);
         }
       } catch {
@@ -352,6 +377,11 @@ export default function Compose({
       setMsg("Add a subject and a message before sending a test.");
       return;
     }
+    // A test send is an email send — it should show exactly what subscribers
+    // would get, so it warns about a missing flyer just like publish does.
+    if (flyerMissingFromEmail(html, flyerPayload(), ["email"]) && !confirmNoFlyer()) {
+      return;
+    }
     setBusy(true);
     setMsg("");
     setErr(false);
@@ -384,6 +414,9 @@ export default function Compose({
     if (selected.length === 0) {
       setErr(true);
       setMsg("Pick at least one destination.");
+      return;
+    }
+    if (flyerMissingFromEmail(html, flyerPayload(), selected) && !confirmNoFlyer()) {
       return;
     }
     if (
@@ -440,7 +473,10 @@ export default function Compose({
       setMsg("Pick a valid Arizona date and time to schedule.");
       return;
     }
-    // Same guard as Send now: scheduling an email IS a send — just deferred.
+    // Same guards as Send now: scheduling an email IS a send — just deferred.
+    if (flyerMissingFromEmail(html, flyerPayload(), selected) && !confirmNoFlyer()) {
+      return;
+    }
     if (
       selected.includes("email") &&
       !window.confirm(

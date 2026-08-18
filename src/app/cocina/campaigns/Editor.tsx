@@ -2,7 +2,20 @@
 
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 
-export type EditorHandle = { getHTML: () => string; isEmpty: () => boolean };
+export type EditorHandle = {
+  getHTML: () => string;
+  isEmpty: () => boolean;
+  // Whether the body already carries an image. Compose uses this to decide
+  // whether an uploaded flyer needs seeding into the message.
+  hasImage: () => boolean;
+  // Append an image to the end of the body. Used when a flyer upload should
+  // also appear in the email; the toolbar's own "+ Image" path inserts at the
+  // caret instead.
+  appendImage: (url: string, alt?: string) => void;
+  // Fill in the alt text of an already-inserted image. Blanks only — an alt
+  // the admin wrote is never overwritten.
+  setImageAlt: (url: string, alt: string) => void;
+};
 
 function preventDefault(e: React.MouseEvent) {
   e.preventDefault();
@@ -37,6 +50,11 @@ const Editor = forwardRef<EditorHandle, { onUploadingChange?: (b: boolean) => vo
         if (!el) return true;
         return (el.textContent ?? "").trim().length === 0 && !el.querySelector("img");
       },
+      // Read the DOM rather than the hasImage state: the admin can delete an
+      // image with the keyboard, which never runs through setHasImage.
+      hasImage: () => !!elRef.current?.querySelector("img"),
+      appendImage,
+      setImageAlt,
     }));
 
     function exec(cmd: string, value?: string) {
@@ -99,20 +117,53 @@ const Editor = forwardRef<EditorHandle, { onUploadingChange?: (b: boolean) => vo
       }
     }
 
+    // Attribute values land inside a double-quoted HTML attribute, so a quote
+    // in the alt text would break out of it. Alt text is admin-authored or read
+    // off a flyer, not hostile, but the escape costs nothing.
+    function attr(v: string): string {
+      return v.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+    }
+
+    function imgTag(url: string, alt: string, width: string): string {
+      return `<img src="${attr(url)}" alt="${attr(alt)}" style="width:${width};max-width:100%;height:auto;display:block;border-radius:8px;margin:10px 0;" />`;
+    }
+
     function insertImage(url: string) {
       const el = elRef.current;
       if (!el) return;
       el.focus();
-      document.execCommand(
-        "insertHTML",
-        false,
-        `<img src="${url}" alt="" style="width:100%;max-width:100%;height:auto;display:block;border-radius:8px;margin:10px 0;" /><p><br></p>`,
-      );
+      document.execCommand("insertHTML", false, `${imgTag(url, "", "100%")}<p><br></p>`);
       const imgs = el.querySelectorAll("img");
       const last = imgs.length ? (imgs[imgs.length - 1] as HTMLImageElement) : null;
       selectImg(last);
       setHasImage(true);
       setNote('Image added — use "Image size" below to shrink it.');
+    }
+
+    // Append to the end of the body without focusing. The flyer upload runs
+    // while the admin may be mid-sentence elsewhere in the form, so this path
+    // deliberately does not steal the caret the way insertImage does.
+    function appendImage(url: string, alt = "") {
+      const el = elRef.current;
+      if (!el) return;
+      el.insertAdjacentHTML("beforeend", `${imgTag(url, alt, "80%")}<p><br></p>`);
+      const imgs = el.querySelectorAll("img");
+      selectImg(imgs.length ? (imgs[imgs.length - 1] as HTMLImageElement) : null);
+      setHasImage(true);
+      setNote('Flyer added to your message — use "Image size" to resize it, or delete it to send without.');
+    }
+
+    // Reading the flyer finishes seconds after the upload that seeded it, so
+    // the alt it proposes arrives after the image is already in the body. Fill
+    // it in then — blanks only, so an alt the admin typed is never clobbered.
+    function setImageAlt(url: string, alt: string) {
+      const el = elRef.current;
+      if (!el || !alt) return;
+      el.querySelectorAll("img").forEach((img) => {
+        if (img.getAttribute("src") === url && !img.getAttribute("alt")) {
+          img.setAttribute("alt", alt);
+        }
+      });
     }
 
     async function onPickFile(e: React.ChangeEvent<HTMLInputElement>) {

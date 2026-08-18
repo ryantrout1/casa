@@ -13,6 +13,8 @@ import {
   type PublishResults,
   type SurfaceFlags,
   heroColumns,
+  flyerMissingFromEmail,
+  bodyContainsImage,
 } from "./publish";
 
 // Campaign fan-out (Phase 2). One publish targets any mix of destinations:
@@ -248,5 +250,59 @@ describe("heroColumns", () => {
     for (const v of Object.values(heroColumns({ title: "X" }))) {
       expect(v).not.toBeUndefined();
     }
+  });
+});
+
+describe("bodyContainsImage", () => {
+  it("finds an image tag", () => {
+    expect(bodyContainsImage('<div>hi</div><img src="/api/img/x" />')).toBe(true);
+  });
+
+  it("is case-insensitive", () => {
+    expect(bodyContainsImage("<IMG SRC='/api/img/x'>")).toBe(true);
+  });
+
+  it("is false for copy-only bodies", () => {
+    expect(bodyContainsImage("<div>Lotería Night returns</div>")).toBe(false);
+  });
+
+  it("does not match a word merely starting with img", () => {
+    expect(bodyContainsImage("<div>imgur is a site</div>")).toBe(false);
+    expect(bodyContainsImage("<image href='x' />")).toBe(false);
+  });
+
+  it("treats empty input as imageless", () => {
+    expect(bodyContainsImage("")).toBe(false);
+  });
+});
+
+describe("flyerMissingFromEmail", () => {
+  const flyer = { imageUrl: "https://www.casadeleyva.com/api/img/abc", caption: "Loteria" };
+  const body = "<div>Lotería Night returns to Casa de Leyva</div>";
+
+  it("flags the August Lotería shape — email selected, flyer uploaded, no body image", () => {
+    expect(flyerMissingFromEmail(body, flyer, ["email", "fiestas_page"])).toBe(true);
+  });
+
+  it("is quiet once the body carries an image", () => {
+    const withImg = `${body}<img src="https://www.casadeleyva.com/api/img/abc" />`;
+    expect(flyerMissingFromEmail(withImg, flyer, ["email"])).toBe(false);
+  });
+
+  it("is quiet for website-only publishes", () => {
+    expect(flyerMissingFromEmail(body, flyer, ["hero", "grid", "fiestas_page"])).toBe(false);
+  });
+
+  it("is quiet when no flyer was uploaded — nothing to have carried over", () => {
+    expect(flyerMissingFromEmail(body, {}, ["email"])).toBe(false);
+    expect(flyerMissingFromEmail(body, { imageUrl: "   " }, ["email"])).toBe(false);
+  });
+
+  it("is quiet with no destinations picked", () => {
+    expect(flyerMissingFromEmail(body, flyer, [])).toBe(false);
+  });
+
+  it("flags an email-only publish that dropped its flyer", () => {
+    expect(flyerMissingFromEmail(body, flyer, ["email"])).toBe(true);
   });
 });

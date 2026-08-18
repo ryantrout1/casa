@@ -98,6 +98,27 @@ export function validatePublish(
   return null;
 }
 
+// True when a flyer was uploaded for the website but the email body carries no
+// image of its own — the shape that sent the August Lotería email out with copy
+// and no flyer. Not a validation error: an email deliberately sent without the
+// flyer is legitimate, so the composer warns rather than blocks.
+export function flyerMissingFromEmail(
+  bodyHtml: string,
+  flyer: FlyerInput,
+  channels: ChannelId[],
+): boolean {
+  if (!channels.includes("email")) return false;
+  if (!flyer.imageUrl || !flyer.imageUrl.trim()) return false;
+  return !bodyContainsImage(bodyHtml);
+}
+
+// Whether email body HTML carries an image. The single definition of "has an
+// image" on the client; the publish route computes the same thing server-side
+// off the sanitized HTML.
+export function bodyContainsImage(bodyHtml: string): boolean {
+  return /<img\b/i.test(bodyHtml ?? "");
+}
+
 // The single place that decides what lands in each hero column on a fiesta
 // insert. Both publish paths — the immediate route and the cron drain — bind
 // this object's values, so they cannot drift apart. Every field is explicitly
