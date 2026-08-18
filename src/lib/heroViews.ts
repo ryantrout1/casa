@@ -77,15 +77,25 @@ export function heroViews(f: HeroViewSource): HeroView[] {
 
   const blocks = alt ? [primary, alt] : [primary];
 
-  return blocks.map((b) => ({
-    lang: b.lang,
-    when: whenLine(f, b.lang),
-    // Narrowed by the guard above for the primary; the alternate cannot exist
-    // without a title, so both are non-null by construction.
-    title: b.title as string,
-    script: b.script,
-    ribbon: b.ribbon,
-    sub: b.sub,
-    ctas: CTAS[b.lang],
-  }));
+  // Both blocks have a title by construction — the guard above covers the
+  // primary, and heroBlocks only pairs an alternate that covers every field
+  // the primary uses. Filtering rather than casting means that stays true by
+  // the compiler's reckoning and not just by comment: if heroAlt's pairing
+  // rule ever loosens, a titleless block is dropped instead of rendering an
+  // empty headline.
+  return blocks.flatMap<HeroView>((b) =>
+    b.title === null
+      ? []
+      : [
+          {
+            lang: b.lang,
+            when: whenLine(f, b.lang),
+            title: b.title,
+            script: b.script,
+            ribbon: b.ribbon,
+            sub: b.sub,
+            ctas: CTAS[b.lang],
+          },
+        ],
+  );
 }

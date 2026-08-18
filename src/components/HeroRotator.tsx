@@ -21,8 +21,17 @@ const DIRECTIONS_HREF =
 
 export default function HeroRotator({ views }: { views: HeroView[] }) {
   const [i, setI] = useState(0);
-  const [paused, setPaused] = useState(false);
   const [reduced, setReduced] = useState(false);
+
+  // Three independent reasons to hold, tracked separately rather than folded
+  // into one `paused` boolean. Sharing one flag lets any of them cancel the
+  // others: moving the mouse off the block would clear a pause that a KEYBOARD
+  // user's focus had set, and the rotation would then mark the block they are
+  // focused inside `inert` — dropping their focus to the document body.
+  const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const [hidden, setHidden] = useState(false);
+  const paused = hovered || focused || hidden;
 
   // Someone who asked their device for less motion gets the primary language,
   // held. Read in an effect rather than at module scope so the server render
@@ -38,7 +47,7 @@ export default function HeroRotator({ views }: { views: HeroView[] }) {
   // A backgrounded tab should not be burning through cycles; more to the
   // point, coming back to a half-faded hero looks broken.
   useEffect(() => {
-    const onVis = () => setPaused(document.hidden);
+    const onVis = () => setHidden(document.hidden);
     document.addEventListener("visibilitychange", onVis);
     return () => document.removeEventListener("visibilitychange", onVis);
   }, []);
@@ -62,10 +71,10 @@ export default function HeroRotator({ views }: { views: HeroView[] }) {
     <div
       className="rot"
       style={{ "--fx-fade": `${FADE_MS}ms` } as React.CSSProperties}
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
-      onFocus={() => setPaused(true)}
-      onBlur={() => setPaused(false)}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onFocus={() => setFocused(true)}
+      onBlur={() => setFocused(false)}
     >
       {views.map((v, n) => {
         const on = n === active;
