@@ -15,6 +15,16 @@ export type HeroFormState = {
   script: string;
   ribbon: string;
   sub: string;
+  /**
+   * The same four lines in the other language, for the rotating hero. `lang`
+   * names the language of the primary set above; these are implicitly the
+   * other one. The hero only rotates when all four cover the primary's used
+   * fields — heroAlt enforces that, not this module.
+   */
+  titleAlt: string;
+  scriptAlt: string;
+  ribbonAlt: string;
+  subAlt: string;
   lang: HeroLang;
   /** Crop position 0–100 as the slider holds it, or "" for "use the default". */
   focus: string;
@@ -30,6 +40,10 @@ export const EMPTY_HERO_FORM: HeroFormState = {
   script: "",
   ribbon: "",
   sub: "",
+  titleAlt: "",
+  scriptAlt: "",
+  ribbonAlt: "",
+  subAlt: "",
   lang: "en",
   focus: "",
   bg: "",
@@ -57,6 +71,10 @@ export function heroPayloadFrom(f: HeroFormState): HeroCopy | undefined {
   const script = f.script.trim();
   const ribbon = f.ribbon.trim();
   const sub = f.sub.trim();
+  const titleAlt = f.titleAlt.trim();
+  const scriptAlt = f.scriptAlt.trim();
+  const ribbonAlt = f.ribbonAlt.trim();
+  const subAlt = f.subAlt.trim();
 
   // A crop of 0 is a real value (top of the flyer), so emptiness is tested on
   // the string, not on the number.
@@ -68,8 +86,12 @@ export function heroPayloadFrom(f: HeroFormState): HeroCopy | undefined {
   const accent = isHex(f.accent) ? f.accent.toLowerCase() : null;
   const ink = isHex(f.ink) ? f.ink.toLowerCase() : null;
 
+  // Alt copy on its own is a real edit — the admin may be adding a translation
+  // to a fiesta whose primary copy was stored before this panel existed.
   const filled =
-    startsAt || liveAt || title || script || ribbon || sub || hasFocus || bg || accent || ink;
+    startsAt || liveAt || title || script || ribbon || sub ||
+    titleAlt || scriptAlt || ribbonAlt || subAlt ||
+    hasFocus || bg || accent || ink;
   if (!filled) return undefined;
 
   return {
@@ -79,6 +101,10 @@ export function heroPayloadFrom(f: HeroFormState): HeroCopy | undefined {
     ...(script ? { script } : {}),
     ...(ribbon ? { ribbon } : {}),
     ...(sub ? { sub } : {}),
+    ...(titleAlt ? { titleAlt } : {}),
+    ...(scriptAlt ? { scriptAlt } : {}),
+    ...(ribbonAlt ? { ribbonAlt } : {}),
+    ...(subAlt ? { subAlt } : {}),
     lang: f.lang,
     ...(hasFocus ? { focus: Math.min(100, Math.max(0, Math.round(focus))) } : {}),
     ...(bg ? { bg } : {}),
