@@ -99,6 +99,24 @@ a{text-decoration:none;color:inherit}ul{list-style:none}
    centers that narrow box instead of honouring the 1200px container gutter. */
 .v8 .herofx .wrap{position:relative;z-index:2;width:100%}
 .v8 .herofx .copy{max-width:620px;padding:64px 0}
+/* The bilingual rotator stacks both language blocks in ONE grid cell. Grid
+   stacking rather than absolute positioning is load-bearing: an absolutely
+   positioned child contributes nothing to its parent's height, so the section
+   would collapse to whichever language is showing and the whole page below the
+   hero would jump every rotation. In grid both children stay in flow, so the
+   cell is always as tall as the LONGER language and nothing moves. Desktop's
+   min-height:540px would mask this; the mobile block below drops it. */
+.v8 .herofx .rot{display:grid}
+.v8 .herofx .rot > .copy{grid-area:1/1;opacity:0;transition:opacity var(--fx-fade,450ms) ease;
+    pointer-events:none}
+/* pointer-events belongs with opacity, not with [inert]: it is the fallback
+   that keeps an invisible button unclickable where inert is unsupported. */
+.v8 .herofx .rot > .copy.on{opacity:1;pointer-events:auto}
+/* A visitor who asked their device for less motion gets the primary language,
+   held — the component stops the timer, and this stops the fade with it. */
+@media (prefers-reduced-motion: reduce){
+  .v8 .herofx .rot > .copy{transition:none}
+}
 .v8 .herofx .when{font-family:'Fredoka',sans-serif;font-weight:600;font-size:clamp(11px,1.5vw,14px);letter-spacing:.24em;color:var(--fx-accent,var(--yel));margin-bottom:10px}
 .v8 .herofx h1{font-family:'Bangers',cursive;font-weight:400;letter-spacing:.02em;line-height:.92;
     font-size:clamp(40px,7vw,84px);color:var(--fx-ink,#f7ecd4);margin:0}

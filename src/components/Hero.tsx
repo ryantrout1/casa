@@ -1,18 +1,20 @@
 import {
   getHeroFiesta,
-  heroWhen,
   heroFocusCss,
   heroStyleVars,
   type Flyer,
-  type HeroWhen,
 } from "@/lib/fiestas";
+import { heroViews, type HeroView } from "@/lib/heroViews";
+import HeroRotator from "./HeroRotator";
 
 // Fiesta takeover. Renders only when a dated hero fiesta carries copy — the
 // crop is deliberately below the flyer's own title block, so the artwork shows
 // and its baked-in type does not fight the live headline.
-function FiestaHero({ hero, when }: { hero: Flyer; when: HeroWhen }) {
-  const line = [`${when.day} ${when.date}`, when.time].filter(Boolean).join(" · ");
-
+//
+// The copy block itself is HeroRotator's, because it may alternate between
+// languages. Everything around it — the section, the artwork, the colours — is
+// the same for every language and stays here on the server.
+function FiestaHero({ hero, views }: { hero: Flyer; views: HeroView[] }) {
   return (
     <section
       className="herofx sec"
@@ -21,26 +23,7 @@ function FiestaHero({ hero, when }: { hero: Flyer; when: HeroWhen }) {
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img className="art" src={hero.src} alt={hero.alt || hero.cap || ""} />
       <div className="wrap">
-        <div className="copy">
-          <div className="when">{line}</div>
-          <h1>{hero.heroTitle}</h1>
-          {hero.heroScript ? <div className="scr">{hero.heroScript}</div> : null}
-          {hero.heroRibbon ? <div className="ribbon">{hero.heroRibbon}</div> : null}
-          {hero.heroSub ? <div className="sub">{hero.heroSub}</div> : null}
-          <div className="ctas">
-            <a
-              className="btn btn-y"
-              href="https://www.google.com/maps/dir/?api=1&destination=424+E+Monroe+Ave%2C+Buckeye%2C+AZ+85326"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Get Directions
-            </a>
-            <a className="btn btn-ghost" href="/menu">
-              See the Menu
-            </a>
-          </div>
-        </div>
+        <HeroRotator views={views} />
       </div>
     </section>
   );
@@ -98,13 +81,15 @@ function BrandHero({ src, alt }: { src: string; alt: string }) {
 
 export default async function Hero() {
   const hero = await getHeroFiesta();
-  const when = hero ? heroWhen(hero.startsAt, hero.eventDate, hero.heroLang) : null;
+  const views = hero ? heroViews(hero) : [];
 
-  // Takeover needs all three: a live hero fiesta, a headline, and a usable
-  // date. Missing any one falls back to the brand hero rather than rendering a
-  // half-dressed takeover.
-  if (hero && hero.heroTitle && when) {
-    return <FiestaHero hero={hero} when={when} />;
+  // Takeover still needs all three: a live hero fiesta, a headline, and a
+  // usable date. heroViews returns nothing without a headline, and a null
+  // `when` is how it reports an unusable date — so this is the same guard as
+  // before, asked of the view models instead of the row. Missing any one falls
+  // back to the brand hero rather than rendering a half-dressed takeover.
+  if (hero && views.length > 0 && views[0].when) {
+    return <FiestaHero hero={hero} views={views} />;
   }
 
   return (
