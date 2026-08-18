@@ -10,6 +10,7 @@ export default async function FiestasAdmin() {
            to_char(starts_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as starts_at,
            is_hero, in_grid, on_fiestas_page, is_evergreen,
            hero_title, hero_script, hero_ribbon, hero_sub, hero_lang,
+           hero_title_alt, hero_script_alt, hero_ribbon_alt, hero_sub_alt,
            hero_focus, hero_bg, hero_accent, hero_ink,
            to_char(hero_live_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as hero_live_at
     from fiestas

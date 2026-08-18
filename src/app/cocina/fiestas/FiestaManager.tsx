@@ -5,6 +5,7 @@ import { CHANNEL_LABEL, liveSurfaces, type ChannelId, type SurfaceFlags } from "
 import { heroWhen, toPhoenixFields } from "@/lib/heroDates";
 import { utcToPhoenixLocalInput } from "@/lib/schedule";
 import type { HeroLang } from "@/lib/publish";
+import { heroBlocks, otherLang } from "@/lib/heroAlt";
 
 export type FiestaAdminRow = {
   id: string;
@@ -20,6 +21,10 @@ export type FiestaAdminRow = {
   hero_script: string | null;
   hero_ribbon: string | null;
   hero_sub: string | null;
+  hero_title_alt: string | null;
+  hero_script_alt: string | null;
+  hero_ribbon_alt: string | null;
+  hero_sub_alt: string | null;
   hero_lang: HeroLang;
   hero_focus: number | null;
   hero_live_at: string | null;
@@ -36,6 +41,10 @@ type HeroDraft = {
   heroScript: string;
   heroRibbon: string;
   heroSub: string;
+  heroTitleAlt: string;
+  heroScriptAlt: string;
+  heroRibbonAlt: string;
+  heroSubAlt: string;
   heroLang: HeroLang;
   heroFocus: string;
   heroLiveLocal: string;
@@ -53,6 +62,10 @@ function draftOf(r: FiestaAdminRow): HeroDraft {
     heroScript: r.hero_script ?? "",
     heroRibbon: r.hero_ribbon ?? "",
     heroSub: r.hero_sub ?? "",
+    heroTitleAlt: r.hero_title_alt ?? "",
+    heroScriptAlt: r.hero_script_alt ?? "",
+    heroRibbonAlt: r.hero_ribbon_alt ?? "",
+    heroSubAlt: r.hero_sub_alt ?? "",
     heroLang: r.hero_lang,
     heroFocus: r.hero_focus === null ? "" : String(r.hero_focus),
     heroLiveLocal: r.hero_live_at ? utcToPhoenixLocalInput(r.hero_live_at) : "",
@@ -60,6 +73,70 @@ function draftOf(r: FiestaAdminRow): HeroDraft {
     heroAccent: r.hero_accent ?? "",
     heroInk: r.hero_ink ?? "",
   };
+}
+
+const LANG_NAME: Record<HeroLang, string> = { en: "English", es: "Spanish" };
+
+// The admin's draft, in the shape heroAlt reasons about. Blank is absent —
+// the same rule the hero itself applies, so the badge below cannot disagree
+// with what the homepage will do.
+function sourceOf(d: HeroDraft) {
+  const v = (x: string) => (x.trim() === "" ? null : x.trim());
+  return {
+    heroLang: d.heroLang,
+    heroTitle: v(d.heroTitle),
+    heroScript: v(d.heroScript),
+    heroRibbon: v(d.heroRibbon),
+    heroSub: v(d.heroSub),
+    heroTitleAlt: v(d.heroTitleAlt),
+    heroScriptAlt: v(d.heroScriptAlt),
+    heroRibbonAlt: v(d.heroRibbonAlt),
+    heroSubAlt: v(d.heroSubAlt),
+  };
+}
+
+// Whether this fiesta will actually rotate, named while the admin types.
+// Without it the all-or-nothing rule is invisible: you fill in three of four
+// lines, save, and the homepage silently does nothing.
+function RotationStatus({ draft }: { draft: HeroDraft }) {
+  const src = sourceOf(draft);
+  const { primary, alt } = heroBlocks(src);
+  const on = alt !== null;
+
+  const missing = !on
+    ? (["title", "script", "ribbon", "sub"] as const)
+        .filter((k) => primary[k] !== null)
+        .filter((k) => {
+          const altKey = `hero${k[0].toUpperCase()}${k.slice(1)}Alt` as keyof typeof src;
+          return src[altKey] === null;
+        })
+    : [];
+
+  const LABEL: Record<string, string> = {
+    title: "headline",
+    script: "script line",
+    ribbon: "ribbon",
+    sub: "sub line",
+  };
+
+  return (
+    <span
+      style={{
+        fontSize: 11,
+        letterSpacing: ".04em",
+        borderRadius: 999,
+        padding: "2px 9px",
+        background: on ? "#e6f7f4" : "#f1f3f7",
+        color: on ? "#0d6b60" : "#5a6b82",
+      }}
+    >
+      {on
+        ? "Will rotate"
+        : missing.length > 0
+          ? `Not rotating — needs the ${missing.map((k) => LABEL[k]).join(", ")}`
+          : "Not rotating"}
+    </span>
+  );
 }
 
 const SURFACES: ChannelId[] = ["hero", "grid", "fiestas_page"];
@@ -139,6 +216,10 @@ export default function FiestaManager({ fiestas }: { fiestas: FiestaAdminRow[] }
                 hero_script: draft.heroScript.trim() || null,
                 hero_ribbon: draft.heroRibbon.trim() || null,
                 hero_sub: draft.heroSub.trim() || null,
+                hero_title_alt: draft.heroTitleAlt.trim() || null,
+                hero_script_alt: draft.heroScriptAlt.trim() || null,
+                hero_ribbon_alt: draft.heroRibbonAlt.trim() || null,
+                hero_sub_alt: draft.heroSubAlt.trim() || null,
                 hero_lang: draft.heroLang,
                 // Mirror what the server stored, not what was typed — a bad
                 // colour or crop is dropped server-side rather than rejected.
@@ -427,6 +508,73 @@ export default function FiestaManager({ fiestas }: { fiestas: FiestaAdminRow[] }
                               onChange={(e) => setField("heroSub", e.target.value)}
                             />
                           </label>
+                          <div
+                            style={{
+                              display: "grid",
+                              gap: 8,
+                              padding: "10px 12px",
+                              border: "1px solid #dfe5ee",
+                              borderRadius: 8,
+                              background: "#fff",
+                            }}
+                          >
+                            <div
+                              style={{
+                                display: "flex",
+                                gap: 10,
+                                alignItems: "baseline",
+                                flexWrap: "wrap",
+                              }}
+                            >
+                              <strong style={{ fontSize: 13 }}>
+                                The same copy in {LANG_NAME[otherLang(draft.heroLang)]}
+                              </strong>
+                              <RotationStatus draft={draft} />
+                            </div>
+                            <p className="muted" style={{ margin: 0, fontSize: 12 }}>
+                              The hero alternates between the two every few seconds. It only
+                              rotates when every line above has a partner here — a half-filled
+                              translation would make a line vanish and come back, so it is
+                              ignored instead. Leave the event name in Spanish if that is what
+                              the flyer says.
+                            </p>
+                            <label style={{ display: "grid", gap: 4, fontSize: 13 }}>
+                              Headline
+                              <input
+                                type="text"
+                                placeholder="LOTERÍA"
+                                value={draft.heroTitleAlt}
+                                onChange={(e) => setField("heroTitleAlt", e.target.value)}
+                              />
+                            </label>
+                            <label style={{ display: "grid", gap: 4, fontSize: 13 }}>
+                              Script line
+                              <input
+                                type="text"
+                                placeholder="¡Noche de!"
+                                value={draft.heroScriptAlt}
+                                onChange={(e) => setField("heroScriptAlt", e.target.value)}
+                              />
+                            </label>
+                            <label style={{ display: "grid", gap: 4, fontSize: 13 }}>
+                              Ribbon
+                              <input
+                                type="text"
+                                placeholder="¡DIVERSIÓN! ★ ¡PREMIOS! ★ ¡COMUNIDAD!"
+                                value={draft.heroRibbonAlt}
+                                onChange={(e) => setField("heroRibbonAlt", e.target.value)}
+                              />
+                            </label>
+                            <label style={{ display: "grid", gap: 4, fontSize: 13 }}>
+                              Sub line
+                              <input
+                                type="text"
+                                placeholder="Cartas a la venta desde las 5 PM"
+                                value={draft.heroSubAlt}
+                                onChange={(e) => setField("heroSubAlt", e.target.value)}
+                              />
+                            </label>
+                          </div>
                           <label style={{ display: "grid", gap: 4, fontSize: 13 }}>
                             Takeover goes live (Arizona) — blank means immediately
                             <input

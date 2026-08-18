@@ -50,7 +50,7 @@ function Row({
   suggested,
   onChange,
 }: {
-  k: "title" | "script" | "ribbon" | "sub";
+  k: "title" | "script" | "ribbon" | "sub" | "titleAlt" | "scriptAlt" | "ribbonAlt" | "subAlt";
   placeholder: string;
   value: HeroFormState;
   suggested: Set<string>;
@@ -151,6 +151,30 @@ export default function HeroPanel({
       <Row k="script" placeholder="Script line — e.g. en Casa" value={value} suggested={suggested} onChange={onChange} />
       <Row k="ribbon" placeholder="Ribbon — e.g. UNA NOCHE DE KARAOKE MEXICANO" value={value} suggested={suggested} onChange={onChange} />
       <Row k="sub" placeholder="Sub-line — address, specials, anything the flyer doesn't already say" value={value} suggested={suggested} onChange={onChange} />
+
+      <div
+        style={{
+          display: "grid",
+          gap: 8,
+          padding: "10px 12px",
+          border: "1px solid #dfe5ee",
+          borderRadius: 8,
+        }}
+      >
+        <strong style={{ fontSize: 13 }}>
+          The same copy in {value.lang === "es" ? "English" : "Spanish"}
+        </strong>
+        <p className="hint" style={{ margin: 0 }}>
+          Optional. The hero alternates between the two every few seconds, and only when
+          every line above has a partner here — a half-filled translation is ignored rather
+          than shown, so a line never vanishes mid-rotation. You can also add this later in
+          Fiestas.
+        </p>
+        <Row k="titleAlt" placeholder="Headline — e.g. LOTERÍA" value={value} suggested={suggested} onChange={onChange} />
+        <Row k="scriptAlt" placeholder="Script line — e.g. ¡Noche de!" value={value} suggested={suggested} onChange={onChange} />
+        <Row k="ribbonAlt" placeholder="Ribbon — e.g. ¡DIVERSIÓN! ★ ¡PREMIOS!" value={value} suggested={suggested} onChange={onChange} />
+        <Row k="subAlt" placeholder="Sub-line in the other language" value={value} suggested={suggested} onChange={onChange} />
+      </div>
 
       <div>
         <label className="hint" style={{ display: "flex", gap: 10, alignItems: "center" }}>

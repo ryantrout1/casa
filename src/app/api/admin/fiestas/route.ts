@@ -86,6 +86,9 @@ export async function POST(req: Request) {
         return phoenixLocalToUtcISO(v);
       })();
 
+      // The _alt columns hold the other language for the rotating hero. Blank
+      // clears, same as the primary fields: clearing one alt line is how an
+      // admin stops a takeover rotating without touching the copy that is live.
       await sql`
         update fiestas set
           starts_at    = ${startsAt},
@@ -94,6 +97,10 @@ export async function POST(req: Request) {
           hero_script  = ${blank(body.heroScript)},
           hero_ribbon  = ${blank(body.heroRibbon)},
           hero_sub     = ${blank(body.heroSub)},
+          hero_title_alt  = ${blank(body.heroTitleAlt)},
+          hero_script_alt = ${blank(body.heroScriptAlt)},
+          hero_ribbon_alt = ${blank(body.heroRibbonAlt)},
+          hero_sub_alt    = ${blank(body.heroSubAlt)},
           hero_lang    = ${lang},
           hero_focus   = ${focus},
           hero_live_at = ${heroLiveAt},
