@@ -289,9 +289,16 @@ a{text-decoration:none;color:inherit}ul{list-style:none}
 .v8 .navtog:checked ~ .hamb::before{content:"\2715"}
 .v8 .hero .grid, .v8 .about .grid, .v8 .find .grid{grid-template-columns:1fr!important}
 .v8 .herofx{min-height:0;flex-direction:column-reverse;align-items:stretch}
-.v8 .herofx .art{position:relative;width:100%;height:240px;object-position:center 55%;
-    -webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 58%);
-    mask-image:linear-gradient(to bottom,transparent 0,#000 58%)}
+/* Mobile honours the row's hero_focus exactly as desktop does. Hardcoding a
+   position here made the admin's crop slider silently do nothing on phones —
+   every flyer got 55%, which on a poster whose title sits up top means the
+   title is the part that gets cropped away. The fallback stays 55% for rows
+   that never set a focus. The mask reaches full opacity early so the crop the
+   admin chose is actually legible rather than faded into the copy above. */
+.v8 .herofx .art{position:relative;width:100%;height:240px;
+    object-position:var(--fx-art-pos,center 55%);
+    -webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 22%);
+    mask-image:linear-gradient(to bottom,transparent 0,#000 22%)}
 .v8 .herofx .copy{padding:22px 0 46px;max-width:none}
 .v8 .wgrid, .v8 .fcards, .v8 .rgrid{grid-template-columns:1fr 1fr!important}
 .v8 .gallery{grid-template-columns:repeat(2,1fr)}
