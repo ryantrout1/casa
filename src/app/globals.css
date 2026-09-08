@@ -135,16 +135,32 @@ a{text-decoration:none;color:inherit}ul{list-style:none}
   .v8 .herofx .rot > .copy{transition:none}
 }
 .v8 .herofx .when{font-family:'Fredoka',sans-serif;font-weight:600;font-size:clamp(11px,1.5vw,14px);letter-spacing:.24em;color:var(--fx-accent,var(--yel));margin-bottom:10px}
-.v8 .herofx h1{font-family:'Bangers',cursive;font-weight:400;letter-spacing:.02em;line-height:.92;
-    font-size:clamp(40px,7vw,84px);color:var(--fx-ink,#f7ecd4);margin:0}
-.v8 .herofx .scr{font-family:'Pacifico',cursive;font-size:clamp(26px,4vw,46px);color:var(--fx-accent,var(--mag));line-height:1.12;margin-top:-2px}
+/* The headline is a LABEL here, not the hero's voice. The flyer beside it shows
+   the event name in Stephanie's own lettering at full size; a second copy in
+   Bangers competing with it read as a weaker duplicate of the thing next to it.
+   Kept rather than removed so the block still carries Casa's display face, and
+   so the rotation has a headline to swap. */
+.v8 .herofx h1{font-family:'Bangers',cursive;font-weight:400;letter-spacing:.06em;line-height:1;
+    font-size:clamp(22px,2.2vw,30px);color:var(--fx-ink,#f7ecd4);margin:0}
 /* Ribbon and primary button keep Casa's teal and yellow on every fiesta. The
    flyer sets the ground and the script line; the furniture is the brand's, not
    the event's. Both carry their own baked-in text colour, so neither can be
    made unreadable by whatever the poster happens to be. */
 .v8 .herofx .ribbon{display:inline-block;background:var(--teal);color:#04342c;font-family:'Fredoka',sans-serif;font-weight:600;
     font-size:13px;letter-spacing:.14em;padding:7px 20px;margin-top:14px}
-.v8 .herofx .sub{color:var(--fx-ink,#cbbca0);opacity:var(--fx-sub-op,1);font-size:16px;margin-top:14px;line-height:1.6;max-width:460px}
+/* The sub-line now carries the display type. It holds the detail the flyer's
+   crop cuts off — showtimes, all-ages — which is the only text in this column
+   that is not already legible in the artwork, so it is the thing worth reading
+   first. Bangers wraps naturally; no separator parsing, which would be a new
+   way to get a different event wrong. */
+.v8 .herofx .sub{font-family:'Bangers',cursive;font-weight:400;letter-spacing:.02em;
+    font-size:clamp(26px,2.8vw,38px);line-height:1.08;color:var(--fx-ink,#f7ecd4);
+    opacity:var(--fx-sub-op,1);margin-top:14px;max-width:560px}
+/* Static, and deliberately outside the rotator: the street address is the same
+   in both languages and for every fiesta, so rotating it would be two DOM nodes
+   cross-fading between identical text. */
+.v8 .herofx .addr{font-family:'Mulish',sans-serif;font-size:15px;margin-top:14px;
+    color:var(--fx-ink,#cbbca0);opacity:.72}
 .v8 .herofx .ctas{display:flex;gap:12px;flex-wrap:wrap;margin-top:24px}
 .v8 .herofx .btn-y{background:var(--yel);color:#3a2a00}
 .v8 .herofx .btn-y:hover{background:#f0b400}

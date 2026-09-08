@@ -13,10 +13,15 @@ import MotifHero from "./hero/MotifHero";
 //
 // The crop is anchored to the TOP of the flyer, so the artwork shows its own
 // title lockup. The live copy block is unchanged and still carries the
-// headline, script and ribbon — which does mean the event name appears twice,
-// once in Stephanie's lettering and once in Bangers. That is a deliberate
-// call, not an oversight: an earlier revision dropped the live headline and
-// the hero lost the type treatment the rest of the site is built on.
+// headline and ribbon, but the headline is a small label rather than the
+// hero's voice: the flyer already shows the event name at full size in
+// Stephanie's lettering, so a second full-size copy read as a weaker duplicate
+// of the thing beside it. The display type goes to the sub-line instead, which
+// carries the detail the crop cuts off and is the only text here that is not
+// already visible in the artwork.
+//
+// The script line is dropped for the same reason the headline shrank. It stays
+// in the database for the email and the grid.
 //
 // The copy block itself is HeroRotator's, because it may alternate between
 // languages. Everything around it — the section, the artwork, the colours — is
@@ -30,7 +35,13 @@ function FiestaHero({ hero, views }: { hero: Flyer; views: HeroView[] }) {
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img className="art" src={hero.src} alt={hero.alt || hero.cap || ""} />
       <div className="wrap">
-        <HeroRotator views={views} />
+        <HeroRotator views={views} variant="takeover" />
+        {/* Outside the rotator on purpose. The address is identical in both
+            languages and for every fiesta, so putting it in the rotating block
+            would cross-fade two DOM nodes between the same string — and it
+            would have to be typed into every row's Spanish translation to
+            satisfy the all-or-nothing pairing rule. */}
+        <div className="addr">424 E Monroe Ave, Buckeye, AZ 85326</div>
       </div>
     </section>
   );

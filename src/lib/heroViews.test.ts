@@ -169,3 +169,49 @@ describe("heroViews — timing constants", () => {
     expect(FADE_MS).toBeLessThan(ROTATE_MS);
   });
 });
+
+// Option C moves the display type from the headline to the sub-line, which
+// makes hero_sub the largest thing in the hero rather than a muted footnote.
+// That changes what a missing translation costs: a sub-line that failed to
+// swap used to be a small inconsistency, and is now the most prominent text on
+// the page sitting in the wrong language.
+describe("heroViews — the sub-line is what rotates now", () => {
+  it("gives each language its own sub-line", () => {
+    const [en, es] = heroViews(LOTERIA());
+    expect(en.sub).toContain("First card drawn at 6 PM");
+    expect(es.sub).toContain("Primera carta a las 6 PM");
+    expect(en.sub).not.toBe(es.sub);
+  });
+
+  it("rotates the date line, headline, ribbon and sub together", () => {
+    const [en, es] = heroViews(LOTERIA());
+    // Every line the takeover renders has to have a partner, or the block
+    // would half-swap and read as a glitch rather than a translation.
+    expect(en.when).not.toBe(es.when);
+    expect(en.ribbon).not.toBe(es.ribbon);
+    expect(en.sub).not.toBe(es.sub);
+    expect(en.ctas.directions).not.toBe(es.ctas.directions);
+  });
+
+  // The Sept 9 row's exact shape: English copy, no translation at all. This is
+  // what is live, and it must keep holding still rather than rotating into a
+  // half-empty second view.
+  it("holds still when the row has no Spanish copy", () => {
+    const views = heroViews(
+      LOTERIA({
+        heroTitleAlt: null,
+        heroScriptAlt: null,
+        heroRibbonAlt: null,
+        heroSubAlt: null,
+      }),
+    );
+    expect(views).toHaveLength(1);
+    expect(views[0].lang).toBe("en");
+    expect(views[0].sub).toContain("All ages");
+  });
+
+  // The failure that matters most under option C: three of four filled in.
+  it("holds still when only the sub-line translation is missing", () => {
+    expect(heroViews(LOTERIA({ heroSubAlt: null }))).toHaveLength(1);
+  });
+});

@@ -643,11 +643,18 @@ export default function FiestaManager({ fiestas }: { fiestas: FiestaAdminRow[] }
                               onChange={(e) => setField("heroRibbon", e.target.value)}
                             />
                           </label>
+                          <p className="hint" style={{ margin: "2px 0 0" }}>
+                            The hero shows the top of the flyer, so the event name is already
+                            large and legible in the artwork. The sub line is set in Bangers
+                            beside it and is the first thing read — put what the crop cuts off
+                            there: showtimes, all ages. The street address is added
+                            automatically and does not belong here.
+                          </p>
                           <label style={{ display: "grid", gap: 4, fontSize: 13 }}>
-                            Sub line
+                            Sub line — the biggest text in the hero
                             <input
                               type="text"
-                              placeholder="Canta los éxitos de tus ídolos"
+                              placeholder="Cards on sale 5 PM · First card drawn 6 PM · All ages"
                               value={draft.heroSub}
                               onChange={(e) => setField("heroSub", e.target.value)}
                             />

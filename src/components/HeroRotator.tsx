@@ -49,6 +49,7 @@ function renderTitle(title: string, colors?: string[]) {
 export default function HeroRotator({
   views,
   titleColors,
+  variant = "full",
 }: {
   views: HeroView[];
   /**
@@ -59,6 +60,18 @@ export default function HeroRotator({
    * ignoring is the safe answer if that ever stops being true.
    */
   titleColors?: string[][];
+  /**
+   * "takeover" omits the script line. Only that one line — the headline, ribbon
+   * and sub all still render and still rotate.
+   *
+   * The flyer takeover shows the poster's own title lockup beside this block,
+   * and "Night!" in Pacifico next to "Night!" in the artwork's script read as a
+   * duplicate rather than a flourish. It stays in the database and still feeds
+   * the campaign email and the fiestas grid.
+   *
+   * Opt-in, defaulting to "full", so the motif hero is unaffected.
+   */
+  variant?: "full" | "takeover";
 }) {
   const [i, setI] = useState(0);
   const [reduced, setReduced] = useState(false);
@@ -128,7 +141,9 @@ export default function HeroRotator({
           >
             {v.when ? <div className="when">{v.when}</div> : null}
             <h1>{renderTitle(v.title, titleColors?.[n])}</h1>
-            {v.script ? <div className="scr">{v.script}</div> : null}
+            {v.script && variant === "full" ? (
+              <div className="scr">{v.script}</div>
+            ) : null}
             {v.ribbon ? <div className="ribbon">{v.ribbon}</div> : null}
             {v.sub ? <div className="sub">{v.sub}</div> : null}
             <div className="ctas">
