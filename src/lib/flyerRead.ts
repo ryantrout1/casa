@@ -41,7 +41,11 @@ export const FLYER_SCHEMA = {
     sub: {
       type: ["string", "null"],
       description:
-        "One short supporting line, usually the address. Must NOT repeat title, script, or ribbon.",
+        "The event's key details: door or start times, ticket or card times, age policy. " +
+        "This is the LARGEST line in the hero, so it must carry information a reader " +
+        "cannot get from the artwork beside it. Do NOT return the street address — the " +
+        "site already shows it. Must NOT repeat title, script, or ribbon. " +
+        "Example: 'Cards on sale 5 PM · First card drawn 6 PM · All ages'.",
     },
     caption: { type: ["string", "null"], description: "Short one-line label for a listing page" },
     alt: { type: ["string", "null"], description: "Accessibility description of the artwork" },
