@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { OWNED_SURFACES, type ChannelId } from "@/lib/publish";
 import { fromPhoenixFields, phoenixDateOf } from "@/lib/heroDates";
 import { phoenixLocalToUtcISO } from "@/lib/schedule";
+import { motifColumnsFrom } from "@/lib/heroForm";
 
 export const dynamic = "force-dynamic";
 
@@ -89,6 +90,25 @@ export async function POST(req: Request) {
       // The _alt columns hold the other language for the rotating hero. Blank
       // clears, same as the primary fields: clearing one alt line is how an
       // admin stops a takeover rotating without touching the copy that is live.
+      // The motif columns go through the same pure builder the admin form
+      // uses, called HERE rather than trusting anything the client computed —
+      // the same posture the crop and colours above already take. An unusable
+      // motif clears all four columns together rather than leaving a stale
+      // palette for the next event to inherit.
+      const motif = motifColumnsFrom({
+        motif: String(body.motif ?? ""),
+        palette: String(body.motifPalette ?? ""),
+        titleColors: String(body.motifTitleColors ?? ""),
+        cards: Array.isArray(body.motifCards) ? body.motifCards : [],
+        icons: Array.isArray(body.motifIcons) ? body.motifIcons : [],
+        bandTop: String(body.motifBandTop ?? ""),
+        bandHeight: String(body.motifBandHeight ?? ""),
+      });
+
+      // jsonb parameters are passed as JSON text and cast, so the driver
+      // cannot hydrate an array into a Postgres array literal instead.
+      const asJson = (v: unknown) => (v === null ? null : JSON.stringify(v));
+
       await sql`
         update fiestas set
           starts_at    = ${startsAt},
@@ -106,7 +126,11 @@ export async function POST(req: Request) {
           hero_live_at = ${heroLiveAt},
           hero_bg      = ${hex(body.heroBg)},
           hero_accent  = ${hex(body.heroAccent)},
-          hero_ink     = ${hex(body.heroInk)}
+          hero_ink     = ${hex(body.heroInk)},
+          hero_motif        = ${motif.motif},
+          hero_palette      = ${asJson(motif.palette)}::jsonb,
+          hero_title_colors = ${asJson(motif.titleColors)}::jsonb,
+          hero_tokens       = ${asJson(motif.tokens)}::jsonb
         where id = ${id}
       `;
 
@@ -121,6 +145,12 @@ export async function POST(req: Request) {
         heroBg: hex(body.heroBg),
         heroAccent: hex(body.heroAccent),
         heroInk: hex(body.heroInk),
+        // Echoed so the client mirrors what was STORED, not what was typed —
+        // an unusable motif is cleared here and the form must show that.
+        heroMotif: motif.motif,
+        heroPalette: motif.palette,
+        heroTitleColors: motif.titleColors,
+        heroTokens: motif.tokens,
       });
     }
 

@@ -12,6 +12,7 @@ export default async function FiestasAdmin() {
            hero_title, hero_script, hero_ribbon, hero_sub, hero_lang,
            hero_title_alt, hero_script_alt, hero_ribbon_alt, hero_sub_alt,
            hero_focus, hero_bg, hero_accent, hero_ink,
+           hero_motif, hero_palette, hero_title_colors, hero_tokens,
            to_char(hero_live_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as hero_live_at
     from fiestas
     order by featured_at desc nulls last, created_at desc

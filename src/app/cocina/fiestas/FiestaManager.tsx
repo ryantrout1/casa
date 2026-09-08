@@ -6,6 +6,20 @@ import { heroWhen, toPhoenixFields } from "@/lib/heroDates";
 import { utcToPhoenixLocalInput } from "@/lib/schedule";
 import type { HeroLang } from "@/lib/publish";
 import { heroBlocks, otherLang } from "@/lib/heroAlt";
+import {
+  formatHexList,
+  motifColumnsFrom,
+  parseHexList,
+} from "@/lib/heroForm";
+import {
+  ATTRACTION_ICONS,
+  LOTERIA_CARDS,
+  MAX_PALETTE,
+  MIN_PALETTE,
+  MOTIF_NAMES,
+  NEON_ICONS,
+  heroMotif,
+} from "@/lib/heroMotif";
 
 export type FiestaAdminRow = {
   id: string;
@@ -31,6 +45,10 @@ export type FiestaAdminRow = {
   hero_bg: string | null;
   hero_accent: string | null;
   hero_ink: string | null;
+  hero_motif: string | null;
+  hero_palette: unknown;
+  hero_title_colors: unknown;
+  hero_tokens: unknown;
 };
 
 // The editable hero fields, as the form holds them.
@@ -51,6 +69,13 @@ type HeroDraft = {
   heroBg: string;
   heroAccent: string;
   heroInk: string;
+  motif: string;
+  motifPalette: string;
+  motifTitleColors: string;
+  motifCards: string[];
+  motifIcons: string[];
+  motifBandTop: string;
+  motifBandHeight: string;
 };
 
 function draftOf(r: FiestaAdminRow): HeroDraft {
@@ -72,7 +97,33 @@ function draftOf(r: FiestaAdminRow): HeroDraft {
     heroBg: r.hero_bg ?? "",
     heroAccent: r.hero_accent ?? "",
     heroInk: r.hero_ink ?? "",
+    motif: r.hero_motif ?? "",
+    motifPalette: formatHexList(r.hero_palette),
+    motifTitleColors: formatHexList(r.hero_title_colors),
+    motifCards: tokenList(r.hero_tokens, "cards"),
+    motifIcons: tokenList(r.hero_tokens, "icons"),
+    motifBandTop: tokenNum(r.hero_tokens, "bandTop"),
+    motifBandHeight: tokenNum(r.hero_tokens, "bandHeight"),
   };
+}
+
+// hero_tokens is jsonb, so nothing about its shape is guaranteed on the way
+// out of the database. Reading it defensively here is what stops a hand-edited
+// row from throwing inside the editor.
+function tokenRecord(v: unknown): Record<string, unknown> {
+  return v !== null && typeof v === "object" && !Array.isArray(v)
+    ? (v as Record<string, unknown>)
+    : {};
+}
+
+function tokenList(v: unknown, key: string): string[] {
+  const raw = tokenRecord(v)[key];
+  return Array.isArray(raw) ? raw.filter((n): n is string => typeof n === "string") : [];
+}
+
+function tokenNum(v: unknown, key: string): string {
+  const raw = tokenRecord(v)[key];
+  return typeof raw === "number" && Number.isFinite(raw) ? String(raw) : "";
 }
 
 const LANG_NAME: Record<HeroLang, string> = { en: "English", es: "Spanish" };
@@ -135,6 +186,95 @@ function RotationStatus({ draft }: { draft: HeroDraft }) {
         : missing.length > 0
           ? `Not rotating — needs the ${missing.map((k) => LABEL[k]).join(", ")}`
           : "Not rotating"}
+    </span>
+  );
+}
+
+const MOTIF_LABEL: Record<string, string> = {
+  "": "None — use the flyer takeover",
+  loteria: "Lotería — cards",
+  patrias: "Fiestas Patrias — fireworks & seal",
+  cantina: "Cantina — string lights & neon",
+  photo_band: "Photo band — crop from the flyer",
+};
+
+const CARD_LABEL: Record<string, string> = {
+  el_sol: "El Sol",
+  la_rosa: "La Rosa",
+  la_luna: "La Luna",
+  la_mano: "La Mano",
+  el_corazon: "El Corazón",
+  la_chalupa: "La Chalupa",
+  la_sirena: "La Sirena",
+  el_gallo: "El Gallo",
+};
+
+const ICON_LABEL: Record<string, string> = {
+  music: "Live music",
+  dancers: "Folklórico",
+  chinelos: "Chinelos",
+  crown: "Crowning",
+  grito: "El Grito",
+  vendors: "Vendors",
+  food: "Food",
+  mic: "Karaoke",
+  drinks: "Drinks",
+  star: "Good vibes",
+};
+
+// Whether this motif will actually draw, named while the admin picks. Same job
+// as RotationStatus and for the same reason: heroMotif's all-or-nothing rule is
+// invisible otherwise, so you choose a motif, mistype one hex, save, and the
+// homepage silently keeps the old takeover with nothing to explain why.
+//
+// This calls the same resolver the homepage calls, through the same column
+// builder the server writes with, so the badge cannot drift from the outcome.
+function MotifStatus({ draft }: { draft: HeroDraft }) {
+  const cols = motifColumnsFrom({
+    motif: draft.motif,
+    palette: draft.motifPalette,
+    titleColors: draft.motifTitleColors,
+    cards: draft.motifCards,
+    icons: draft.motifIcons,
+    bandTop: draft.motifBandTop,
+    bandHeight: draft.motifBandHeight,
+  });
+  const plan = heroMotif({
+    heroMotif: cols.motif,
+    heroPalette: cols.palette,
+    heroTitleColors: cols.titleColors,
+    heroTokens: cols.tokens,
+    heroTitle: draft.heroTitle.trim() || null,
+  });
+  const on = plan.motif !== "none";
+
+  const why = (() => {
+    if (on) return "";
+    if (draft.motif === "") return "";
+    const pal = parseHexList(draft.motifPalette);
+    if (!pal) return " — needs 3–6 valid hex colours";
+    if (pal.length < MIN_PALETTE || pal.length > MAX_PALETTE) {
+      return ` — needs ${MIN_PALETTE}–${MAX_PALETTE} colours, has ${pal.length}`;
+    }
+    if (draft.motif === "photo_band") return " — needs a band top and height that fit in 0–100";
+    if (draft.motif === "loteria") return " — pick 2–4 cards";
+    return " — pick at least one icon";
+  })();
+
+  if (draft.motif === "") return null;
+
+  return (
+    <span
+      style={{
+        fontSize: 11,
+        letterSpacing: ".04em",
+        borderRadius: 999,
+        padding: "2px 9px",
+        background: on ? "#e6f7f4" : "#fdf0e6",
+        color: on ? "#0d6b60" : "#8a4b18",
+      }}
+    >
+      {on ? `Will draw the ${draft.motif} motif` : `Won't draw${why}`}
     </span>
   );
 }
@@ -228,6 +368,10 @@ export default function FiestaManager({ fiestas }: { fiestas: FiestaAdminRow[] }
                 hero_bg: d.heroBg ?? null,
                 hero_accent: d.heroAccent ?? null,
                 hero_ink: d.heroInk ?? null,
+                hero_motif: d.heroMotif ?? null,
+                hero_palette: d.heroPalette ?? null,
+                hero_title_colors: d.heroTitleColors ?? null,
+                hero_tokens: d.heroTokens ?? null,
               }
             : r,
         ),
@@ -651,6 +795,191 @@ export default function FiestaManager({ fiestas }: { fiestas: FiestaAdminRow[] }
                             derived from the background when blank, and always checked for
                             readability.
                           </p>
+
+                          <div
+                            style={{
+                              borderTop: "1px solid #e6e8ee",
+                              paddingTop: 14,
+                              display: "grid",
+                              gap: 10,
+                            }}
+                          >
+                            <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                              <strong style={{ fontSize: 13 }}>Motif</strong>
+                              <MotifStatus draft={draft} />
+                            </div>
+
+                            <label style={{ display: "grid", gap: 4, fontSize: 13 }}>
+                              Composition
+                              <select
+                                value={draft.motif}
+                                onChange={(e) => setField("motif", e.target.value)}
+                              >
+                                <option value="">{MOTIF_LABEL[""]}</option>
+                                {MOTIF_NAMES.map((m) => (
+                                  <option key={m} value={m}>
+                                    {MOTIF_LABEL[m]}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+
+                            {draft.motif !== "" ? (
+                              <>
+                                <label style={{ display: "grid", gap: 4, fontSize: 13 }}>
+                                  Palette — {MIN_PALETTE}–{MAX_PALETTE} hex colours, most
+                                  prominent first
+                                  <input
+                                    type="text"
+                                    value={draft.motifPalette}
+                                    onChange={(e) => setField("motifPalette", e.target.value)}
+                                    placeholder="#f7ead0, #d42b2b, #2e7d4f, #6b3fa0"
+                                  />
+                                </label>
+                                {parseHexList(draft.motifPalette) ? (
+                                  <div style={{ display: "flex", gap: 5 }}>
+                                    {parseHexList(draft.motifPalette)!.map((c, i) => (
+                                      <span
+                                        key={`${c}-${i}`}
+                                        title={c}
+                                        style={{
+                                          width: 26,
+                                          height: 20,
+                                          borderRadius: 3,
+                                          background: c,
+                                          border: "1px solid #d7dae2",
+                                        }}
+                                      />
+                                    ))}
+                                  </div>
+                                ) : null}
+
+                                <label style={{ display: "grid", gap: 4, fontSize: 13 }}>
+                                  Headline colours — one per letter, or blank to cycle the
+                                  palette
+                                  {draft.heroTitle.trim() ? (
+                                    <span className="hint" style={{ margin: 0 }}>
+                                      &ldquo;{draft.heroTitle.trim()}&rdquo; needs{" "}
+                                      {[...draft.heroTitle.normalize("NFC").trim()].length}{" "}
+                                      colours
+                                    </span>
+                                  ) : null}
+                                  <input
+                                    type="text"
+                                    value={draft.motifTitleColors}
+                                    onChange={(e) =>
+                                      setField("motifTitleColors", e.target.value)
+                                    }
+                                    placeholder="blank cycles the palette"
+                                  />
+                                </label>
+
+                                {draft.motif === "loteria" ? (
+                                  <fieldset
+                                    style={{ border: 0, padding: 0, margin: 0, fontSize: 13 }}
+                                  >
+                                    <legend style={{ padding: 0 }}>Cards — pick 2 to 4</legend>
+                                    <div
+                                      style={{ display: "flex", gap: 12, flexWrap: "wrap" }}
+                                    >
+                                      {LOTERIA_CARDS.map((c) => (
+                                        <label
+                                          key={c}
+                                          style={{ display: "flex", gap: 5, alignItems: "center" }}
+                                        >
+                                          <input
+                                            type="checkbox"
+                                            checked={draft.motifCards.includes(c)}
+                                            onChange={(e) =>
+                                              setField(
+                                                "motifCards",
+                                                e.target.checked
+                                                  ? [...draft.motifCards, c]
+                                                  : draft.motifCards.filter((x) => x !== c),
+                                              )
+                                            }
+                                          />
+                                          {CARD_LABEL[c]}
+                                        </label>
+                                      ))}
+                                    </div>
+                                  </fieldset>
+                                ) : null}
+
+                                {draft.motif === "patrias" || draft.motif === "cantina" ? (
+                                  <fieldset
+                                    style={{ border: 0, padding: 0, margin: 0, fontSize: 13 }}
+                                  >
+                                    <legend style={{ padding: 0 }}>Icons — pick 1 to 6</legend>
+                                    <div
+                                      style={{ display: "flex", gap: 12, flexWrap: "wrap" }}
+                                    >
+                                      {(draft.motif === "patrias"
+                                        ? ATTRACTION_ICONS
+                                        : NEON_ICONS
+                                      ).map((ic) => (
+                                        <label
+                                          key={ic}
+                                          style={{ display: "flex", gap: 5, alignItems: "center" }}
+                                        >
+                                          <input
+                                            type="checkbox"
+                                            checked={draft.motifIcons.includes(ic)}
+                                            onChange={(e) =>
+                                              setField(
+                                                "motifIcons",
+                                                e.target.checked
+                                                  ? [...draft.motifIcons, ic]
+                                                  : draft.motifIcons.filter((x) => x !== ic),
+                                              )
+                                            }
+                                          />
+                                          {ICON_LABEL[ic]}
+                                        </label>
+                                      ))}
+                                    </div>
+                                  </fieldset>
+                                ) : null}
+
+                                {draft.motif === "photo_band" ? (
+                                  <div
+                                    style={{ display: "flex", gap: 14, flexWrap: "wrap", fontSize: 13 }}
+                                  >
+                                    <label style={{ display: "grid", gap: 3 }}>
+                                      Band starts at %
+                                      <input
+                                        type="number"
+                                        min={0}
+                                        max={100}
+                                        value={draft.motifBandTop}
+                                        onChange={(e) => setField("motifBandTop", e.target.value)}
+                                        style={{ width: 90 }}
+                                      />
+                                    </label>
+                                    <label style={{ display: "grid", gap: 3 }}>
+                                      Band height %
+                                      <input
+                                        type="number"
+                                        min={1}
+                                        max={100}
+                                        value={draft.motifBandHeight}
+                                        onChange={(e) =>
+                                          setField("motifBandHeight", e.target.value)
+                                        }
+                                        style={{ width: 90 }}
+                                      />
+                                    </label>
+                                  </div>
+                                ) : null}
+
+                                <p className="hint" style={{ margin: 0 }}>
+                                  A motif is all-or-nothing. If the badge above says it
+                                  won&rsquo;t draw, saving clears all four motif fields and the
+                                  homepage keeps the flyer takeover.
+                                </p>
+                              </>
+                            ) : null}
+                          </div>
                           <div>
                             <button
                               type="button"

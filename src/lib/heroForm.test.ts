@@ -178,3 +178,218 @@ describe("heroPayloadFrom — the other language", () => {
     expect(parsed?.ribbonAlt).toBe("¡DIVERSIÓN!");
   });
 });
+
+// ---------------------------------------------------------------------------
+
+import {
+  EMPTY_MOTIF_DRAFT,
+  NO_MOTIF_COLUMNS,
+  formatHexList,
+  motifColumnsFrom,
+  parseHexList,
+  type MotifDraft,
+} from "./heroForm";
+import { heroMotif } from "./heroMotif";
+
+const motifDraft = (o: Partial<MotifDraft> = {}): MotifDraft => ({
+  ...EMPTY_MOTIF_DRAFT,
+  ...o,
+});
+
+const LOTERIA_DRAFT = motifDraft({
+  motif: "loteria",
+  palette: "#f7ead0, #d42b2b, #2e7d4f, #6b3fa0",
+  cards: ["el_sol", "la_rosa"],
+});
+
+describe("parseHexList", () => {
+  it("splits on commas, whitespace, or both", () => {
+    expect(parseHexList("#f7ead0,#d42b2b")).toEqual(["#f7ead0", "#d42b2b"]);
+    expect(parseHexList("#f7ead0 #d42b2b")).toEqual(["#f7ead0", "#d42b2b"]);
+    expect(parseHexList("  #f7ead0 ,  #d42b2b  ")).toEqual(["#f7ead0", "#d42b2b"]);
+  });
+
+  it("lowercases so a colour typed in caps matches one picked from a swatch", () => {
+    expect(parseHexList("#F7EAD0")).toEqual(["#f7ead0"]);
+  });
+
+  it("returns null for an empty or whitespace-only field", () => {
+    expect(parseHexList("")).toBeNull();
+    expect(parseHexList("   ")).toBeNull();
+    expect(parseHexList(" , , ")).toBeNull();
+  });
+
+  // All-or-nothing. A partially-parsed palette would draw the composition in
+  // colours the admin did not choose, with no way to tell which were dropped.
+  it("returns null when any entry is malformed, not a shorter list", () => {
+    expect(parseHexList("#f7ead0, red, #2e7d4f")).toBeNull();
+    expect(parseHexList("#f7ead0, #fff")).toBeNull();
+    expect(parseHexList("#f7ead0, f7ead0")).toBeNull();
+  });
+});
+
+describe("formatHexList", () => {
+  it("round-trips a stored palette back into the text field", () => {
+    const stored = ["#f7ead0", "#d42b2b", "#2e7d4f"];
+    expect(parseHexList(formatHexList(stored))).toEqual(stored);
+  });
+
+  it("yields an empty field for anything that is not an array of strings", () => {
+    expect(formatHexList(null)).toBe("");
+    expect(formatHexList(undefined)).toBe("");
+    expect(formatHexList("#f7ead0")).toBe("");
+    expect(formatHexList({ 0: "#f7ead0" })).toBe("");
+    expect(formatHexList([1, 2])).toBe("");
+  });
+});
+
+describe("motifColumnsFrom — clearing", () => {
+  it("clears all four columns when no motif is chosen", () => {
+    expect(motifColumnsFrom(EMPTY_MOTIF_DRAFT)).toEqual(NO_MOTIF_COLUMNS);
+  });
+
+  // Leaving a stale palette behind after switching the dropdown to "none"
+  // would mean the next motif silently inherited the previous event's colours.
+  it("clears the palette and tokens too, not just the name", () => {
+    const cols = motifColumnsFrom({ ...LOTERIA_DRAFT, motif: "" });
+    expect(cols).toEqual(NO_MOTIF_COLUMNS);
+  });
+
+  it("clears everything for a motif name outside the enum", () => {
+    expect(motifColumnsFrom({ ...LOTERIA_DRAFT, motif: "fireworks" })).toEqual(
+      NO_MOTIF_COLUMNS,
+    );
+  });
+
+  it("clears everything when the palette will not parse", () => {
+    expect(motifColumnsFrom({ ...LOTERIA_DRAFT, palette: "#f7ead0, nope" })).toEqual(
+      NO_MOTIF_COLUMNS,
+    );
+  });
+
+  // A motif with a name and a palette but no tokens can never render. Storing
+  // it would leave a row that looks configured in /cocina and does nothing on
+  // the site — the exact gap the status badge exists to close.
+  it("clears everything when no tokens can be built", () => {
+    expect(motifColumnsFrom({ ...LOTERIA_DRAFT, cards: [] })).toEqual(NO_MOTIF_COLUMNS);
+    expect(
+      motifColumnsFrom(
+        motifDraft({ motif: "photo_band", palette: LOTERIA_DRAFT.palette, bandTop: "32" }),
+      ),
+    ).toEqual(NO_MOTIF_COLUMNS);
+  });
+});
+
+describe("motifColumnsFrom — building", () => {
+  it("builds a loteria record", () => {
+    expect(motifColumnsFrom(LOTERIA_DRAFT)).toEqual({
+      motif: "loteria",
+      palette: ["#f7ead0", "#d42b2b", "#2e7d4f", "#6b3fa0"],
+      titleColors: null,
+      tokens: { motif: "loteria", cards: ["el_sol", "la_rosa"] },
+    });
+  });
+
+  it("drops unknown and duplicate card names before storing", () => {
+    const cols = motifColumnsFrom({
+      ...LOTERIA_DRAFT,
+      cards: ["el_sol", "el_dragon", "el_sol", "la_luna"],
+    });
+    expect(cols.tokens).toEqual({ motif: "loteria", cards: ["el_sol", "la_luna"] });
+  });
+
+  it("keeps icons to the set belonging to the chosen motif", () => {
+    const cols = motifColumnsFrom(
+      motifDraft({
+        motif: "cantina",
+        palette: LOTERIA_DRAFT.palette,
+        icons: ["mic", "chinelos", "drinks"],
+      }),
+    );
+    expect(cols.tokens).toEqual({ motif: "cantina", icons: ["mic", "drinks"] });
+  });
+
+  it("rounds and clamps band percentages", () => {
+    const cols = motifColumnsFrom(
+      motifDraft({
+        motif: "photo_band",
+        palette: LOTERIA_DRAFT.palette,
+        bandTop: "31.6",
+        bandHeight: "140",
+      }),
+    );
+    expect(cols.tokens).toEqual({ motif: "photo_band", bandTop: 32, bandHeight: 100 });
+  });
+
+  it("stores title colours when given, and null when blank", () => {
+    expect(motifColumnsFrom(LOTERIA_DRAFT).titleColors).toBeNull();
+    expect(
+      motifColumnsFrom({ ...LOTERIA_DRAFT, titleColors: "#111111 #222222" }).titleColors,
+    ).toEqual(["#111111", "#222222"]);
+  });
+
+  // A bad colour array has a good default (cycle the palette); a bad card name
+  // does not. So this drops to null rather than voiding the whole motif.
+  it("drops unparseable title colours without voiding the motif", () => {
+    const cols = motifColumnsFrom({ ...LOTERIA_DRAFT, titleColors: "#111111, nope" });
+    expect(cols.motif).toBe("loteria");
+    expect(cols.titleColors).toBeNull();
+  });
+});
+
+// The round-trip that matters: what the admin types must survive the column
+// builder AND heroMotif's re-validation on the way back out. These are the two
+// halves of the same guard, and a value that clears one but not the other would
+// save cleanly in /cocina and render nothing on the homepage.
+describe("motifColumnsFrom → heroMotif round-trip", () => {
+  function planFor(d: MotifDraft, heroTitle: string | null) {
+    const c = motifColumnsFrom(d);
+    return heroMotif({
+      heroMotif: c.motif,
+      heroPalette: c.palette,
+      heroTitleColors: c.titleColors,
+      heroTokens: c.tokens,
+      heroTitle,
+    });
+  }
+
+  it("a saveable loteria draft renders", () => {
+    expect(planFor(LOTERIA_DRAFT, "LOTERÍA")).toMatchObject({
+      motif: "loteria",
+      cards: ["el_sol", "la_rosa"],
+    });
+  });
+
+  // motifColumnsFrom is deliberately MORE permissive than heroMotif. It
+  // validates format — is this a hex, is this a real card name — while
+  // heroMotif validates renderability: are there 3-6 colours, are there 2-4
+  // cards. The gap is on purpose. If saving cleared a palette that was one
+  // colour short, the admin would reopen the editor to find their work gone;
+  // storing it means the badge tells them what is missing and they add one
+  // colour. Work in progress survives a save.
+  //
+  // What must NOT differ is the verdict, and the /cocina badge runs both
+  // halves so the admin always sees heroMotif's answer, not this one's.
+  it("stores a two-colour palette but does not render it", () => {
+    const d = { ...LOTERIA_DRAFT, palette: "#f7ead0, #d42b2b" };
+    expect(motifColumnsFrom(d).palette).toEqual(["#f7ead0", "#d42b2b"]);
+    expect(planFor(d, "LOTERÍA")).toEqual({ motif: "none" });
+  });
+
+  it("renders once the palette reaches three colours", () => {
+    const d = { ...LOTERIA_DRAFT, palette: "#f7ead0, #d42b2b, #2e7d4f" };
+    expect(planFor(d, "LOTERÍA")).toMatchObject({ motif: "loteria" });
+  });
+
+  // Five saved cards pass the column builder — it only filters unknown names —
+  // and are then rejected by heroMotif's 2-4 rule. Pinning it here so the
+  // /cocina badge, which runs both, is what surfaces the mismatch.
+  it("five cards save but do not render, and the badge sees it", () => {
+    const d = {
+      ...LOTERIA_DRAFT,
+      cards: ["el_sol", "la_rosa", "la_luna", "la_mano", "el_gallo"],
+    };
+    expect(motifColumnsFrom(d).tokens).not.toBeNull();
+    expect(planFor(d, "LOTERÍA")).toEqual({ motif: "none" });
+  });
+});
