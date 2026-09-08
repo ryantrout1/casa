@@ -5,7 +5,7 @@
 //
 // lib/fiestas re-exports both functions, so server-side callers are unaffected.
 
-import { AA_CONTRAST, FALLBACK_BG, contrastRatio, isHex, pickInk } from "./palette";
+import { AA_CONTRAST, AA_LARGE, FALLBACK_BG, contrastRatio, isHex, pickInk } from "./palette";
 
 // The object-position the flyer should be cropped at. Clamped and rounded here
 // rather than trusted from the row, because this value reaches the page as a
@@ -26,10 +26,10 @@ export function heroFocusCss(focus: number | null): string {
   return `center ${pct}%`;
 }
 
-// Two colours, not four. `--fx-bg` is the section ground and `--fx-ink` is the
-// text on it, derived when not stored. `--fx-accent` colours the eyebrow and
-// the script line — both TEXT on that ground, which is why it is gated on
-// contrast rather than paired with its own ink.
+// `--fx-bg` is the section ground and `--fx-ink` is the text on it, derived
+// when not stored. The accent colours TEXT on that ground, which is why it is
+// gated on contrast rather than paired with its own ink — and why it ships as
+// two variables, one per text size band.
 //
 // The ribbon and the primary button deliberately do not read any of this. They
 // stay Casa's teal and yellow on every fiesta, with their own baked-in text
@@ -61,9 +61,23 @@ export function heroStyleVars(f: {
   // An accent that cannot be read against the ground is not usable as text.
   // Dropping it lets the stylesheet fall back to the brand yellow and magenta,
   // which is a better outcome than an unreadable eyebrow.
+  //
+  // Two gates, because the takeover now sets text at two very different sizes.
+  // --fx-accent is for the 11px eyebrow and keeps WCAG's normal-text ratio.
+  // --fx-accent-lg is for the Bangers sub-line at up to 38px, which is
+  // large-scale text and whose required ratio is 3:1.
+  //
+  // The difference is not academic: Casa's Lotería flyer is red #d42b2b on
+  // cream #f5e6c8, which measures 4.08. Under one gate the flyer's own colour
+  // was discarded and the hero fell back to brand yellow at 1.34 against that
+  // ground — so a light poster lost its accent entirely and the fallback was
+  // less readable than the colour it replaced. Dark posters were never
+  // affected, which is why this only surfaced when a cream flyer went live.
   if (accent) {
     const ground = bg ?? FALLBACK_BG;
-    if (contrastRatio(accent, ground) >= AA_CONTRAST) out["--fx-accent"] = accent;
+    const ratio = contrastRatio(accent, ground);
+    if (ratio >= AA_CONTRAST) out["--fx-accent"] = accent;
+    if (ratio >= AA_LARGE) out["--fx-accent-lg"] = accent;
   }
 
   return out;

@@ -134,7 +134,13 @@ a{text-decoration:none;color:inherit}ul{list-style:none}
 @media (prefers-reduced-motion: reduce){
   .v8 .herofx .rot > .copy{transition:none}
 }
-.v8 .herofx .when{font-family:'Fredoka',sans-serif;font-weight:600;font-size:clamp(11px,1.5vw,14px);letter-spacing:.24em;color:var(--fx-accent,var(--yel));margin-bottom:10px}
+/* Brand yellow is the fallback only when nothing better exists. On a cream
+   poster it measures 1.34 against the ground, so the accent is preferred and
+   the ink is preferred over the yellow — an unreadable eyebrow is worse than
+   an off-brand one. */
+.v8 .herofx .when{font-family:'Fredoka',sans-serif;font-weight:600;font-size:clamp(11px,1.5vw,14px);
+    letter-spacing:.24em;color:var(--fx-accent,var(--fx-ink,var(--yel)));
+    opacity:.85;margin-bottom:10px}
 /* The headline is a LABEL here, not the hero's voice. The flyer beside it shows
    the event name in Stephanie's own lettering at full size; a second copy in
    Bangers competing with it read as a weaker duplicate of the thing next to it.
@@ -154,8 +160,14 @@ a{text-decoration:none;color:inherit}ul{list-style:none}
    first. Bangers wraps naturally; no separator parsing, which would be a new
    way to get a different event wrong. */
 .v8 .herofx .sub{font-family:'Bangers',cursive;font-weight:400;letter-spacing:.02em;
-    font-size:clamp(26px,2.8vw,38px);line-height:1.08;color:var(--fx-ink,#f7ecd4);
-    opacity:var(--fx-sub-op,1);margin-top:14px;max-width:560px}
+    font-size:clamp(26px,2.8vw,38px);line-height:1.08;
+    /* The flyer's own accent, gated at the large-text ratio rather than the
+       normal-text one — see heroStyleVars. Falling through to the ink would put
+       this line in the same navy as the headline above it, which is exactly how
+       the column ended up as two identical Bangers lines. --mag is the last
+       resort for a poster with no usable accent at all. */
+    color:var(--fx-accent-lg,var(--fx-ink,var(--mag)));
+    margin-top:14px;max-width:560px}
 /* Static, and deliberately outside the rotator: the street address is the same
    in both languages and for every fiesta, so rotating it would be two DOM nodes
    cross-fading between identical text. */

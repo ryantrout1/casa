@@ -105,3 +105,51 @@ describe("heroStyleVars", () => {
     expect(v["--fx-accent"]).toBe("#ffbf1f");
   });
 });
+
+// The flyer's accent was being thrown away on light posters.
+//
+// heroStyleVars gates the accent at AA_CONTRAST (4.5:1), which is correct for
+// the 11px eyebrow. But the takeover's largest line is now Bangers at up to
+// 38px, and WCAG's threshold for large text is 3:1. Casa's Lotería flyer is
+// red #d42b2b on cream #f5e6c8 — 4.08 — so the accent was dropped entirely and
+// the hero fell back to brand yellow, which is 1.34 on that ground and
+// effectively invisible.
+//
+// This is specific to LIGHT posters. The dark flyers' accents clear 4.5
+// comfortably and were never affected, which is why the bug only showed up
+// once a cream poster reached the hero.
+describe("heroStyleVars — a display-size accent for light posters", () => {
+  const CREAM_LOTERIA = { heroBg: "#f5e6c8", heroAccent: "#d42b2b", heroInk: null };
+  const DARK_PALOMAZO = { heroBg: "#1a0d07", heroAccent: "#e8334a", heroInk: null };
+
+  it("keeps the flyer's accent for display type where the strict gate drops it", () => {
+    const v = heroStyleVars(CREAM_LOTERIA);
+    expect(v["--fx-accent"]).toBeUndefined();
+    expect(v["--fx-accent-lg"]).toBe("#d42b2b");
+  });
+
+  it("sets both when the accent clears the strict gate too", () => {
+    const v = heroStyleVars(DARK_PALOMAZO);
+    expect(v["--fx-accent"]).toBe("#e8334a");
+    expect(v["--fx-accent-lg"]).toBe("#e8334a");
+  });
+
+  // The looser gate is looser, not absent. An accent that cannot be read at
+  // any size still has to go, or the biggest line on the page becomes the
+  // least legible one.
+  it("still drops an accent that fails even at display size", () => {
+    const v = heroStyleVars({ heroBg: "#f5e6c8", heroAccent: "#f0e2c4", heroInk: null });
+    expect(v["--fx-accent"]).toBeUndefined();
+    expect(v["--fx-accent-lg"]).toBeUndefined();
+  });
+
+  it("sets neither when the row has no accent", () => {
+    const v = heroStyleVars({ heroBg: "#f5e6c8", heroAccent: null, heroInk: null });
+    expect(v["--fx-accent-lg"]).toBeUndefined();
+  });
+
+  it("measures against the fallback ground when the row has no background", () => {
+    const v = heroStyleVars({ heroBg: null, heroAccent: "#ffbf1f", heroInk: null });
+    expect(v["--fx-accent-lg"]).toBe("#ffbf1f");
+  });
+});
