@@ -6,6 +6,7 @@ import type { HeroView } from "@/lib/heroViews";
 import HeroRotator from "../HeroRotator";
 import PapelPicado from "./PapelPicado";
 import LoteriaCards from "./motifs/LoteriaCards";
+import { AttractionIcons, FireworkBurst } from "./motifs/PatriasArt";
 
 // The motif takeover. Where FiestaHero crops the flyer and lays type beside it,
 // this draws the composition natively from the row's palette and never renders
@@ -62,6 +63,8 @@ export default function MotifHero({
       <div className="mo-body">
         {plan.motif === "loteria" ? (
           <LoteriaCards cards={splitCards(plan.cards).left} side="l" />
+        ) : plan.motif === "patrias" ? (
+          <FireworkBurst color={plan.palette[1]} side="l" />
         ) : (
           <div className="side" />
         )}
@@ -72,10 +75,16 @@ export default function MotifHero({
 
         {plan.motif === "loteria" ? (
           <LoteriaCards cards={splitCards(plan.cards).right} side="r" />
+        ) : plan.motif === "patrias" ? (
+          <FireworkBurst color={plan.palette[2] ?? plan.palette[1]} side="r" />
         ) : (
           <div className="side" />
         )}
       </div>
+
+      {plan.motif === "patrias" ? (
+        <AttractionIcons icons={plan.icons} plan={plan} />
+      ) : null}
 
       {plan.motif === "photo_band" ? (
         <div className="band">

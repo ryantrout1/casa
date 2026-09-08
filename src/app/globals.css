@@ -155,6 +155,18 @@ a{text-decoration:none;color:inherit}ul{list-style:none}
     gap:clamp(4px,1vw,12px);padding:14px 0}
 .v8 .motifhero .card{display:block;width:clamp(76px,8.6vw,122px);height:auto;
     filter:drop-shadow(0 8px 16px rgba(0,0,0,.18))}
+/* patrias: a burst on each flank, and a row of attraction badges under the
+   copy. The badge row is full-width rather than a fourth grid column — it names
+   what is happening at the event, so it belongs under the headline, not beside
+   it. */
+.v8 .motifhero .burst{display:block;width:clamp(60px,7vw,104px);height:auto}
+.v8 .motifhero .mo-icons{display:flex;justify-content:center;align-items:flex-start;
+    flex-wrap:wrap;gap:clamp(10px,2.4vw,30px);width:100%;padding:6px 16px 0}
+.v8 .motifhero .mo-icon{display:flex;flex-direction:column;align-items:center;gap:6px;
+    width:clamp(64px,8vw,92px)}
+.v8 .motifhero .mo-icon svg{display:block;width:100%;height:auto}
+.v8 .motifhero .mo-icon span{font-family:'Fredoka',sans-serif;font-weight:600;
+    font-size:clamp(10px,1.15vw,13px);text-align:center;line-height:1.25;opacity:.9}
 .v8 .motifhero .wrap{position:relative;z-index:2;width:100%}
 .v8 .motifhero .copy{max-width:760px;margin:0 auto;text-align:center;padding:34px 0 0}
 /* Same one-grid-cell stacking .herofx uses, and load-bearing for the same
@@ -384,6 +396,11 @@ a{text-decoration:none;color:inherit}ul{list-style:none}
    admin picked two, three or four. */
 .v8 .motifhero .side .card:nth-child(n+2){display:none}
 .v8 .motifhero .card{width:clamp(96px,30vw,128px)}
+.v8 .motifhero .burst{width:clamp(52px,16vw,76px)}
+/* The badge row comes after both flanks in DOM order, so it needs an explicit
+   order to sit under the copy rather than after the fireworks. */
+.v8 .motifhero .mo-icons{order:3;gap:12px 16px;padding-top:16px}
+.v8 .motifhero .mo-icon{width:clamp(58px,20vw,78px)}
 .v8 .motifhero .ctas{flex-direction:column;align-items:stretch}
 .v8 .motifhero .ctas .btn{text-align:center}
 .v8 .motifhero .band{margin-top:14px}

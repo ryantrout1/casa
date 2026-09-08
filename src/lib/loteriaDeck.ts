@@ -1,4 +1,5 @@
 import type { LoteriaCard } from "./heroMotif";
+import type { Shape } from "./motifShapes";
 
 // The lotería deck, described rather than drawn.
 //
@@ -19,10 +20,9 @@ import type { LoteriaCard } from "./heroMotif";
 // at 110px wide on a phone. If a shape needs more than a handful of segments,
 // it is overshooting — a recognisable silhouette beats an accurate contour.
 
-export type Shape =
-  | { k: "circle"; cx: number; cy: number; r: number; fill: string }
-  | { k: "rect"; x: number; y: number; w: number; h: number; rx?: number; fill: string }
-  | { k: "path"; d: string; fill?: string; stroke?: string; w?: number };
+// Re-exported so existing importers keep working; the definition now lives in
+// motifShapes, shared with every other motif's art.
+export type { Shape };
 
 export type CardArt = {
   /** The number printed in the card's top-left corner. */
