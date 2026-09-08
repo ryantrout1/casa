@@ -44,6 +44,18 @@ export type FiestaRow = {
   hero_script_alt: string | null;
   hero_ribbon_alt: string | null;
   hero_sub_alt: string | null;
+  // Which composition the hero draws, and the parts it draws it from. All four
+  // are null on every row published before motifs existed, and lib/heroMotif
+  // resolves that to "none" — so adding them changes nothing for those rows.
+  //
+  // The three jsonb columns are deliberately typed `unknown` rather than to
+  // their resolved shapes. Postgres guarantees only that they parse as JSON;
+  // claiming string[] here would be the type system asserting something the
+  // database does not enforce. heroMotif is where they earn a real type.
+  hero_motif: string | null;
+  hero_palette: unknown;
+  hero_title_colors: unknown;
+  hero_tokens: unknown;
   sort_key: number;
 };
 
@@ -76,6 +88,10 @@ export type Flyer = {
   heroScriptAlt: string | null;
   heroRibbonAlt: string | null;
   heroSubAlt: string | null;
+  heroMotif: string | null;
+  heroPalette: unknown;
+  heroTitleColors: unknown;
+  heroTokens: unknown;
 };
 
 // The homepage grid shows at most this many fiestas.
@@ -142,6 +158,10 @@ export function toFlyer(f: FiestaRow): Flyer {
     heroScriptAlt: f.hero_script_alt,
     heroRibbonAlt: f.hero_ribbon_alt,
     heroSubAlt: f.hero_sub_alt,
+    heroMotif: f.hero_motif,
+    heroPalette: f.hero_palette,
+    heroTitleColors: f.hero_title_colors,
+    heroTokens: f.hero_tokens,
   };
 }
 
@@ -227,6 +247,10 @@ async function loadFiestas(): Promise<FiestaRow[]> {
         hero_script_alt,
         hero_ribbon_alt,
         hero_sub_alt,
+        hero_motif,
+        hero_palette,
+        hero_title_colors,
+        hero_tokens,
         extract(epoch from coalesce(featured_at, created_at))::float8 as sort_key
       from fiestas
     `) as FiestaRow[];

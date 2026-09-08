@@ -211,3 +211,40 @@ describe("extractPalette", () => {
     expect(a).toEqual(b);
   });
 });
+
+// Real grounds, not synthetic ones. Every ground below was sampled from a
+// flyer Stephanie actually shipped, so these pin the contrast floor against
+// the range of posters the hero has to survive — a bright cream Lotería, a
+// near-black cantina, a saturated navy, an aged parchment. The adversarial
+// case is the one that matters most: a mid-tone ground has poor contrast with
+// BOTH brand inks, and pickInk has to fall through to black or white rather
+// than shipping an unreadable headline.
+describe("pickInk — real flyer grounds", () => {
+  const GROUNDS: Array<[string, string]> = [
+    ["Lotería Night, Sept 9 — cream", "#f5e6c8"],
+    ["Lotería Night, July 30 — navy", "#1b2a4a"],
+    ["El Palomazo — cantina black", "#1a0d07"],
+    ["Las Fiestas Patrias — aged parchment", "#f2e6c9"],
+    ["adversarial — mid grey", "#808080"],
+    ["adversarial — mid olive", "#7a7a4a"],
+  ];
+
+  it.each(GROUNDS)("%s yields ink clearing AA", (_label, bg) => {
+    const ink = pickInk(bg);
+    expect(isHex(ink)).toBe(true);
+    expect(contrastRatio(ink, bg)).toBeGreaterThanOrEqual(AA);
+  });
+
+  it("prefers a brand ink where one clears AA", () => {
+    expect(pickInk("#1a0d07")).toBe(CREAM);
+    expect(pickInk("#f5e6c8")).toBe(NAVY);
+  });
+
+  it("falls through to black or white on a mid-tone ground", () => {
+    // Neither cream nor navy clears 4.5:1 against mid grey; the fallback is
+    // what keeps the headline readable at the cost of being off-brand.
+    expect(contrastRatio(CREAM, "#808080")).toBeLessThan(AA);
+    expect(contrastRatio(NAVY, "#808080")).toBeLessThan(AA);
+    expect(["#ffffff", "#000000"]).toContain(pickInk("#808080"));
+  });
+});

@@ -43,6 +43,13 @@ function row(overrides: Partial<FiestaRow> = {}): FiestaRow {
     hero_lang: "en",
     hero_focus: null,
     hero_live_at: null,
+    // The opted-out default, matching all 17 production rows. lib/heroMotif
+    // resolves this to "none", so the factory keeps describing a fiesta with
+    // no motif unless a test asks for one.
+    hero_motif: null,
+    hero_palette: null,
+    hero_title_colors: null,
+    hero_tokens: null,
     hero_bg: null,
     hero_accent: null,
     hero_ink: null,
