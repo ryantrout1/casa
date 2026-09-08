@@ -35,13 +35,11 @@ function FiestaHero({ hero, views }: { hero: Flyer; views: HeroView[] }) {
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img className="art" src={hero.src} alt={hero.alt || hero.cap || ""} />
       <div className="wrap">
+        {/* No street address here. Get Directions already does the wayfinding,
+            and Find Us and the footer both carry it — a third copy in the hero
+            was redundant even before hero_sub happened to hold the address too,
+            which put it on screen twice. */}
         <HeroRotator views={views} variant="takeover" />
-        {/* Outside the rotator on purpose. The address is identical in both
-            languages and for every fiesta, so putting it in the rotating block
-            would cross-fade two DOM nodes between the same string — and it
-            would have to be typed into every row's Spanish translation to
-            satisfy the all-or-nothing pairing rule. */}
-        <div className="addr">424 E Monroe Ave, Buckeye, AZ 85326</div>
       </div>
     </section>
   );

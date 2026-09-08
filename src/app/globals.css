@@ -168,11 +168,7 @@ a{text-decoration:none;color:inherit}ul{list-style:none}
        resort for a poster with no usable accent at all. */
     color:var(--fx-accent-lg,var(--fx-ink,var(--mag)));
     margin-top:14px;max-width:560px}
-/* Static, and deliberately outside the rotator: the street address is the same
-   in both languages and for every fiesta, so rotating it would be two DOM nodes
-   cross-fading between identical text. */
-.v8 .herofx .addr{font-family:'Mulish',sans-serif;font-size:15px;margin-top:14px;
-    color:var(--fx-ink,#cbbca0);opacity:.72}
+
 .v8 .herofx .ctas{display:flex;gap:12px;flex-wrap:wrap;margin-top:24px}
 .v8 .herofx .btn-y{background:var(--yel);color:#3a2a00}
 .v8 .herofx .btn-y:hover{background:#f0b400}
