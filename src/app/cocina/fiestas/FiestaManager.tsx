@@ -643,11 +643,18 @@ export default function FiestaManager({ fiestas }: { fiestas: FiestaAdminRow[] }
                               onChange={(e) => setField("heroRibbon", e.target.value)}
                             />
                           </label>
+                          <p className="hint" style={{ margin: "2px 0 0" }}>
+                            The hero shows the top of the flyer, so the headline, script line
+                            and ribbon are already legible in the artwork and are not printed
+                            again beside it. They are still used by the campaign email and the
+                            fiestas grid. Put the details the crop cuts off — showtimes, all
+                            ages — in the sub line below.
+                          </p>
                           <label style={{ display: "grid", gap: 4, fontSize: 13 }}>
-                            Sub line
+                            Sub line — what the flyer crop cuts off
                             <input
                               type="text"
-                              placeholder="Canta los éxitos de tus ídolos"
+                              placeholder="Cards 5 PM · First card 6 PM · All ages"
                               value={draft.heroSub}
                               onChange={(e) => setField("heroSub", e.target.value)}
                             />

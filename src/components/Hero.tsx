@@ -9,9 +9,12 @@ import { heroMotif } from "@/lib/heroMotif";
 import HeroRotator from "./HeroRotator";
 import MotifHero from "./hero/MotifHero";
 
-// Fiesta takeover. Renders only when a dated hero fiesta carries copy — the
-// crop is deliberately below the flyer's own title block, so the artwork shows
-// and its baked-in type does not fight the live headline.
+// Fiesta takeover. Renders only when a dated hero fiesta carries copy.
+//
+// The crop is now anchored to the TOP of the flyer rather than below its title
+// block, so the artwork shows its own lockup — and the live copy drops to a
+// caption: date line, detail line, buttons. Repeating a headline beside a
+// legible headline was the whole reason this hero read as duplicated.
 //
 // The copy block itself is HeroRotator's, because it may alternate between
 // languages. Everything around it — the section, the artwork, the colours — is
@@ -25,7 +28,9 @@ function FiestaHero({ hero, views }: { hero: Flyer; views: HeroView[] }) {
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img className="art" src={hero.src} alt={hero.alt || hero.cap || ""} />
       <div className="wrap">
-        <HeroRotator views={views} />
+        {/* caption, not full: the flyer now shows its own title lockup, so the
+            headline, script and ribbon would be printed twice. */}
+        <HeroRotator views={views} variant="caption" />
       </div>
     </section>
   );
