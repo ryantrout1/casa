@@ -10,8 +10,18 @@ import { AA_CONTRAST, FALLBACK_BG, contrastRatio, isHex, pickInk } from "./palet
 // The object-position the flyer should be cropped at. Clamped and rounded here
 // rather than trusted from the row, because this value reaches the page as a
 // custom property — the DB CHECK is the other half of the same guard.
+//
+// Null means the TOP of the poster, not its middle. Every flyer Casa has run is
+// composed top-down — sponsor or presenter, then the title lockup, then details
+// — so the top is the half worth showing when nobody has chosen a crop.
+//
+// This default has to live here rather than in the stylesheet. globals.css
+// writes `var(--fx-art-pos, center 0%)`, but that fallback is unreachable:
+// Hero.tsx sets --fx-art-pos from this function on every render, so the custom
+// property is never unset and the CSS default never fires. Changing it there
+// alone did nothing at all.
 export function heroFocusCss(focus: number | null): string {
-  if (focus === null || !Number.isFinite(focus)) return "center 50%";
+  if (focus === null || !Number.isFinite(focus)) return "center 0%";
   const pct = Math.min(100, Math.max(0, Math.round(focus)));
   return `center ${pct}%`;
 }

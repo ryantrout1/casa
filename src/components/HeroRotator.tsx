@@ -49,19 +49,8 @@ function renderTitle(title: string, colors?: string[]) {
 export default function HeroRotator({
   views,
   titleColors,
-  variant = "full",
 }: {
   views: HeroView[];
-  /**
-   * "full" renders the whole copy block. "caption" drops the headline, script
-   * and ribbon — used by the flyer takeover, where all three are legible in the
-   * artwork itself and repeating them in HTML makes the page look like a
-   * fallback for an image that already loaded.
-   *
-   * They stay in the database either way: the campaign email, the fiestas grid
-   * and the page title all still read them.
-   */
-  variant?: "full" | "caption";
   /**
    * One colour array per view, for the motif hero's multicolour headline.
    * Omitted by the flyer takeover, which paints the whole headline in
@@ -138,13 +127,9 @@ export default function HeroRotator({
             inert={!on}
           >
             {v.when ? <div className="when">{v.when}</div> : null}
-            {variant === "full" ? (
-              <>
-                <h1>{renderTitle(v.title, titleColors?.[n])}</h1>
-                {v.script ? <div className="scr">{v.script}</div> : null}
-                {v.ribbon ? <div className="ribbon">{v.ribbon}</div> : null}
-              </>
-            ) : null}
+            <h1>{renderTitle(v.title, titleColors?.[n])}</h1>
+            {v.script ? <div className="scr">{v.script}</div> : null}
+            {v.ribbon ? <div className="ribbon">{v.ribbon}</div> : null}
             {v.sub ? <div className="sub">{v.sub}</div> : null}
             <div className="ctas">
               <a

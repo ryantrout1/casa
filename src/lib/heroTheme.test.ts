@@ -13,8 +13,13 @@ const vars = (o: Partial<Parameters<typeof heroStyleVars>[0]> = {}) =>
   heroStyleVars({ heroBg: null, heroAccent: null, heroInk: null, ...o });
 
 describe("heroFocusCss", () => {
-  it("defaults to 50% when unset", () => {
-    expect(heroFocusCss(null)).toBe("center 50%");
+  // Top, not middle. Casa's flyers are composed top-down, so an unset crop
+  // should frame the title lockup rather than a band through the poster's
+  // centre. The CSS carries the same value as a fallback, but that fallback is
+  // unreachable — Hero.tsx always sets the custom property from here — so this
+  // is the only place the default actually takes effect.
+  it("defaults to the top of the flyer when unset", () => {
+    expect(heroFocusCss(null)).toBe("center 0%");
   });
 
   it("uses the stored value", () => {
@@ -33,7 +38,7 @@ describe("heroFocusCss", () => {
   });
 
   it("falls back to 50% for NaN", () => {
-    expect(heroFocusCss(Number.NaN)).toBe("center 50%");
+    expect(heroFocusCss(Number.NaN)).toBe("center 0%");
   });
 });
 
