@@ -19,7 +19,47 @@ import { ROTATE_MS, FADE_MS, type HeroView } from "@/lib/heroViews";
 const DIRECTIONS_HREF =
   "https://www.google.com/maps/dir/?api=1&destination=424+E+Monroe+Ave%2C+Buckeye%2C+AZ+85326";
 
-export default function HeroRotator({ views }: { views: HeroView[] }) {
+/**
+ * The headline, painted one colour per letter when the motif supplies them.
+ *
+ * Falls back to a plain string whenever the colours are absent or disagree
+ * with the title's length. That fallback is the whole safety story here: the
+ * flyer takeover passes nothing and is unaffected, and a mismatch renders a
+ * correct single-colour headline rather than a word missing its tail.
+ *
+ * Split on NFC code points, matching how heroMotif counted them — splitting
+ * the two ways differently is exactly how the accent would end up wearing the
+ * colour meant for the letter after it.
+ *
+ * Every code point gets a span, spaces included. That is safe rather than
+ * ideal: the h1's text content is byte-identical to the plain-string version,
+ * so its accessible name does not change and assistive technology still reads
+ * whole words. A coloured space renders nothing either way.
+ */
+function renderTitle(title: string, colors?: string[]) {
+  const chars = [...title.normalize("NFC")];
+  if (!colors || colors.length !== chars.length) return title;
+  return chars.map((ch, i) => (
+    <span key={i} style={{ color: colors[i] }}>
+      {ch}
+    </span>
+  ));
+}
+
+export default function HeroRotator({
+  views,
+  titleColors,
+}: {
+  views: HeroView[];
+  /**
+   * One colour array per view, for the motif hero's multicolour headline.
+   * Omitted by the flyer takeover, which paints the whole headline in
+   * --fx-ink. An array whose length disagrees with its title is ignored
+   * rather than applied partway — heroMotif guarantees agreement, and
+   * ignoring is the safe answer if that ever stops being true.
+   */
+  titleColors?: string[][];
+}) {
   const [i, setI] = useState(0);
   const [reduced, setReduced] = useState(false);
 
@@ -87,7 +127,7 @@ export default function HeroRotator({ views }: { views: HeroView[] }) {
             inert={!on}
           >
             {v.when ? <div className="when">{v.when}</div> : null}
-            <h1>{v.title}</h1>
+            <h1>{renderTitle(v.title, titleColors?.[n])}</h1>
             {v.script ? <div className="scr">{v.script}</div> : null}
             {v.ribbon ? <div className="ribbon">{v.ribbon}</div> : null}
             {v.sub ? <div className="sub">{v.sub}</div> : null}

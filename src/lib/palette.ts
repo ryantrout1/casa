@@ -26,6 +26,22 @@ export type Palette = {
 /** WCAG AA for normal-size text. */
 export const AA_CONTRAST = 4.5;
 
+/**
+ * WCAG AA for large-scale text — 18.66px bold or 24px regular and above.
+ *
+ * The hero headline is Bangers at clamp(40px, 7vw, 84px), which clears that bar
+ * at every viewport, so 3:1 is the ratio the spec actually asks of it. The
+ * distinction is load-bearing rather than pedantic: Casa's red (4.22 against
+ * cream), green (4.24) and magenta (3.74 against navy) all sit in the gap
+ * between the two thresholds. Gating the headline at 4.5 would repaint most of
+ * a flyer's own colours as a single ink and flatten the multicolour lockup the
+ * motif exists to reproduce — while giving a reader nothing the spec requires.
+ *
+ * Body copy and the sub-line keep AA_CONTRAST. Only the display headline
+ * qualifies for this one.
+ */
+export const AA_LARGE = 3;
+
 // The two ink colours the v8 system already uses on light and dark grounds.
 export const CREAM = "#f7ecd4";
 export const NAVY = "#1f3a63";

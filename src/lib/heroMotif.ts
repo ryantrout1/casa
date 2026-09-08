@@ -1,4 +1,4 @@
-import { isHex } from "./palette";
+import { AA_LARGE, contrastRatio, isHex, pickInk } from "./palette";
 
 // One fiesta row becomes the motif composition the hero should draw, or
 // nothing. Pure and client-safe, like heroAlt, heroDates, heroViews and
@@ -67,11 +67,47 @@ export const MAX_CARDS = 4;
 export const MIN_ICONS = 1;
 export const MAX_ICONS = 6;
 
+/**
+ * A resolved composition.
+ *
+ * `ground` is the colour the section is painted with — palette[0], the flyer's
+ * most prominent colour. `ink` is the readable text colour derived from it by
+ * the same pickInk the takeover already uses. Both are resolved here rather
+ * than in the component so the contrast rules stay in one tested place.
+ */
 export type MotifPlan =
-  | { motif: "loteria"; palette: string[]; titleColors: string[]; cards: LoteriaCard[] }
-  | { motif: "patrias"; palette: string[]; titleColors: string[]; icons: AttractionIcon[] }
-  | { motif: "cantina"; palette: string[]; titleColors: string[]; icons: NeonIcon[] }
-  | { motif: "photo_band"; palette: string[]; bandTop: number; bandHeight: number }
+  | {
+      motif: "loteria";
+      palette: string[];
+      ground: string;
+      ink: string;
+      titleColors: string[];
+      cards: LoteriaCard[];
+    }
+  | {
+      motif: "patrias";
+      palette: string[];
+      ground: string;
+      ink: string;
+      titleColors: string[];
+      icons: AttractionIcon[];
+    }
+  | {
+      motif: "cantina";
+      palette: string[];
+      ground: string;
+      ink: string;
+      titleColors: string[];
+      icons: NeonIcon[];
+    }
+  | {
+      motif: "photo_band";
+      palette: string[];
+      ground: string;
+      ink: string;
+      bandTop: number;
+      bandHeight: number;
+    }
   | { motif: "none" };
 
 /** The single "draw nothing" value, so callers can compare against one object shape. */
@@ -133,6 +169,39 @@ export function cyclePalette(n: number, palette: string[]): string[] {
 }
 
 /**
+ * Swap any letter colour that cannot be read against the ground for the ink.
+ *
+ * The failure this exists to stop is specific and near-certain without it:
+ * palette[0] is BOTH the ground and the first colour the cycle hands to the
+ * headline, so letter one would be painted the same colour as the surface
+ * behind it and simply vanish. Swapping rather than dropping keeps the array
+ * one-colour-per-letter, so a partly-unreadable palette degrades to a partly
+ * monochrome headline instead of a misaligned one.
+ *
+ * Same rule heroStyleVars applies to --fx-accent, applied per letter — but at
+ * AA_LARGE, because the headline is display type. See palette.ts for why the
+ * two thresholds are not interchangeable here.
+ */
+function gate(colors: string[], ground: string, ink: string): string[] {
+  return colors.map((c) => (contrastRatio(c, ground) >= AA_LARGE ? c : ink));
+}
+
+/**
+ * Per-character colours for a headline this plan did not resolve — the second
+ * language in the rotating hero, whose title is a different length.
+ *
+ * Stored title colours belong to the primary headline only, so this always
+ * cycles the palette. Callers use `plan.titleColors` for the primary and this
+ * for the alternate.
+ */
+export function letterColors(title: string | null, plan: MotifPlan): string[] {
+  if (plan.motif === "none" || plan.motif === "photo_band") return [];
+  const n = titleLength(title);
+  if (n === 0) return [];
+  return gate(cyclePalette(n, plan.palette), plan.ground, plan.ink);
+}
+
+/**
  * Per-character colours for the headline.
  *
  * Stored colours are used only when they are all valid hex AND there are
@@ -141,18 +210,24 @@ export function cyclePalette(n: number, palette: string[]): string[] {
  * both leave a headline that looks half-styled, which is worse than an
  * evenly-cycled one. Falling back is deliberate and never voids the plan:
  * unlike a bad card name, a bad colour array has a good default.
+ *
+ * Whichever source wins, every colour is then gated for contrast — a colour
+ * the admin typed by hand is no more readable than one the cycle produced.
  */
-function resolveTitleColors(v: unknown, title: string | null, palette: string[]): string[] {
+function resolveTitleColors(
+  v: unknown,
+  title: string | null,
+  palette: string[],
+  ground: string,
+  ink: string,
+): string[] {
   const n = titleLength(title);
   if (n === 0) return [];
-  if (
-    Array.isArray(v) &&
-    v.length === n &&
-    v.every((c) => typeof c === "string" && isHex(c))
-  ) {
-    return v as string[];
-  }
-  return cyclePalette(n, palette);
+  const chosen =
+    Array.isArray(v) && v.length === n && v.every((c) => typeof c === "string" && isHex(c))
+      ? (v as string[]).map((c) => c.toLowerCase())
+      : cyclePalette(n, palette);
+  return gate(chosen, ground, ink);
 }
 
 // A jsonb object, and specifically not an array — Array.isArray is the check
@@ -218,20 +293,30 @@ export function heroMotif(f: MotifSource): MotifPlan {
   // lotería cards, so a mismatch voids instead.
   if (tokens.motif !== f.heroMotif) return NO_MOTIF;
 
-  const titleColors = resolveTitleColors(f.heroTitleColors, f.heroTitle, palette);
+  // The section is painted with the flyer's most prominent colour, and the ink
+  // is derived from it by the same rule the existing takeover uses.
+  const ground = palette[0];
+  const ink = pickInk(ground);
+  const titleColors = resolveTitleColors(f.heroTitleColors, f.heroTitle, palette, ground, ink);
 
   switch (f.heroMotif) {
     case "loteria": {
       const cards = validNames(tokens.cards, LOTERIA_CARDS, MIN_CARDS, MAX_CARDS);
-      return cards ? { motif: "loteria", palette, titleColors, cards } : NO_MOTIF;
+      return cards
+        ? { motif: "loteria", palette, ground, ink, titleColors, cards }
+        : NO_MOTIF;
     }
     case "patrias": {
       const icons = validNames(tokens.icons, ATTRACTION_ICONS, MIN_ICONS, MAX_ICONS);
-      return icons ? { motif: "patrias", palette, titleColors, icons } : NO_MOTIF;
+      return icons
+        ? { motif: "patrias", palette, ground, ink, titleColors, icons }
+        : NO_MOTIF;
     }
     case "cantina": {
       const icons = validNames(tokens.icons, NEON_ICONS, MIN_ICONS, MAX_ICONS);
-      return icons ? { motif: "cantina", palette, titleColors, icons } : NO_MOTIF;
+      return icons
+        ? { motif: "cantina", palette, ground, ink, titleColors, icons }
+        : NO_MOTIF;
     }
     case "photo_band": {
       const bandTop = pct(tokens.bandTop, 0, 100);
@@ -240,7 +325,7 @@ export function heroMotif(f: MotifSource): MotifPlan {
       // A band running past the bottom edge would leave dead space under the
       // crop rather than clipping — object-position cannot reach past 100%.
       if (bandTop + bandHeight > 100) return NO_MOTIF;
-      return { motif: "photo_band", palette, bandTop, bandHeight };
+      return { motif: "photo_band", palette, ground, ink, bandTop, bandHeight };
     }
   }
 }

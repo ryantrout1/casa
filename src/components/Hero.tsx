@@ -5,7 +5,9 @@ import {
   type Flyer,
 } from "@/lib/fiestas";
 import { heroViews, type HeroView } from "@/lib/heroViews";
+import { heroMotif } from "@/lib/heroMotif";
 import HeroRotator from "./HeroRotator";
+import MotifHero from "./hero/MotifHero";
 
 // Fiesta takeover. Renders only when a dated hero fiesta carries copy — the
 // crop is deliberately below the flyer's own title block, so the artwork shows
@@ -83,12 +85,21 @@ export default async function Hero() {
   const hero = await getHeroFiesta();
   const views = hero ? heroViews(hero) : [];
 
+  // Three tiers, in order of specificity. Each falls through to the next, so
+  // adding the motif tier cannot change what any existing row renders — every
+  // row in production resolves to { motif: "none" } and lands on tier two
+  // exactly as it did before.
+  //
   // Takeover still needs all three: a live hero fiesta, a headline, and a
   // usable date. heroViews returns nothing without a headline, and a null
   // `when` is how it reports an unusable date — so this is the same guard as
   // before, asked of the view models instead of the row. Missing any one falls
   // back to the brand hero rather than rendering a half-dressed takeover.
   if (hero && views.length > 0 && views[0].when) {
+    const plan = heroMotif(hero);
+    if (plan.motif !== "none") {
+      return <MotifHero hero={hero} views={views} plan={plan} />;
+    }
     return <FiestaHero hero={hero} views={views} />;
   }
 

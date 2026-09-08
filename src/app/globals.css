@@ -133,6 +133,58 @@ a{text-decoration:none;color:inherit}ul{list-style:none}
 .v8 .herofx .btn-y:hover{background:#f0b400}
 .v8 .herofx .btn-ghost{border-color:color-mix(in srgb,var(--fx-ink,#f7ecd4) 42%,transparent);color:var(--fx-ink,#f7ecd4)}
 .v8 .herofx .btn-ghost:hover{background:rgba(247,236,212,.1)}
+/* motif takeover — the hero drawn from the flyer's palette instead of cropped
+   from the flyer itself. Shares .herofx's type scale on purpose: the two are
+   the same hero wearing different clothes, and a second scale would mean a
+   headline that changed size depending on whether a motif was configured.
+   The flyer image is NOT rendered here (except the photo_band slice) — it
+   lives in the fiestas grid and the email, where portrait works. */
+.v8 .motifhero{position:relative;overflow:hidden;background:var(--mo-ground);
+    padding:0 0 44px;display:flex;flex-direction:column;align-items:stretch}
+.v8 .motifhero .picado-wrap{width:100%;line-height:0}
+.v8 .motifhero .picado{display:block;width:100%;height:clamp(34px,4.4vw,54px)}
+.v8 .motifhero .wrap{position:relative;z-index:2;width:100%}
+.v8 .motifhero .copy{max-width:760px;margin:0 auto;text-align:center;padding:34px 0 0}
+/* Same one-grid-cell stacking .herofx uses, and load-bearing for the same
+   reason: an absolutely positioned language contributes no height, so the
+   section would collapse to whichever one is showing and everything below the
+   hero would jump on every rotation. .motifhero has no min-height to mask it. */
+.v8 .motifhero .rot{display:grid}
+.v8 .motifhero .rot > .copy{grid-area:1/1;opacity:0;
+    transition:opacity var(--fx-fade,450ms) ease;pointer-events:none}
+.v8 .motifhero .rot > .copy.on{opacity:1;pointer-events:auto}
+@media (prefers-reduced-motion: reduce){
+  .v8 .motifhero .rot > .copy{transition:none}
+}
+.v8 .motifhero .when{font-family:'Fredoka',sans-serif;font-weight:600;
+    font-size:clamp(11px,1.5vw,14px);letter-spacing:.24em;color:var(--mo-ink);
+    opacity:.78;margin-bottom:10px}
+/* Each letter carries its own inline colour from heroMotif, already gated for
+   contrast against --mo-ground at the WCAG large-text ratio. The colour here
+   is only the fallback for a headline the motif did not colour. */
+.v8 .motifhero h1{font-family:'Bangers',cursive;font-weight:400;letter-spacing:.02em;
+    line-height:.92;font-size:clamp(40px,7vw,84px);color:var(--mo-ink);margin:0}
+.v8 .motifhero .scr{font-family:'Pacifico',cursive;font-size:clamp(26px,4vw,46px);
+    color:var(--mo-ink);line-height:1.12;margin-top:-2px}
+/* Ribbon keeps Casa's teal with its own baked-in text colour, exactly as
+   .herofx does — the flyer sets the ground and the letters, the furniture
+   belongs to the brand and no palette can make it unreadable. */
+.v8 .motifhero .ribbon{display:inline-block;background:var(--teal);color:#04342c;
+    font-family:'Fredoka',sans-serif;font-weight:600;font-size:13px;
+    letter-spacing:.14em;padding:7px 20px;margin-top:14px}
+.v8 .motifhero .sub{color:var(--mo-ink);opacity:.82;font-size:16px;margin-top:14px;
+    line-height:1.6;max-width:520px;margin-left:auto;margin-right:auto}
+.v8 .motifhero .ctas{display:flex;gap:12px;flex-wrap:wrap;margin-top:24px;justify-content:center}
+.v8 .motifhero .btn-y{background:var(--yel);color:#3a2a00}
+.v8 .motifhero .btn-y:hover{background:#f0b400}
+.v8 .motifhero .btn-ghost{border-color:color-mix(in srgb,var(--mo-ink) 42%,transparent);
+    color:var(--mo-ink)}
+.v8 .motifhero .btn-ghost:hover{background:color-mix(in srgb,var(--mo-ink) 10%,transparent)}
+/* photo_band: the one motif that still shows the artwork, as a horizontal
+   slice. aspect-ratio comes from the band height so the frame matches the
+   crop rather than the crop being fitted to an arbitrary frame. */
+.v8 .motifhero .band{width:100%;margin-top:18px;overflow:hidden}
+.v8 .motifhero .band img{display:block;width:100%;height:100%;object-fit:cover}
 /* weekly specials strip */
   .v8 .week{padding:52px 0 52px}
 .v8 .week .lead{text-align:center;margin-bottom:26px}
@@ -300,6 +352,18 @@ a{text-decoration:none;color:inherit}ul{list-style:none}
     -webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 22%);
     mask-image:linear-gradient(to bottom,transparent 0,#000 22%)}
 .v8 .herofx .copy{padding:22px 0 46px;max-width:none}
+/* The motif hero reflows rather than reshaping. Papel picado stays full-bleed,
+   the type stack stays centred, and the padding tightens — no second layout to
+   keep in sync, and no viewport detection in JS, which is why the pieces are
+   separate elements in a grid rather than one SVG with a chosen viewBox. */
+.v8 .motifhero{padding-bottom:30px}
+.v8 .motifhero .copy{padding-top:22px;max-width:none}
+.v8 .motifhero .sub{font-size:15px}
+/* Full-width stacked buttons: at 390px two pills side by side leave each one
+   too narrow to read, and wrapping them unevenly looks accidental. */
+.v8 .motifhero .ctas{flex-direction:column;align-items:stretch}
+.v8 .motifhero .ctas .btn{text-align:center}
+.v8 .motifhero .band{margin-top:14px}
 .v8 .wgrid, .v8 .fcards, .v8 .rgrid{grid-template-columns:1fr 1fr!important}
 .v8 .gallery{grid-template-columns:repeat(2,1fr)}
 .v8 .revs .marquee{-webkit-mask:none;mask:none;overflow-x:auto;-webkit-overflow-scrolling:touch}
