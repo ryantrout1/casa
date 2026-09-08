@@ -143,6 +143,18 @@ a{text-decoration:none;color:inherit}ul{list-style:none}
     padding:0 0 44px;display:flex;flex-direction:column;align-items:stretch}
 .v8 .motifhero .picado-wrap{width:100%;line-height:0}
 .v8 .motifhero .picado{display:block;width:100%;height:clamp(34px,4.4vw,54px)}
+/* Three columns: a flank of ornament, the copy, the other flank. Motifs with
+   no ornament render empty side cells so the shell stays one component and the
+   copy column keeps the same width whatever the motif is. minmax(0,...) on the
+   centre stops a long headline from pushing the flanks off the viewport —
+   1fr's default min-width:auto would let it. */
+.v8 .motifhero .mo-body{display:grid;width:100%;
+    grid-template-columns:1fr minmax(0,760px) 1fr;
+    align-items:center;gap:clamp(6px,1.6vw,26px)}
+.v8 .motifhero .side{display:flex;align-items:center;justify-content:center;
+    gap:clamp(4px,1vw,12px);padding:14px 0}
+.v8 .motifhero .card{display:block;width:clamp(76px,8.6vw,122px);height:auto;
+    filter:drop-shadow(0 8px 16px rgba(0,0,0,.18))}
 .v8 .motifhero .wrap{position:relative;z-index:2;width:100%}
 .v8 .motifhero .copy{max-width:760px;margin:0 auto;text-align:center;padding:34px 0 0}
 /* Same one-grid-cell stacking .herofx uses, and load-bearing for the same
@@ -359,8 +371,19 @@ a{text-decoration:none;color:inherit}ul{list-style:none}
 .v8 .motifhero{padding-bottom:30px}
 .v8 .motifhero .copy{padding-top:22px;max-width:none}
 .v8 .motifhero .sub{font-size:15px}
-/* Full-width stacked buttons: at 390px two pills side by side leave each one
-   too narrow to read, and wrapping them unevenly looks accidental. */
+/* The flanks stop flanking and sit under the copy as one row. Flex rather than
+   grid so `order` can put the copy first while the two side groups share the
+   row below it — with grid-template-columns:1fr they would stack as two
+   separate rows instead. */
+.v8 .motifhero .mo-body{display:flex;flex-wrap:wrap}
+.v8 .motifhero .wrap{order:1;width:100%}
+.v8 .motifhero .side{order:2;flex:1 1 0;min-width:0;padding:0}
+/* Two cards, not four. At 390px four across leaves each one too small to make
+   out, and the cards are aria-hidden ornament — hiding them removes nothing
+   from the accessible page. One from each flank keeps it symmetric whether the
+   admin picked two, three or four. */
+.v8 .motifhero .side .card:nth-child(n+2){display:none}
+.v8 .motifhero .card{width:clamp(96px,30vw,128px)}
 .v8 .motifhero .ctas{flex-direction:column;align-items:stretch}
 .v8 .motifhero .ctas .btn{text-align:center}
 .v8 .motifhero .band{margin-top:14px}

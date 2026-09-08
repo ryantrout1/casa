@@ -1,9 +1,11 @@
 import type { Flyer } from "@/lib/fiestas";
 import type { MotifPlan } from "@/lib/heroMotif";
 import { letterColors } from "@/lib/heroMotif";
+import { splitCards } from "@/lib/loteriaDeck";
 import type { HeroView } from "@/lib/heroViews";
 import HeroRotator from "../HeroRotator";
 import PapelPicado from "./PapelPicado";
+import LoteriaCards from "./motifs/LoteriaCards";
 
 // The motif takeover. Where FiestaHero crops the flyer and lays type beside it,
 // this draws the composition natively from the row's palette and never renders
@@ -57,6 +59,24 @@ export default function MotifHero({
         <PapelPicado palette={plan.palette} />
       </div>
 
+      <div className="mo-body">
+        {plan.motif === "loteria" ? (
+          <LoteriaCards cards={splitCards(plan.cards).left} side="l" />
+        ) : (
+          <div className="side" />
+        )}
+
+        <div className="wrap">
+          <HeroRotator views={views} titleColors={perView} />
+        </div>
+
+        {plan.motif === "loteria" ? (
+          <LoteriaCards cards={splitCards(plan.cards).right} side="r" />
+        ) : (
+          <div className="side" />
+        )}
+      </div>
+
       {plan.motif === "photo_band" ? (
         <div className="band">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -80,10 +100,6 @@ export default function MotifHero({
           />
         </div>
       ) : null}
-
-      <div className="wrap">
-        <HeroRotator views={views} titleColors={perView} />
-      </div>
     </section>
   );
 }

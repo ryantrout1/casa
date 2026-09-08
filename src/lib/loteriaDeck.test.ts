@@ -55,19 +55,29 @@ describe("LOTERIA_DECK — totality", () => {
 // deliberately does not, and this test is the guard against someone
 // "helpfully" unifying the two later.
 describe("LOTERIA_DECK — canonical colours, never the row's palette", () => {
-  it("keeps El Sol on pale sky and La Luna on night navy", () => {
-    expect(LOTERIA_DECK.el_sol.panel).toBe("#bfe4f2");
-    expect(LOTERIA_DECK.la_luna.panel).toBe("#1f3a63");
+  // Pinning all eight panels IS the guard. If someone later wires the row's
+  // palette into the deck, these fail immediately and by name.
+  //
+  // The tempting version of this test — assert no deck colour appears in a
+  // flyer palette — does not work and was removed: El Gallo's comb is #d42b2b
+  // and so is Casa's brand red. Canonical lotería red and Casa red are the same
+  // red, so value overlap proves nothing either way.
+  it.each([
+    ["el_sol", "#bfe4f2"],
+    ["la_rosa", "#fdf4e0"],
+    ["la_luna", "#1f3a63"],
+    ["la_mano", "#4a90d9"],
+    ["el_corazon", "#fdf4e0"],
+    ["la_chalupa", "#8fc4d8"],
+    ["la_sirena", "#4a90d9"],
+    ["el_gallo", "#f2c94c"],
+  ] as const)("%s keeps its panel", (card, panel) => {
+    expect(LOTERIA_DECK[card].panel).toBe(panel);
   });
 
-  it("uses no colour from a flyer palette", () => {
-    const palette = ["#f5e6c8", "#d42b2b", "#2e7d4f", "#6b3fa0", "#e8913c"];
-    const used = LOTERIA_CARDS.flatMap((c) => [
-      LOTERIA_DECK[c].panel,
-      ...LOTERIA_DECK[c].shapes.map((s) => ("fill" in s ? s.fill : undefined)),
-      ...LOTERIA_DECK[c].shapes.map((s) => ("stroke" in s ? s.stroke : undefined)),
-    ]);
-    for (const p of palette) expect(used).not.toContain(p);
+  it("gives El Sol a yellow face and La Luna a gold crescent", () => {
+    expect(LOTERIA_DECK.el_sol.shapes.some((s) => "fill" in s && s.fill === "#f5c518")).toBe(true);
+    expect(LOTERIA_DECK.la_luna.shapes.some((s) => "fill" in s && s.fill === "#f2c94c")).toBe(true);
   });
 });
 
