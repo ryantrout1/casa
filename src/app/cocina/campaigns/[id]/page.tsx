@@ -4,6 +4,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import DeleteCampaignButton from "./DeleteCampaignButton";
+import CampaignChannels from "./CampaignChannels";
+import { OWNED_SURFACES } from "@/lib/publish";
 import {
   ALL_CHANNELS,
   resultEntries,
@@ -99,11 +101,26 @@ export default async function CampaignDetail({
   const dests = resultEntries(results);
 
   // The flyer this campaign put on the website, if any.
-  let flyer: { image_url: string; caption: string | null } | null = null;
+  let flyer:
+    | {
+        image_url: string;
+        caption: string | null;
+        is_hero: boolean;
+        in_grid: boolean;
+        on_fiestas_page: boolean;
+      }
+    | null = null;
   if (c.fiesta_id) {
     const fr = (await sql`
-      select image_url, caption from fiestas where id = ${c.fiesta_id}
-    `) as { image_url: string; caption: string | null }[];
+      select image_url, caption, is_hero, in_grid, on_fiestas_page
+      from fiestas where id = ${c.fiesta_id}
+    `) as {
+      image_url: string;
+      caption: string | null;
+      is_hero: boolean;
+      in_grid: boolean;
+      on_fiestas_page: boolean;
+    }[];
     flyer = fr[0] ?? null;
   }
 
@@ -194,6 +211,25 @@ export default async function CampaignDetail({
           </p>
         )}
       </div>
+
+      <CampaignChannels
+        campaignId={c.id}
+        fiestaId={flyer ? c.fiesta_id : null}
+        surfaces={
+          flyer
+            ? OWNED_SURFACES.map((id) => ({
+                id,
+                on:
+                  id === "hero" ? flyer.is_hero : id === "grid" ? flyer.in_grid : flyer.on_fiestas_page,
+              }))
+            : []
+        }
+        emailLine={
+          c.sent_count > 0
+            ? `Email went to ${c.sent_count} members on ${fmt(c.sent_at)}. An email cannot be taken back.`
+            : "No email was sent for this campaign."
+        }
+      />
 
       <div className="stat-grid">
         {stat(s.sent, "Sent")}

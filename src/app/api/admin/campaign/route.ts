@@ -10,6 +10,7 @@ import {
   type FlyerInput,
 } from "@/lib/publish";
 import { isDraftEmpty, parseHeroCopy } from "@/lib/schedule";
+import { duplicateConfig, duplicateSubject } from "@/lib/duplicate";
 
 export const dynamic = "force-dynamic";
 
@@ -251,6 +252,27 @@ export async function POST(req: Request) {
       const rows = (await sql`
         insert into campaigns (subject, body, audience_count, sent_count, status, sent_at, publish_config)
         values (${subject}, ${html}, 0, 0, 'draft', null, ${config}::jsonb)
+        returning id
+      `) as { id: string }[];
+      return NextResponse.json({ ok: true, id: rows[0].id });
+    }
+
+    if (action === "duplicate") {
+      // Run it again for the next event: same channels, flyer and hero copy,
+      // no dates. The copy is a draft, so nothing is published or sent by
+      // duplicating.
+      const id = String(body.id ?? "");
+      if (!id) return NextResponse.json({ error: "Missing campaign id." }, { status: 400 });
+      const src = (await sql`
+        select subject, body, publish_config from campaigns where id = ${id}
+      `) as { subject: string; body: string; publish_config: unknown }[];
+      if (src.length === 0) {
+        return NextResponse.json({ error: "Campaign not found." }, { status: 404 });
+      }
+      const config = JSON.stringify(duplicateConfig(src[0].publish_config));
+      const rows = (await sql`
+        insert into campaigns (subject, body, audience_count, sent_count, status, sent_at, publish_config)
+        values (${duplicateSubject(src[0].subject)}, ${src[0].body}, 0, 0, 'draft', null, ${config}::jsonb)
         returning id
       `) as { id: string }[];
       return NextResponse.json({ ok: true, id: rows[0].id });
