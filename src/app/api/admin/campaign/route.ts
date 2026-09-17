@@ -10,6 +10,11 @@ import {
   type FlyerInput,
 } from "@/lib/publish";
 import { isDraftEmpty, parseHeroCopy } from "@/lib/schedule";
+import { applyRewards } from "@/lib/rewardsLine";
+
+// The punch count a test send pretends the reader has, so the rewards line in
+// a test reads the way most members will see it.
+const SAMPLE_PROGRESS = 4;
 import { duplicateConfig, duplicateSubject } from "@/lib/duplicate";
 
 export const dynamic = "force-dynamic";
@@ -91,7 +96,14 @@ export async function POST(req: Request) {
       if (!testEmail) {
         return NextResponse.json({ error: "A test email address is required." }, { status: 400 });
       }
-      const emailHtml = renderEmail(html, `${origin}/api/unsubscribe?m=test`, logoUrl);
+      // A test is an email: it must look like what a member gets, and it must
+      // never carry the rewards token as visible text. SAMPLE_PROGRESS stands
+      // in for a member part way through a card.
+      const emailHtml = renderEmail(
+        applyRewards(html, SAMPLE_PROGRESS),
+        `${origin}/api/unsubscribe?m=test`,
+        logoUrl,
+      );
       const result = (await sendBatch([{ to: testEmail, subject, html: emailHtml }])) as BatchResult;
       const resendId = result?.data?.[0]?.id ?? null;
       // record the test send (no campaign) so the webhook can attach its events

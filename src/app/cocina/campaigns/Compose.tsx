@@ -22,6 +22,7 @@ import type { Palette } from "@/lib/palette";
 import HeroPanel from "./HeroPanel";
 import { readiness, type ReadyState } from "@/lib/readiness";
 import { buildAnnouncement, type EmailDraft } from "@/lib/emailTemplate";
+import { rewardsLine } from "@/lib/rewardsLine";
 import { imageIdOf } from "@/lib/platePrompt";
 import { CHANNELS, channel } from "@/lib/channels";
 
@@ -232,6 +233,9 @@ export default function Compose({
   const [reminderDraft, setReminderDraft] = useState<EmailDraft | null>(null);
   const [writing, setWriting] = useState(false);
   const [writeNote, setWriteNote] = useState("");
+  // One personalized line above the sign-off. On by default; off for a send
+  // that is not about coming in (an event somewhere else, say).
+  const [includeRewards, setIncludeRewards] = useState(true);
   const [results, setResults] = useState<PublishResults | null>(null);
   const [draftId, setDraftId] = useState<string | null>(initialDraft?.id ?? null);
 
@@ -345,11 +349,7 @@ export default function Compose({
       const a = d.drafts.announcement as EmailDraft;
       setSubject(a.subject);
       editorRef.current?.setHTML(
-        buildAnnouncement(a, {
-          flyerUrl,
-          flyerAlt,
-          includeRewards: false,
-        }),
+        buildAnnouncement(a, { flyerUrl, flyerAlt, includeRewards }),
       );
       setReminderDraft((d.drafts.reminder as EmailDraft) ?? null);
       setWriteNote("Written from the flyer. Read it through and change anything you like.");
@@ -865,6 +865,19 @@ export default function Compose({
               />
               <p className="hint">Casa header, footer, and an unsubscribe link are added automatically.</p>
             </div>
+            <label className="field-c" style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <input
+                type="checkbox"
+                checked={includeRewards}
+                onChange={(e) => setIncludeRewards(e.target.checked)}
+                style={{ width: 18, height: 18, accentColor: "#a3175f" }}
+              />
+              <span style={{ fontWeight: 400, color: "#3a4150", fontSize: "0.92rem" }}>
+                Add each member&rsquo;s rewards progress, just above the sign-off. Example:{" "}
+                <em>{rewardsLine(4)}</em>
+              </span>
+            </label>
+
             <div className="field-c test-row">
               <label htmlFor="cmp-test">Send a test to</label>
               <input

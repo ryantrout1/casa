@@ -6,6 +6,7 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { renderEmail, sendBatch } from "@/lib/email";
+import { applyRewards } from "@/lib/rewardsLine";
 import {
   ALL_CHANNELS,
   OWNED_SURFACES,
@@ -41,11 +42,11 @@ export async function sendCampaignEmail(
   logoUrl: string,
 ): Promise<{ sent: number; skipped: number; audience: number; warning?: string }> {
   const members = (await sql`
-    select id, email from members
+    select id, email, punch_progress from members
     where email_subscribed = true
       and email is not null
       and email ~ '^[^@[:space:]]+@[^@[:space:]]+\\.[^@[:space:]]+$'
-  `) as { id: string; email: string }[];
+  `) as { id: string; email: string; punch_progress: number | null }[];
 
   await sql`update campaigns set audience_count = ${members.length} where id = ${campaignId}`;
 
@@ -54,10 +55,18 @@ export async function sendCampaignEmail(
     return { sent: 0, skipped: 0, audience: 0 };
   }
 
+  // Each member's email is already rendered separately for the unsubscribe
+  // link, so the rewards line rides along at no extra cost. applyRewards
+  // always removes its token, so a body carrying one can never ship the token
+  // itself, and a body without one is untouched.
   const recipients = members.map((m) => ({
     m: m.id,
     e: m.email.trim(),
-    html: renderEmail(html, `${origin}/api/unsubscribe?m=${m.id}&c=${campaignId}`, logoUrl),
+    html: renderEmail(
+      applyRewards(html, m.punch_progress),
+      `${origin}/api/unsubscribe?m=${m.id}&c=${campaignId}`,
+      logoUrl,
+    ),
   }));
 
   const sends: { m: string; e: string; r: string | null }[] = [];
