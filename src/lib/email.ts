@@ -1,5 +1,6 @@
+import { CASA_FACTS } from "./emailTemplate";
+
 const FROM = "Casa de Leyva <rewards@updates.casadeleyva.com>";
-const ADDRESS = "424 E Monroe Ave, Buckeye, AZ 85326";
 
 export function renderEmail(
   bodyHtml: string,
@@ -26,7 +27,9 @@ export function renderEmail(
         <tr><td style="padding:28px;font-size:16px;line-height:1.6;color:#222222;">${bodyHtml}</td></tr>
         <tr><td style="padding:20px 28px;border-top:1px solid #eeeeee;font-size:12px;color:#888888;line-height:1.6;">
           You're receiving this as a Casa Rewards member.<br>
-          ${ADDRESS}<br>
+          ${CASA_FACTS.address}<br>
+          <a href="${CASA_FACTS.phoneHref}" style="color:#888888;">${CASA_FACTS.phone}</a> &middot;
+          <a href="${CASA_FACTS.site}" style="color:#888888;">casadeleyva.com</a><br>
           <a href="${unsubscribeUrl}" style="color:#888888;">Unsubscribe</a>
         </td></tr>
       </table>
