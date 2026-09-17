@@ -3,7 +3,9 @@ import { AA_CONTRAST, AA_LARGE, contrastRatio } from "./palette";
 import { heroViews, type HeroViewSource } from "./heroViews";
 import { heroMotif, type MotifSource } from "./heroMotif";
 import {
+  FLYER_CLOSE_LABEL,
   FLYER_LABEL,
+  PLATE_BREAKPOINT,
   PLATE_GROUND,
   PLATE_INK,
   PLATE_SHADE,
@@ -115,6 +117,12 @@ describe("plateFocusCss: one number, applied to whichever axis crops", () => {
   });
 });
 
+describe("PLATE_BREAKPOINT", () => {
+  it("matches the stylesheet's mobile block", () => {
+    expect(PLATE_BREAKPOINT).toBe(880);
+  });
+});
+
 describe("plateSources", () => {
   it("is null without a desktop plate, even when a mobile plate is set", () => {
     expect(plateSources(row({ heroPlateMobileUrl: `/api/img/${ID2}` }))).toBeNull();
@@ -153,7 +161,7 @@ describe("plateSources", () => {
 
 describe("plate legibility", () => {
   it("the shade minimum is what the ground is computed from", () => {
-    expect(PLATE_SHADE_MIN).toBeGreaterThanOrEqual(0.7);
+    expect(PLATE_SHADE_MIN).toBeGreaterThanOrEqual(0.8);
     expect(PLATE_SHADE_MIN).toBeLessThanOrEqual(1);
   });
 
@@ -186,13 +194,12 @@ describe("plateStyleVars: two themed colours at most, gated on the plate ground"
   });
 
   it("keeps a large-only accent for display type and drops it for the eyebrow", () => {
-    // Find a colour between the two thresholds against this ground.
-    const mid = ["#c8102e", "#e8212a", "#d42b2b", "#b0302a", "#a04030"].find((c) => {
-      const r = contrastRatio(c, PLATE_GROUND);
-      return r >= AA_LARGE && r < AA_CONTRAST;
-    });
-    expect(mid).toBeDefined();
-    const v = plateStyleVars({ heroAccent: mid! });
+    // A muted gold that sits between the two thresholds on this ground.
+    const mid = "#b08030";
+    const r = contrastRatio(mid, PLATE_GROUND);
+    expect(r).toBeGreaterThanOrEqual(AA_LARGE);
+    expect(r).toBeLessThan(AA_CONTRAST);
+    const v = plateStyleVars({ heroAccent: mid });
     expect(v["--fx-accent"]).toBeUndefined();
     expect(v["--fx-accent-lg"]).toBe(mid);
   });
@@ -211,6 +218,7 @@ describe("plateStyleVars: two themed colours at most, gated on the plate ground"
 describe("FLYER_LABEL", () => {
   it("has a label per language", () => {
     expect(FLYER_LABEL).toEqual({ en: "View Flyer", es: "Ver el Flyer" });
+    expect(FLYER_CLOSE_LABEL).toEqual({ en: "Close", es: "Cerrar" });
   });
 });
 

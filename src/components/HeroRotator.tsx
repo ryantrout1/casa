@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { ROTATE_MS, FADE_MS, type HeroView } from "@/lib/heroViews";
+import { FLYER_CLOSE_LABEL, FLYER_LABEL } from "@/lib/heroPlate";
+import FlyerLightbox from "./hero/FlyerLightbox";
 
 // The takeover's copy block, alternating between languages.
 //
@@ -50,6 +52,7 @@ export default function HeroRotator({
   views,
   titleColors,
   variant = "full",
+  flyer,
 }: {
   views: HeroView[];
   /**
@@ -72,6 +75,12 @@ export default function HeroRotator({
    * Opt-in, defaulting to "full", so the motif hero is unaffected.
    */
   variant?: "full" | "takeover";
+  /**
+   * The poster, for a "View Flyer" button beside the two CTAs. Passed only by
+   * the plate hero, where the plate has replaced the poster on screen. The
+   * flyer and motif heroes omit it and render exactly as before.
+   */
+  flyer?: { src: string; alt: string };
 }) {
   const [i, setI] = useState(0);
   const [reduced, setReduced] = useState(false);
@@ -158,6 +167,14 @@ export default function HeroRotator({
               <a className="btn btn-ghost" href="/menu">
                 {v.ctas.menu}
               </a>
+              {flyer ? (
+                <FlyerLightbox
+                  src={flyer.src}
+                  alt={flyer.alt}
+                  label={FLYER_LABEL[v.lang]}
+                  closeLabel={FLYER_CLOSE_LABEL[v.lang]}
+                />
+              ) : null}
             </div>
           </div>
         );

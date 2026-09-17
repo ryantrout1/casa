@@ -57,6 +57,11 @@ function row(overrides: Partial<FiestaRow> = {}): FiestaRow {
     hero_script_alt: null,
     hero_ribbon_alt: null,
     hero_sub_alt: null,
+    // No plate, matching every production row. lib/heroPlate resolves this to
+    // the tiers that shipped before plates existed.
+    hero_plate_url: null,
+    hero_plate_mobile_url: null,
+    hero_plate_focus: null,
     sort_key: 0,
     ...overrides,
   };
@@ -481,6 +486,28 @@ describe("toFlyer — Phase 2 field passthrough", () => {
     expect(f.heroBg).toBeNull();
     expect(f.heroAccent).toBeNull();
     expect(f.heroInk).toBeNull();
+  });
+});
+
+describe("toFlyer: plate passthrough", () => {
+  it("carries both plates and the focus", () => {
+    const f = toFlyer(
+      row({
+        hero_plate_url: "/api/img/72dcee08-9888-409c-a4eb-d0cd7e1b1b68",
+        hero_plate_mobile_url: "/api/img/33350609-061e-4718-97c1-18e8fc2f2e9c",
+        hero_plate_focus: 0,
+      }),
+    );
+    expect(f.heroPlateUrl).toBe("/api/img/72dcee08-9888-409c-a4eb-d0cd7e1b1b68");
+    expect(f.heroPlateMobileUrl).toBe("/api/img/33350609-061e-4718-97c1-18e8fc2f2e9c");
+    expect(f.heroPlateFocus).toBe(0);
+  });
+
+  it("leaves them null when unset", () => {
+    const f = toFlyer(row());
+    expect(f.heroPlateUrl).toBeNull();
+    expect(f.heroPlateMobileUrl).toBeNull();
+    expect(f.heroPlateFocus).toBeNull();
   });
 });
 

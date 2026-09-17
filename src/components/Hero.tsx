@@ -6,8 +6,10 @@ import {
 } from "@/lib/fiestas";
 import { heroViews, type HeroView } from "@/lib/heroViews";
 import { heroMotif } from "@/lib/heroMotif";
+import { heroTier, plateSources } from "@/lib/heroPlate";
 import HeroRotator from "./HeroRotator";
 import MotifHero from "./hero/MotifHero";
+import PlateHero from "./hero/PlateHero";
 
 // Fiesta takeover. Renders only when a dated hero fiesta carries copy.
 //
@@ -99,21 +101,25 @@ export default async function Hero() {
   const hero = await getHeroFiesta();
   const views = hero ? heroViews(hero) : [];
 
-  // Three tiers, in order of specificity. Each falls through to the next, so
-  // adding the motif tier cannot change what any existing row renders — every
-  // row in production resolves to { motif: "none" } and lands on tier two
-  // exactly as it did before.
+  // Four tiers, in order of specificity: plate, motif, flyer, brand. The
+  // choice lives in lib/heroPlate so it is tested; each tier falls through to
+  // the next, so a row with no plate renders exactly what it did before.
   //
-  // Takeover still needs all three: a live hero fiesta, a headline, and a
-  // usable date. heroViews returns nothing without a headline, and a null
-  // `when` is how it reports an unusable date — so this is the same guard as
-  // before, asked of the view models instead of the row. Missing any one falls
-  // back to the brand hero rather than rendering a half-dressed takeover.
-  if (hero && views.length > 0 && views[0].when) {
-    const plan = heroMotif(hero);
-    if (plan.motif !== "none") {
-      return <MotifHero hero={hero} views={views} plan={plan} />;
-    }
+  // Takeover still needs a live hero fiesta, a headline, and a usable date.
+  // heroViews returns nothing without a headline, and a null `when` is how it
+  // reports an unusable date. Missing any one falls back to the brand hero
+  // rather than rendering a half-dressed takeover.
+  const tier = hero ? heroTier(hero, views) : "brand";
+
+  const plate = hero ? plateSources(hero) : null;
+
+  if (hero && tier === "plate" && plate) {
+    return <PlateHero hero={hero} views={views} plate={plate} />;
+  }
+  if (hero && tier === "motif") {
+    return <MotifHero hero={hero} views={views} plan={heroMotif(hero)} />;
+  }
+  if (hero && tier === "flyer") {
     return <FiestaHero hero={hero} views={views} />;
   }
 

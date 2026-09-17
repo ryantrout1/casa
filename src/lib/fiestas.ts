@@ -56,6 +56,13 @@ export type FiestaRow = {
   hero_palette: unknown;
   hero_title_colors: unknown;
   hero_tokens: unknown;
+  // The text-free background plate for the full-bleed takeover, and where to
+  // crop it. All three null on every row published before plates existed, and
+  // lib/heroPlate resolves that to "no plate", so adding them changes nothing
+  // for those rows. Paths only, never hosts: see platePath.
+  hero_plate_url: string | null;
+  hero_plate_mobile_url: string | null;
+  hero_plate_focus: number | null;
   sort_key: number;
 };
 
@@ -92,6 +99,9 @@ export type Flyer = {
   heroPalette: unknown;
   heroTitleColors: unknown;
   heroTokens: unknown;
+  heroPlateUrl: string | null;
+  heroPlateMobileUrl: string | null;
+  heroPlateFocus: number | null;
 };
 
 // The homepage grid shows at most this many fiestas.
@@ -162,6 +172,9 @@ export function toFlyer(f: FiestaRow): Flyer {
     heroPalette: f.hero_palette,
     heroTitleColors: f.hero_title_colors,
     heroTokens: f.hero_tokens,
+    heroPlateUrl: f.hero_plate_url,
+    heroPlateMobileUrl: f.hero_plate_mobile_url,
+    heroPlateFocus: f.hero_plate_focus,
   };
 }
 
@@ -251,6 +264,9 @@ async function loadFiestas(): Promise<FiestaRow[]> {
         hero_palette,
         hero_title_colors,
         hero_tokens,
+        hero_plate_url,
+        hero_plate_mobile_url,
+        hero_plate_focus,
         extract(epoch from coalesce(featured_at, created_at))::float8 as sort_key
       from fiestas
     `) as FiestaRow[];
