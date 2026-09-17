@@ -94,6 +94,12 @@ describe("campaignRow: status", () => {
     expect(r.status).toBe("ended");
   });
 
+  it("has ended when it was on the website and its flyer was deleted", () => {
+    const r = campaignRow(c({ dispatches: [{ channel: "grid", status: "ok" }] }), TODAY, NOW);
+    expect(r.status).toBe("ended");
+    expect(states(r).website).toBe("done");
+  });
+
   it("is simply sent for an email-only campaign", () => {
     const r = campaignRow(c({ status: "sent", sentCount: 220 }), TODAY, NOW);
     expect(r.status).toBe("sent");

@@ -579,7 +579,7 @@ export default function Compose({
             </>
           ) : (
             <span className="muted">
-              Editing a saved draft. <a href="/cocina/campaigns">Start a new campaign</a>
+              Editing a saved draft. <a href="/cocina/campaigns/new">Start a new campaign</a>
             </span>
           )}
         </div>
