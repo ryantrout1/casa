@@ -127,6 +127,9 @@ export default function Compose({
     bg: initialHero?.bg ?? "",
     accent: initialHero?.accent ?? "",
     ink: initialHero?.ink ?? "",
+    plateUrl: initialHero?.plateUrl ?? "",
+    plateMobileUrl: initialHero?.plateMobileUrl ?? "",
+    plateFocus: initialHero?.plateFocus === undefined ? "" : String(initialHero.plateFocus),
   });
   // Swatches sampled from the uploaded flyer. Null until a flyer is picked, or
   // when the browser could not decode it — either way the panel just hides the
@@ -662,6 +665,10 @@ export default function Compose({
           reading={reading}
           readNote={readNote}
           onClearSuggestions={clearSuggestions}
+          onError={(m) => {
+            setErr(true);
+            setMsg(m);
+          }}
         />
       </Panel>
 

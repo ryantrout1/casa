@@ -8,6 +8,9 @@ export type ChannelId = "email" | "hero" | "grid" | "fiestas_page";
 // Type-only import — erased at compile, so this does not create a runtime
 // cycle with schedule.ts (which imports ALL_CHANNELS from here).
 import type { HeroCopy } from "./schedule";
+// Runtime import. heroPlate only imports a type from this module, so there is
+// no cycle at runtime.
+import { platePath } from "./heroPlate";
 
 // Which language the generated hero date line is written in. Declared here
 // rather than in lib/fiestas so client-safe modules (schedule, the composer)
@@ -140,6 +143,9 @@ export function heroColumns(hero: HeroCopy | undefined): {
   hero_script_alt: string | null;
   hero_ribbon_alt: string | null;
   hero_sub_alt: string | null;
+  hero_plate_url: string | null;
+  hero_plate_mobile_url: string | null;
+  hero_plate_focus: number | null;
 } {
   const h = hero ?? {};
   return {
@@ -159,6 +165,15 @@ export function heroColumns(hero: HeroCopy | undefined): {
     hero_script_alt: h.scriptAlt ?? null,
     hero_ribbon_alt: h.ribbonAlt ?? null,
     hero_sub_alt: h.subAlt ?? null,
+    // Re-validated here as well as in parseHeroCopy. A value that slipped past
+    // would fail fiestas_hero_plate_path and take the whole insert with it, and
+    // the cron drain has no one to show that error to.
+    hero_plate_url: platePath(h.plateUrl),
+    hero_plate_mobile_url: platePath(h.plateMobileUrl),
+    hero_plate_focus:
+      typeof h.plateFocus === "number" && Number.isFinite(h.plateFocus)
+        ? Math.min(100, Math.max(0, Math.round(h.plateFocus)))
+        : null,
   };
 }
 

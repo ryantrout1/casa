@@ -126,7 +126,8 @@ export async function runPublish(
           (image_url, alt, caption, event_date, is_hero, in_grid, on_fiestas_page, is_evergreen, featured_at,
            starts_at, hero_title, hero_script, hero_ribbon, hero_sub, hero_lang,
            hero_focus, hero_live_at, hero_bg, hero_accent, hero_ink,
-           hero_title_alt, hero_script_alt, hero_ribbon_alt, hero_sub_alt)
+           hero_title_alt, hero_script_alt, hero_ribbon_alt, hero_sub_alt,
+           hero_plate_url, hero_plate_mobile_url, hero_plate_focus)
         values
           (${flyer.imageUrl}, ${flyer.alt ?? ""}, ${flyer.caption ?? null}, ${flyer.eventDate || null},
            ${flags.is_hero}, ${flags.in_grid}, ${flags.on_fiestas_page}, false, now(),
@@ -135,7 +136,8 @@ export async function runPublish(
            ${hero.hero_focus}, ${hero.hero_live_at}, ${hero.hero_bg},
            ${hero.hero_accent}, ${hero.hero_ink},
            ${hero.hero_title_alt}, ${hero.hero_script_alt},
-           ${hero.hero_ribbon_alt}, ${hero.hero_sub_alt})
+           ${hero.hero_ribbon_alt}, ${hero.hero_sub_alt},
+           ${hero.hero_plate_url}, ${hero.hero_plate_mobile_url}, ${hero.hero_plate_focus})
         returning id
       `) as { id: string }[];
       fiestaId = frows[0].id;

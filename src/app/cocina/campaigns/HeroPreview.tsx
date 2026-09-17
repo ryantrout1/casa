@@ -2,6 +2,12 @@
 
 import { heroFocusCss, heroStyleVars } from "@/lib/heroTheme";
 import type { HeroFormState } from "@/lib/heroForm";
+import {
+  PLATE_INK,
+  plateFocusCss,
+  platePath,
+  plateStyleVars,
+} from "@/lib/heroPlate";
 
 // A scaled-down render of the real takeover. It deliberately reuses
 // heroStyleVars and heroFocusCss rather than reimplementing the styling, so
@@ -20,6 +26,126 @@ import type { HeroFormState } from "@/lib/heroForm";
 const PREVIEW_VIEWPORT = 1440;
 const HERO_HEIGHT = 540;
 
+// The plate hero's height at PREVIEW_VIEWPORT: clamp(520px, 42vw, 760px) in
+// globals.css, which is 605px at 1440. Change with the stylesheet.
+const PLATE_HEIGHT = Math.min(760, Math.max(520, PREVIEW_VIEWPORT * 0.42));
+
+// The plate takeover at preview scale. Same helpers as the live PlateHero
+// (plateStyleVars, plateFocusCss), same shade colour, copy bottom-left.
+function PlatePreview({
+  hero,
+  plate,
+  dateLine,
+}: {
+  hero: HeroFormState;
+  plate: string;
+  dateLine: string;
+}) {
+  const vars = plateStyleVars({ heroAccent: hero.accent || null });
+  const ink = vars["--fx-ink"] ?? PLATE_INK;
+  const eyebrow = vars["--fx-accent"] ?? ink;
+  const script = vars["--fx-accent-lg"] ?? "#ffbf1f";
+  const pos = plateFocusCss(hero.plateFocus === "" ? null : Number(hero.plateFocus));
+
+  return (
+    <div>
+      <div
+        style={{
+          position: "relative",
+          overflow: "hidden",
+          background: "#140c06",
+          borderRadius: 10,
+          aspectRatio: `${PREVIEW_VIEWPORT} / ${PLATE_HEIGHT}`,
+          display: "flex",
+          alignItems: "flex-end",
+          border: "1px solid #dfe3ea",
+        }}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={plate}
+          alt=""
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            objectPosition: pos,
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background:
+              "linear-gradient(to top,rgba(14,8,5,.6) 0,rgba(14,8,5,0) 45%)," +
+              "linear-gradient(to right,rgba(14,8,5,.92) 0,rgba(14,8,5,.8) 50%,rgba(14,8,5,0) 72%)",
+          }}
+        />
+        <div style={{ position: "relative", zIndex: 2, padding: "0 18px 16px", maxWidth: "46%" }}>
+          <div
+            style={{ fontSize: 8, letterSpacing: ".2em", color: eyebrow, fontWeight: 700, marginBottom: 5 }}
+          >
+            {dateLine || "SATURDAY AUGUST 29 · 8 PM"}
+          </div>
+          <div
+            style={{ fontFamily: "'Bangers',system-ui", fontSize: 30, lineHeight: 0.95, color: ink }}
+          >
+            {hero.title || "HEADLINE"}
+          </div>
+          {hero.script ? (
+            <div style={{ fontFamily: "'Pacifico',cursive", fontSize: 14, color: script }}>
+              {hero.script}
+            </div>
+          ) : null}
+          {hero.ribbon ? (
+            <div
+              style={{
+                display: "inline-block",
+                background: "#16a89e",
+                color: "#04342c",
+                fontSize: 7.5,
+                letterSpacing: ".12em",
+                fontWeight: 700,
+                padding: "4px 10px",
+                marginTop: 7,
+              }}
+            >
+              {hero.ribbon}
+            </div>
+          ) : null}
+          {hero.sub ? (
+            <div style={{ color: ink, opacity: 0.92, fontSize: 10, marginTop: 7 }}>{hero.sub}</div>
+          ) : null}
+          <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
+            {["Get Directions", "See the Menu", "View Flyer"].map((l, i) => (
+              <span
+                key={l}
+                style={{
+                  background: i === 0 ? "#ffbf1f" : "transparent",
+                  color: i === 0 ? "#3a2a00" : ink,
+                  border: i === 0 ? "none" : `1px solid ${ink}`,
+                  fontSize: 8,
+                  fontWeight: i === 0 ? 700 : 400,
+                  padding: "5px 12px",
+                  borderRadius: 999,
+                }}
+              >
+                {l}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+      <p className="hint" style={{ marginTop: 6 }}>
+        Plate takeover at {PREVIEW_VIEWPORT}px desktop width. On a phone the plate sits above the
+        copy, using the phone plate when there is one.
+      </p>
+    </div>
+  );
+}
+
 export default function HeroPreview({
   hero,
   flyerUrl,
@@ -29,6 +155,10 @@ export default function HeroPreview({
   flyerUrl: string;
   dateLine: string;
 }) {
+  // A usable desktop plate outranks everything else, as it does on the site.
+  const plate = platePath(hero.plateUrl);
+  if (plate) return <PlatePreview hero={hero} plate={plate} dateLine={dateLine} />;
+
   const vars = heroStyleVars({
     heroBg: hero.bg || null,
     heroAccent: hero.accent || null,

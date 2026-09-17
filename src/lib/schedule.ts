@@ -2,6 +2,7 @@
 // covers drafts; Phase 2 will add the scheduling (timezone + due-check) helpers.
 
 import { ALL_CHANNELS, type ChannelId, type HeroLang } from "./publish";
+import { platePath } from "./heroPlate";
 
 // Takeover hero copy, carried inside the flyer blob. Nested as one object
 // rather than six sibling fields so both publish paths — the immediate route
@@ -27,6 +28,15 @@ export type HeroCopy = {
   scriptAlt?: string;
   ribbonAlt?: string;
   subAlt?: string;
+  /**
+   * The text-free background plate for the full-bleed takeover. Same-origin
+   * `/api/img/<uuid>` paths only; parseHeroCopy strips hosts and drops
+   * anything else, matching the DB CHECK.
+   */
+  plateUrl?: string;
+  plateMobileUrl?: string;
+  /** Plate crop position, 0-100. Clamped on parse, like focus. */
+  plateFocus?: number;
 };
 
 export type DraftFlyer = {
@@ -98,6 +108,12 @@ export function parseHeroCopy(raw: unknown): HeroCopy | undefined {
   if (str(o.scriptAlt)) out.scriptAlt = str(o.scriptAlt);
   if (str(o.ribbonAlt)) out.ribbonAlt = str(o.ribbonAlt);
   if (str(o.subAlt)) out.subAlt = str(o.subAlt);
+  const plateUrl = platePath(o.plateUrl);
+  if (plateUrl) out.plateUrl = plateUrl;
+  const plateMobileUrl = platePath(o.plateMobileUrl);
+  if (plateMobileUrl) out.plateMobileUrl = plateMobileUrl;
+  const plateFocus = pct(o.plateFocus);
+  if (plateFocus !== undefined) out.plateFocus = plateFocus;
   return Object.keys(out).length > 0 ? out : undefined;
 }
 

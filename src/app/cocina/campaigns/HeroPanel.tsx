@@ -4,6 +4,7 @@ import type { Palette } from "@/lib/palette";
 import type { HeroFormState } from "@/lib/heroForm";
 import type { HeroLang } from "@/lib/publish";
 import HeroPreview from "./HeroPreview";
+import PlateControls from "../PlateControls";
 
 // The Hero destination panel. Everything it renders is controlled by the
 // parent's HeroFormState, so the panel itself holds no state — which keeps the
@@ -80,6 +81,7 @@ export default function HeroPanel({
   reading,
   readNote,
   onClearSuggestions,
+  onError,
 }: {
   value: HeroFormState;
   onChange: (patch: Partial<HeroFormState>) => void;
@@ -90,6 +92,8 @@ export default function HeroPanel({
   reading: boolean;
   readNote: string;
   onClearSuggestions: () => void;
+  /** Where plate upload errors are shown. */
+  onError: (msg: string) => void;
 }) {
   const set = <K extends keyof HeroFormState>(k: K, v: HeroFormState[K]) => onChange({ [k]: v });
 
@@ -277,6 +281,19 @@ export default function HeroPanel({
           Leave all three blank for the standard dark hero. Text colour is derived from the
           background when blank, and always checked for readability.
         </p>
+      </div>
+
+      <div style={{ borderTop: "1px solid #e6e8ee", paddingTop: 12 }}>
+        <PlateControls
+          plateUrl={value.plateUrl}
+          plateMobileUrl={value.plateMobileUrl}
+          plateFocus={value.plateFocus}
+          hasTitle={value.title.trim() !== ""}
+          hasDate={value.startLocal.trim() !== ""}
+          disabled={false}
+          onChange={onChange}
+          onError={onError}
+        />
       </div>
 
       <div>

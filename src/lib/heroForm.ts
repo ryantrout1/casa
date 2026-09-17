@@ -1,6 +1,7 @@
 import { phoenixLocalToUtcISO, type HeroCopy } from "./schedule";
 import { isHex } from "./palette";
 import type { HeroLang } from "./publish";
+import { platePath } from "./heroPlate";
 import {
   ATTRACTION_ICONS,
   LOTERIA_CARDS,
@@ -38,6 +39,11 @@ export type HeroFormState = {
   bg: string;
   accent: string;
   ink: string;
+  /** Background plate paths, as the upload slots hold them. "" means none. */
+  plateUrl: string;
+  plateMobileUrl: string;
+  /** Plate crop 0-100 as the slider holds it, or "" for the centre. */
+  plateFocus: string;
 };
 
 export const EMPTY_HERO_FORM: HeroFormState = {
@@ -56,6 +62,9 @@ export const EMPTY_HERO_FORM: HeroFormState = {
   bg: "",
   accent: "",
   ink: "",
+  plateUrl: "",
+  plateMobileUrl: "",
+  plateFocus: "",
 };
 
 /**
@@ -93,12 +102,19 @@ export function heroPayloadFrom(f: HeroFormState): HeroCopy | undefined {
   const accent = isHex(f.accent) ? f.accent.toLowerCase() : null;
   const ink = isHex(f.ink) ? f.ink.toLowerCase() : null;
 
+  const plateUrl = platePath(f.plateUrl);
+  const plateMobileUrl = platePath(f.plateMobileUrl);
+  const plateFocusRaw = f.plateFocus.trim();
+  const plateFocus = plateFocusRaw === "" ? null : Number(plateFocusRaw);
+  const hasPlateFocus = plateFocus !== null && Number.isFinite(plateFocus);
+
   // Alt copy on its own is a real edit — the admin may be adding a translation
   // to a fiesta whose primary copy was stored before this panel existed.
   const filled =
     startsAt || liveAt || title || script || ribbon || sub ||
     titleAlt || scriptAlt || ribbonAlt || subAlt ||
-    hasFocus || bg || accent || ink;
+    hasFocus || bg || accent || ink ||
+    plateUrl || plateMobileUrl || hasPlateFocus;
   if (!filled) return undefined;
 
   return {
@@ -117,6 +133,11 @@ export function heroPayloadFrom(f: HeroFormState): HeroCopy | undefined {
     ...(bg ? { bg } : {}),
     ...(accent ? { accent } : {}),
     ...(ink ? { ink } : {}),
+    ...(plateUrl ? { plateUrl } : {}),
+    ...(plateMobileUrl ? { plateMobileUrl } : {}),
+    ...(hasPlateFocus
+      ? { plateFocus: Math.min(100, Math.max(0, Math.round(plateFocus))) }
+      : {}),
   };
 }
 
