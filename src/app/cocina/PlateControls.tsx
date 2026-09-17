@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { platePath, plateFocusCss, plateStatus, type PlateStatus } from "@/lib/heroPlate";
+import { imageIdOf } from "@/lib/platePrompt";
 
 // Whether the plate takeover will draw, named while the admin edits. Same job
 // as RotationStatus and MotifStatus: the rules live in lib/heroPlate, and the
@@ -169,6 +170,98 @@ export function PlateSlot({
   );
 }
 
+// Writes the image-model prompts for this flyer's plates. The admin pastes each
+// into Google AI Studio (set the aspect ratio there too), downloads the result,
+// and uploads it in the slot above. Nothing is generated or stored here.
+function PromptHelper({ flyerUrl }: { flyerUrl: string }) {
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState("");
+  const [prompts, setPrompts] = useState<{ desktop: string; mobile: string } | null>(null);
+  const [copied, setCopied] = useState<"" | "desktop" | "mobile">("");
+  const imageId = imageIdOf(flyerUrl);
+
+  async function write() {
+    if (!imageId) return;
+    setBusy(true);
+    setNote("");
+    try {
+      const res = await fetch("/api/admin/read-flyer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageId, mode: "scene" }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (d?.ok && d.prompts?.desktop && d.prompts?.mobile) {
+        setPrompts({ desktop: d.prompts.desktop, mobile: d.prompts.mobile });
+      } else {
+        setNote("Couldn't read the flyer. Try again, or write the prompt by hand.");
+      }
+    } catch {
+      setNote("Couldn't read the flyer. Try again, or write the prompt by hand.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function copy(which: "desktop" | "mobile") {
+    if (!prompts) return;
+    try {
+      await navigator.clipboard.writeText(prompts[which]);
+      setCopied(which);
+      setTimeout(() => setCopied(""), 2000);
+    } catch {
+      setNote("Copy failed. Select the text and copy it yourself.");
+    }
+  }
+
+  if (!imageId) {
+    return (
+      <p className="muted" style={{ margin: 0, fontSize: 12 }}>
+        Upload the flyer first to get a plate prompt.
+      </p>
+    );
+  }
+
+  return (
+    <div style={{ display: "grid", gap: 8, fontSize: 13 }}>
+      <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+        <button type="button" className="ghost" disabled={busy} onClick={write}>
+          {busy ? "Reading the flyer…" : prompts ? "Rewrite plate prompts" : "Write plate prompts"}
+        </button>
+        <span className="muted" style={{ fontSize: 12 }}>
+          Paste each into Google AI Studio with the matching aspect ratio set, then upload the
+          image above. Check the result for stray lettering before saving.
+        </span>
+      </div>
+      {note ? <span style={{ color: "#b42318", fontSize: 12 }}>{note}</span> : null}
+      {prompts
+        ? (
+            [
+              ["desktop", "Desktop plate (set 16:9)"],
+              ["mobile", "Phone plate (set 4:5)"],
+            ] as const
+          ).map(([k, label]) => (
+            <div key={k} style={{ display: "grid", gap: 4 }}>
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <strong style={{ fontSize: 12 }}>{label}</strong>
+                <button type="button" className="ghost" onClick={() => copy(k)}>
+                  {copied === k ? "Copied" : "Copy"}
+                </button>
+              </div>
+              <textarea
+                readOnly
+                value={prompts[k]}
+                rows={8}
+                style={{ width: "100%", fontSize: 12, fontFamily: "monospace" }}
+                onFocus={(e) => e.currentTarget.select()}
+              />
+            </div>
+          ))
+        : null}
+    </div>
+  );
+}
+
 export type PlatePatch = { plateUrl?: string; plateMobileUrl?: string; plateFocus?: string };
 
 /**
@@ -177,6 +270,7 @@ export type PlatePatch = { plateUrl?: string; plateMobileUrl?: string; plateFocu
  * the parent owns the three strings.
  */
 export default function PlateControls({
+  flyerUrl,
   plateUrl,
   plateMobileUrl,
   plateFocus,
@@ -186,6 +280,8 @@ export default function PlateControls({
   onChange,
   onError,
 }: {
+  /** The fiesta's flyer, read to write the plate prompts. */
+  flyerUrl: string;
   plateUrl: string;
   plateMobileUrl: string;
   plateFocus: string;
@@ -211,6 +307,7 @@ export default function PlateControls({
         headline and buttons over it, and a View Flyer button opens the poster. It takes
         priority over the motif and the flyer crop. Remove both plates to go back.
       </p>
+      <PromptHelper flyerUrl={flyerUrl} />
       <div style={{ display: "flex", gap: 18, flexWrap: "wrap" }}>
         <PlateSlot
           label="Desktop"

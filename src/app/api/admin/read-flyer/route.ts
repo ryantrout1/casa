@@ -1,10 +1,18 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { FLYER_SCHEMA, parseFlyerResponse } from "@/lib/flyerRead";
+import {
+  SCENE_PROMPT,
+  SCENE_SCHEMA,
+  parseSceneResponse,
+  platePrompts,
+} from "@/lib/platePrompt";
 
 export const dynamic = "force-dynamic";
 
-// Reads an uploaded flyer and proposes hero field values.
+// Reads an uploaded flyer and proposes hero field values, or, with
+// mode "scene", describes its artwork and returns the two background-plate
+// prompts built from that description.
 //
 // This lives on the server for one reason: the API key. Everything else about
 // the read — parsing, validation, date normalisation — is in lib/flyerRead,
@@ -93,8 +101,11 @@ export async function POST(req: Request) {
     // disable it, and preview environments without one simply do not offer it.
     if (!key) return NextResponse.json({ ok: false, reason: "not_configured" });
 
-    const body = (await req.json().catch(() => ({}))) as { imageId?: unknown };
+    const body = (await req.json().catch(() => ({}))) as { imageId?: unknown; mode?: unknown };
     const imageId = typeof body.imageId === "string" ? body.imageId : "";
+    // "scene" describes the artwork for a background-plate prompt; anything
+    // else is the original copy read, so existing callers are unchanged.
+    const scene = body.mode === "scene";
     if (!imageId) return NextResponse.json({ ok: false, reason: "bad_request" });
 
     const sql = db();
@@ -136,14 +147,16 @@ export async function POST(req: Request) {
                   type: "image",
                   source: { type: "base64", media_type: content_type, data: data_base64 },
                 },
-                { type: "text", text: PROMPT },
+                { type: "text", text: scene ? SCENE_PROMPT : PROMPT },
               ],
             },
           ],
           // Constrained decoding. Without this the response is prose-shaped
           // JSON that needs retries; with it the shape is guaranteed except
           // for refusals and truncation, both of which the parser handles.
-          output_config: { format: { type: "json_schema", schema: FLYER_SCHEMA } },
+          output_config: {
+            format: { type: "json_schema", schema: scene ? SCENE_SCHEMA : FLYER_SCHEMA },
+          },
         }),
       });
 
@@ -155,6 +168,12 @@ export async function POST(req: Request) {
       apiBody = await res.json();
     } finally {
       clearTimeout(timer);
+    }
+
+    if (scene) {
+      const read = parseSceneResponse(apiBody);
+      if (!read) return NextResponse.json({ ok: false, reason: "unreadable" });
+      return NextResponse.json({ ok: true, scene: read, prompts: platePrompts(read) });
     }
 
     const suggestion = parseFlyerResponse(apiBody);

@@ -108,13 +108,14 @@ function int(v: unknown, lo: number, hi: number): { ok: boolean; value: number |
 }
 
 /**
- * Turn a Messages API response body into a suggestion, or null.
+ * The JSON object a structured-output response carries, or null.
  *
- * Total by contract. Every failure — refusal, truncation, no text block,
- * malformed JSON, a wrong-typed field — returns null so the caller can carry
- * on with an untouched form.
+ * Shared by every reader of a Messages API response (the flyer copy read here,
+ * the plate scene read in lib/platePrompt) so the failure shapes are handled
+ * once. Total: a refusal, a truncation, a missing text block, malformed JSON,
+ * or a non-object payload all return null.
  */
-export function parseFlyerResponse(raw: unknown): FlyerSuggestion | null {
+export function responsePayload(raw: unknown): Record<string, unknown> | null {
   if (!raw || typeof raw !== "object") return null;
   const res = raw as Record<string, unknown>;
 
@@ -138,7 +139,19 @@ export function parseFlyerResponse(raw: unknown): FlyerSuggestion | null {
     return null;
   }
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) return null;
-  const p = payload as Record<string, unknown>;
+  return payload as Record<string, unknown>;
+}
+
+/**
+ * Turn a Messages API response body into a suggestion, or null.
+ *
+ * Total by contract. Every failure — refusal, truncation, no text block,
+ * malformed JSON, a wrong-typed field — returns null so the caller can carry
+ * on with an untouched form.
+ */
+export function parseFlyerResponse(raw: unknown): FlyerSuggestion | null {
+  const p = responsePayload(raw);
+  if (!p) return null;
 
   // Every schema key must be present. A missing key means the response did not
   // come from this schema, so nothing in it can be trusted.

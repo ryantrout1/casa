@@ -827,6 +827,7 @@ export default function FiestaManager({ fiestas }: { fiestas: FiestaAdminRow[] }
                             }}
                           >
                             <PlateControls
+                              flyerUrl={r.image_url}
                               plateUrl={draft.heroPlateUrl}
                               plateMobileUrl={draft.heroPlateMobileUrl}
                               plateFocus={draft.heroPlateFocus}

@@ -285,6 +285,7 @@ export default function HeroPanel({
 
       <div style={{ borderTop: "1px solid #e6e8ee", paddingTop: 12 }}>
         <PlateControls
+          flyerUrl={flyerUrl}
           plateUrl={value.plateUrl}
           plateMobileUrl={value.plateMobileUrl}
           plateFocus={value.plateFocus}
