@@ -4,8 +4,6 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Editor, { type EditorHandle } from "./Editor";
 import {
-  ALL_CHANNELS,
-  CHANNEL_LABEL,
   flyerMissingFromEmail,
   resultEntries,
   type ChannelId,
@@ -22,6 +20,19 @@ import { paletteFromFile } from "@/lib/paletteFromFile";
 import { mergeSuggestions, type FlyerSuggestion } from "@/lib/flyerRead";
 import type { Palette } from "@/lib/palette";
 import HeroPanel from "./HeroPanel";
+import { readiness, type ReadyState } from "@/lib/readiness";
+import { CHANNELS, channel } from "@/lib/channels";
+
+const READY_CLS: Record<ReadyState, string> = {
+  ready: "pill good",
+  needs: "pill warn",
+  off: "pill",
+};
+const READY_WORD: Record<ReadyState, string> = {
+  ready: "Ready",
+  needs: "Needs work",
+  off: "Off",
+};
 
 type InitialDraft = {
   id: string;
@@ -53,31 +64,6 @@ function channelsRecord(list: ChannelId[] | undefined): Record<ChannelId, boolea
     grid: list.includes("grid"),
     fiestas_page: list.includes("fiestas_page"),
   };
-}
-
-// A destination's configuration, shown only while that destination is ticked.
-// Values are KEPT when it is unticked rather than cleared, so unticking to
-// look at something and re-ticking does not silently discard work; the payload
-// is built from the selected channels, so hidden values are never published.
-function Panel({
-  on,
-  title,
-  note,
-  children,
-}: {
-  on: boolean;
-  title: string;
-  note: string;
-  children: React.ReactNode;
-}) {
-  if (!on) return null;
-  return (
-    <div className="field-c dest-panel">
-      <label>{title}</label>
-      <p className="hint" style={{ margin: "0 0 10px" }}>{note}</p>
-      {children}
-    </div>
-  );
 }
 
 export default function Compose({
@@ -233,6 +219,12 @@ export default function Compose({
     channelsRecord(initialDraft?.channels),
   );
   const [emailSent, setEmailSent] = useState(false);
+  // Tracked for the checklist; the editor reports it on every change.
+  const [emailEmpty, setEmailEmpty] = useState(!(initialDraft?.body ?? "").trim());
+  // Wizard position. A saved draft opens on the review step, where the
+  // checklist says what is left.
+  const [step, setStep] = useState<number>(initialDraft ? 4 : 1);
+  const [tab, setTab] = useState<"website" | "email">("website");
   const [results, setResults] = useState<PublishResults | null>(null);
   const [draftId, setDraftId] = useState<string | null>(initialDraft?.id ?? null);
 
@@ -563,197 +555,407 @@ export default function Compose({
 
   const anyBusy = busy || uploading || flyerUploading;
 
+  const check = readiness({
+    selected: (Object.keys(channels) as ChannelId[]).filter((k) => channels[k]),
+    subject,
+    emailEmpty,
+    emailSent,
+    flyerUrl,
+    caption: flyerCaption,
+    eventDate: flyerDate,
+    hero,
+  });
+  const websiteOn = anyWebsite;
+  const emailOn = channels.email && !emailSent;
+  const tabs: ("website" | "email")[] = [
+    ...(websiteOn ? (["website"] as const) : []),
+    ...(emailOn ? (["email"] as const) : []),
+  ];
+  const activeTab = tabs.includes(tab) ? tab : (tabs[0] ?? "website");
+
+  function setWebsite(on: boolean) {
+    setChannels((c) => ({ ...c, hero: on, grid: on, fiestas_page: on }));
+  }
+
+  const STEPS = [
+    { n: 1, title: "The flyer", sub: "Name it and upload the flyer." },
+    { n: 2, title: "Where it goes", sub: "Switch channels on." },
+    { n: 3, title: "Make it fit", sub: "One tab per channel." },
+    { n: 4, title: "Review & publish", sub: "Check, then send." },
+  ] as const;
+
   return (
-    <div className="panel compose">
-      {draftId ? (
-        <div className="field-c" style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-          <span className="pill">{isScheduled ? "Scheduled" : "Draft"}</span>
-          {isScheduled && initialDraft?.scheduledFor ? (
-            <>
-              <span>
-                Scheduled for <strong>{fmtPhoenix(initialDraft.scheduledFor)}</strong> (Arizona time)
-              </span>
-              <button className="ghost" disabled={anyBusy} onClick={cancelSchedule}>
-                Cancel schedule
-              </button>
-            </>
-          ) : (
-            <span className="muted">
-              Editing a saved draft. <a href="/cocina/campaigns/new">Start a new campaign</a>
+    <div className="wiz">
+      <nav className="wiz-rail" aria-label="Campaign steps">
+        {STEPS.map((st) => (
+          <button
+            key={st.n}
+            type="button"
+            className={step === st.n ? "wiz-step on" : "wiz-step"}
+            aria-current={step === st.n ? "step" : undefined}
+            onClick={() => setStep(st.n)}
+          >
+            <span className="wiz-dot">{st.n}</span>
+            <span>
+              <strong>{st.title}</strong>
+              <span className="wiz-sub-label">{st.sub}</span>
             </span>
-          )}
-        </div>
-      ) : null}
+          </button>
+        ))}
+      </nav>
 
-      <div className="field-c">
-        <label>Subject</label>
-        <input
-          type="text"
-          value={subject}
-          onChange={(e) => setSubject(e.target.value)}
-          placeholder="e.g. Taco Tuesday is back — $2 tacos all night"
-        />
-      </div>
-
-      <div className="field-c">
-        <label>Email message</label>
-        <Editor ref={editorRef} onUploadingChange={setUploading} initialHTML={initialDraft?.body} />
-        <p className="hint">
-          Casa header, footer, and an unsubscribe link are added automatically. Only used when{" "}
-          <strong>Email</strong> is a destination below.
-        </p>
-      </div>
-
-      <Panel
-        on={anyWebsite}
-        title="Website flyer"
-        note="Shared by the hero, the homepage grid, and the Fiestas page."
-      >
-        <div style={{ display: "flex", gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}>
-          <div>
-            <button
-              type="button"
-              className="ghost"
-              disabled={flyerUploading}
-              onClick={() => flyerFileRef.current?.click()}
-            >
-              {flyerUploading ? "Uploading…" : flyerUrl ? "Replace flyer" : "Upload flyer"}
-            </button>
-            <input ref={flyerFileRef} type="file" accept="image/*" hidden onChange={onPickFlyer} />
+      <div className="panel compose wiz-main">
+        {draftId ? (
+          <div className="field-c" style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+            <span className="pill">{isScheduled ? "Scheduled" : "Draft"}</span>
+            {isScheduled && initialDraft?.scheduledFor ? (
+              <>
+                <span>
+                  Scheduled for <strong>{fmtPhoenix(initialDraft.scheduledFor)}</strong> (Arizona time)
+                </span>
+                <button className="ghost" disabled={anyBusy} onClick={cancelSchedule}>
+                  Cancel schedule
+                </button>
+              </>
+            ) : (
+              <span className="muted">
+                Editing a saved draft. <a href="/cocina/campaigns/new">Start a new campaign</a>
+              </span>
+            )}
           </div>
-          {flyerUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={flyerUrl}
-              alt="Flyer preview"
-              style={{ width: 120, height: "auto", borderRadius: 8, border: "1px solid #eee" }}
+        ) : null}
+
+        {/* Every step stays mounted and is only hidden, so nothing typed in
+            one step is lost by visiting another. The email editor in
+            particular keeps its content in the DOM. */}
+        <section hidden={step !== 1} aria-label="The flyer">
+          <h2 className="wiz-h">Start with the flyer</h2>
+          <div className="field-c">
+            <label htmlFor="cmp-subject">Campaign name (also the email subject)</label>
+            <input
+              id="cmp-subject"
+              type="text"
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              placeholder="e.g. Del Rancho al Honky Tonk: Karaoke Night this Saturday!"
             />
-          ) : null}
-        </div>
-        <div style={{ display: "grid", gap: 8, marginTop: 10, maxWidth: 520 }}>
-          <input
-            type="text"
-            value={flyerCaption}
-            onChange={(e) => setFlyerCaption(e.target.value)}
-            placeholder="Caption (shown on the Fiestas page) — e.g. México vs USA · July 4"
-          />
-          <input
-            type="text"
-            value={flyerAlt}
-            onChange={(e) => setFlyerAlt(e.target.value)}
-            placeholder="Alt text (describe the flyer for accessibility)"
-          />
-          <label className="hint" style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            Event date (optional — leave blank for recurring/ongoing)
-            <input type="date" value={flyerDate} onChange={(e) => setFlyerDate(e.target.value)} />
-          </label>
-        </div>
-      </Panel>
+          </div>
+          <div className="field-c">
+            <label>Flyer</label>
+            <div style={{ display: "flex", gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}>
+              <div>
+                <button
+                  type="button"
+                  className="ghost"
+                  disabled={flyerUploading}
+                  onClick={() => flyerFileRef.current?.click()}
+                >
+                  {flyerUploading ? "Uploading…" : flyerUrl ? "Replace flyer" : "Upload flyer"}
+                </button>
+                <input ref={flyerFileRef} type="file" accept="image/*" hidden onChange={onPickFlyer} />
+                <p className="hint">We read the name, date and colors from it for you.</p>
+              </div>
+              {flyerUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={flyerUrl}
+                  alt="Flyer preview"
+                  style={{ width: 120, height: "auto", borderRadius: 8, border: "1px solid #eee" }}
+                />
+              ) : null}
+            </div>
+          </div>
+          <div className="field-c" style={{ display: "grid", gap: 8, maxWidth: 560 }}>
+            <label htmlFor="cmp-caption">Caption (shown under the flyer on the website)</label>
+            <input
+              id="cmp-caption"
+              type="text"
+              value={flyerCaption}
+              onChange={(e) => setFlyerCaption(e.target.value)}
+              placeholder="e.g. Del Rancho al Honky Tonk Karaoke Night"
+            />
+            <label htmlFor="cmp-alt">Describe the flyer (for screen readers)</label>
+            <input
+              id="cmp-alt"
+              type="text"
+              value={flyerAlt}
+              onChange={(e) => setFlyerAlt(e.target.value)}
+              placeholder="e.g. Poster with a microphone, accordion and guitar"
+            />
+            <label htmlFor="cmp-date">Event date (leave blank for something ongoing)</label>
+            <input id="cmp-date" type="date" value={flyerDate} onChange={(e) => setFlyerDate(e.target.value)} />
+          </div>
+        </section>
 
-      <Panel
-        on={channels.hero}
-        title="Hero takeover"
-        note="Replaces the homepage hero until the event is over."
-      >
-        <HeroPanel
-          value={hero}
-          onChange={patchHero}
-          flyerUrl={flyerUrl}
-          palette={palette}
-          dateLine={previewDateLine}
-          suggested={suggested}
-          reading={reading}
-          readNote={readNote}
-          onClearSuggestions={clearSuggestions}
-          onError={(m) => {
-            setErr(true);
-            setMsg(m);
-          }}
-        />
-      </Panel>
-
-      <div className="field-c">
-        <label>Publish to</label>
-        <div style={{ display: "flex", gap: 18, flexWrap: "wrap" }}>
-          {ALL_CHANNELS.map((c) => {
-            const locked = c === "email" && emailSent;
-            return (
-              <label
-                key={c}
-                style={{ display: "flex", gap: 6, alignItems: "center", opacity: locked ? 0.55 : 1 }}
-              >
+        <section hidden={step !== 2} aria-label="Where it goes">
+          <h2 className="wiz-h">Where should it go?</h2>
+          <div className="wiz-cards">
+            <div className={websiteOn ? "wiz-card on" : "wiz-card"}>
+              <label className="wiz-toggle">
+                <input type="checkbox" checked={websiteOn} onChange={(e) => setWebsite(e.target.checked)} />
+                <strong>{channel("website").label}</strong>
+              </label>
+              <p className="hint">{channel("website").description}</p>
+              <div style={{ display: "grid", gap: 6, marginTop: 8 }}>
+                {(["hero", "grid", "fiestas_page"] as const).map((k) => (
+                  <label key={k} className="wiz-sub">
+                    <input type="checkbox" checked={channels[k]} onChange={() => toggle(k)} />
+                    {k === "hero"
+                      ? "Homepage hero (takes over the top of the site)"
+                      : k === "grid"
+                        ? "Homepage upcoming fiestas grid"
+                        : "Fiestas page"}
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div className={emailOn ? "wiz-card on" : "wiz-card"}>
+              <label className="wiz-toggle" style={{ opacity: emailSent ? 0.55 : 1 }}>
                 <input
                   type="checkbox"
-                  checked={channels[c] && !locked}
-                  disabled={locked}
-                  onChange={() => toggle(c)}
+                  checked={channels.email && !emailSent}
+                  disabled={emailSent}
+                  onChange={() => toggle("email")}
                 />
-                {CHANNEL_LABEL[c]}
-                {locked ? <span className="hint"> (already sent)</span> : null}
+                <strong>{channel("email").label}</strong>
+                {emailSent ? <span className="hint" style={{ margin: 0 }}>(already sent)</span> : null}
               </label>
-            );
-          })}
-        </div>
-      </div>
-
-      <div className="field-c test-row">
-        <label>Send a test to</label>
-        <input
-          type="email"
-          value={testEmail}
-          onChange={(e) => setTestEmail(e.target.value)}
-          placeholder="you@example.com"
-        />
-        <button className="ghost" disabled={anyBusy} onClick={sendTest}>
-          Send test
-        </button>
-      </div>
-
-      <div className="field-c test-row">
-        <label>Schedule for (Arizona time)</label>
-        <input
-          type="datetime-local"
-          value={scheduleLocal}
-          onChange={(e) => setScheduleLocal(e.target.value)}
-        />
-        <button className="ghost" disabled={anyBusy || !scheduleLocal} onClick={schedule}>
-          {isScheduled ? "Reschedule" : "Schedule"}
-        </button>
-      </div>
-
-      <div className="send-row" style={{ gap: 10, flexWrap: "wrap" }}>
-        <button disabled={anyBusy} onClick={publish}>
-          {busy ? "Working…" : draftId ? "Send now" : "Publish"}
-        </button>
-        {!isScheduled ? (
-          <button className="ghost" disabled={anyBusy} onClick={saveDraft}>
-            {draftId ? "Update draft" : "Save draft"}
-          </button>
-        ) : null}
-        {draftId ? (
-          <button className="ghost" disabled={anyBusy} onClick={deleteDraft} style={{ color: "#c0392b" }}>
-            {isScheduled ? "Delete" : "Delete draft"}
-          </button>
-        ) : null}
-        {msg ? <span className={err ? "send-msg err" : "send-msg ok"}>{msg}</span> : null}
-      </div>
-
-      {results ? (
-        <div className="panel" style={{ marginTop: 16 }}>
-          <strong>Publish results</strong>
-          <ul style={{ listStyle: "none", padding: 0, margin: "8px 0 0" }}>
-            {resultEntries(results).map((e) => (
-              <li key={e.channel} style={{ padding: "3px 0" }}>
-                <span style={{ color: e.ok ? "#16a89e" : "#c0392b", fontWeight: 700 }}>
-                  {e.ok ? "✓" : "✗"}
-                </span>{" "}
-                {e.label}
-                {e.detail ? <span className="muted"> — {e.detail}</span> : null}
-              </li>
+              <p className="hint">
+                {channel("email").description} Goes to {subscriberCount}{" "}
+                {subscriberCount === 1 ? "member" : "members"}.
+              </p>
+            </div>
+            {CHANNELS.filter((c) => c.availability === "not_connected").map((c) => (
+              <div key={c.key} className="wiz-card" style={{ opacity: 0.7 }}>
+                <label className="wiz-toggle">
+                  <input type="checkbox" disabled checked={false} readOnly />
+                  <strong>{c.label}</strong>
+                  <span className="pill warn">Not connected</span>
+                </label>
+                <p className="hint">
+                  {c.description} <a href="/cocina/channels">See Channels</a>.
+                </p>
+              </div>
             ))}
-          </ul>
+          </div>
+          <p className="hint">
+            Coming later:{" "}
+            {CHANNELS.filter((c) => c.availability === "coming_later")
+              .map((c) => c.label)
+              .join(", ")}
+            .
+          </p>
+        </section>
+
+        <section hidden={step !== 3} aria-label="Make it fit">
+          <h2 className="wiz-h">Make it fit each channel</h2>
+          {tabs.length === 0 ? (
+            <p className="muted">Nothing is switched on yet. Pick channels in step 2.</p>
+          ) : (
+            <div role="tablist" aria-label="Channels" className="wiz-tabs">
+              {tabs.map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  role="tab"
+                  aria-selected={activeTab === t}
+                  className={activeTab === t ? "wiz-tab on" : "wiz-tab"}
+                  onClick={() => setTab(t)}
+                >
+                  {channel(t).label}
+                </button>
+              ))}
+            </div>
+          )}
+          <div hidden={!(websiteOn && activeTab === "website")}>
+            {channels.hero ? (
+              <HeroPanel
+                value={hero}
+                onChange={patchHero}
+                flyerUrl={flyerUrl}
+                palette={palette}
+                dateLine={previewDateLine}
+                suggested={suggested}
+                reading={reading}
+                readNote={readNote}
+                onClearSuggestions={clearSuggestions}
+                onError={(m) => {
+                  setErr(true);
+                  setMsg(m);
+                }}
+              />
+            ) : (
+              <p className="muted">
+                The homepage hero is off for this campaign, so the flyer from step 1 is all the
+                website needs.
+              </p>
+            )}
+          </div>
+          {/* Always mounted: the editor holds the message in the DOM. */}
+          <div hidden={!(emailOn && activeTab === "email")}>
+            <div className="field-c">
+              <label>Email message</label>
+              <Editor
+                ref={editorRef}
+                onUploadingChange={setUploading}
+                initialHTML={initialDraft?.body}
+                onEmptyChange={setEmailEmpty}
+              />
+              <p className="hint">Casa header, footer, and an unsubscribe link are added automatically.</p>
+            </div>
+            <div className="field-c test-row">
+              <label htmlFor="cmp-test">Send a test to</label>
+              <input
+                id="cmp-test"
+                type="email"
+                value={testEmail}
+                onChange={(e) => setTestEmail(e.target.value)}
+                placeholder="you@example.com"
+              />
+              <button className="ghost" disabled={anyBusy} onClick={sendTest}>
+                Send test
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section hidden={step !== 4} aria-label="Review and publish">
+          <h2 className="wiz-h">Review and publish</h2>
+          <div className="wiz-review">
+            {check.channels.map((c) => (
+              <div key={c.key} className="wiz-review-row">
+                <strong>{c.label}</strong>
+                <span>
+                  <span className={READY_CLS[c.state]}>{READY_WORD[c.state]}</span>
+                </span>
+                <span className="muted" style={{ fontSize: "0.88rem" }}>
+                  {c.missing.length > 0 ? `Needs ${c.missing.join(", ")}.` : null}
+                  {c.notes.length > 0 ? ` ${c.notes.join(" ")}` : null}
+                  {c.state === "ready" && c.key === "email"
+                    ? `Goes to ${subscriberCount} members.`
+                    : null}
+                  {c.state === "ready" && c.key === "website"
+                    ? [channels.hero && "homepage hero", channels.grid && "homepage grid", channels.fiestas_page && "Fiestas page"]
+                        .filter(Boolean)
+                        .join(", ")
+                        .replace(/^./, (m) => m.toUpperCase()) + "."
+                    : null}
+                </span>
+                <span>
+                  {c.state !== "off" ? (
+                    <button
+                      type="button"
+                      className="ghost"
+                      onClick={() => {
+                        setStep(c.key === "website" && c.missing.some((m) => m.includes("flyer")) ? 1 : 3);
+                        if (c.key === "website" || c.key === "email") setTab(c.key);
+                      }}
+                    >
+                      Edit
+                    </button>
+                  ) : null}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <div className="field-c test-row">
+            <label htmlFor="cmp-when">Send later instead (Arizona time)</label>
+            <input
+              id="cmp-when"
+              type="datetime-local"
+              value={scheduleLocal}
+              onChange={(e) => setScheduleLocal(e.target.value)}
+            />
+            <button
+              className="ghost"
+              disabled={anyBusy || !scheduleLocal || !check.canPublish}
+              onClick={schedule}
+            >
+              {isScheduled ? "Reschedule" : "Schedule"}
+            </button>
+          </div>
+          <p className="hint" style={{ marginTop: -8 }}>
+            A scheduled campaign sends everything at that time. To show the hero at a different time
+            than the email, set &ldquo;Takeover goes live&rdquo; in step 3.
+          </p>
+        </section>
+
+        <div className="send-row" style={{ gap: 10, flexWrap: "wrap", marginTop: 16 }}>
+          {step > 1 ? (
+            <button type="button" className="ghost" onClick={() => setStep(step - 1)}>
+              Back
+            </button>
+          ) : null}
+          {step < 4 ? (
+            <button type="button" onClick={() => setStep(step + 1)}>
+              Next
+            </button>
+          ) : (
+            <button disabled={anyBusy || !check.canPublish} onClick={publish}>
+              {busy ? "Working…" : draftId ? "Publish now" : "Publish campaign"}
+            </button>
+          )}
+          {!isScheduled ? (
+            <button className="ghost" disabled={anyBusy} onClick={saveDraft}>
+              {draftId ? "Update draft" : "Save draft"}
+            </button>
+          ) : null}
+          {draftId ? (
+            <button className="ghost" disabled={anyBusy} onClick={deleteDraft} style={{ color: "#c0392b" }}>
+              {isScheduled ? "Delete" : "Delete draft"}
+            </button>
+          ) : null}
+          {msg ? <span className={err ? "send-msg err" : "send-msg ok"}>{msg}</span> : null}
         </div>
-      ) : null}
+
+        {results ? (
+          <div className="panel" style={{ marginTop: 16 }}>
+            <strong>Publish results</strong>
+            <ul style={{ listStyle: "none", padding: 0, margin: "8px 0 0" }}>
+              {resultEntries(results).map((e) => (
+                <li key={e.channel} style={{ padding: "3px 0" }}>
+                  <span style={{ color: e.ok ? "#16a89e" : "#c0392b", fontWeight: 700 }}>
+                    {e.ok ? "✓" : "✗"}
+                  </span>{" "}
+                  {e.label}
+                  {e.detail ? <span className="muted"> ({e.detail})</span> : null}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+      </div>
+
+      <aside className="panel wiz-side" aria-label="Checklist">
+        <strong style={{ display: "block", marginBottom: 10 }}>Ready to publish?</strong>
+        {check.general.length > 0 ? (
+          <p className="hint" style={{ margin: "0 0 10px", color: "#b45309" }}>
+            Still needs {check.general.join(" and ")}.
+          </p>
+        ) : null}
+        <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: 10 }}>
+          {check.channels.map((c) => (
+            <li key={c.key} style={{ display: "grid", gap: 3 }}>
+              <span style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+                <span style={{ fontWeight: 600 }}>{c.label}</span>
+                <span className={READY_CLS[c.state]}>{READY_WORD[c.state]}</span>
+              </span>
+              {c.missing.length > 0 ? (
+                <span className="hint" style={{ margin: 0 }}>Needs {c.missing.join(", ")}.</span>
+              ) : null}
+              {c.notes.length > 0 ? (
+                <span className="hint" style={{ margin: 0 }}>{c.notes.join(" ")}</span>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+        {check.canPublish ? (
+          <p className="hint" style={{ margin: "12px 0 0", color: "#1f7a44" }}>
+            Everything that is switched on is ready.
+          </p>
+        ) : null}
+      </aside>
     </div>
   );
 }

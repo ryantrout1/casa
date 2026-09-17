@@ -21,8 +21,20 @@ function preventDefault(e: React.MouseEvent) {
   e.preventDefault();
 }
 
-const Editor = forwardRef<EditorHandle, { onUploadingChange?: (b: boolean) => void; initialHTML?: string }>(
-  function Editor({ onUploadingChange, initialHTML }, ref) {
+const Editor = forwardRef<
+  EditorHandle,
+  {
+    onUploadingChange?: (b: boolean) => void;
+    initialHTML?: string;
+    /**
+     * Called with whether the message is empty, whenever its content changes
+     * by any path: typing, pasting, toolbar, image upload, or a flyer seeded
+     * from outside. Lets the composer's checklist track the email.
+     */
+    onEmptyChange?: (empty: boolean) => void;
+  }
+>(
+  function Editor({ onUploadingChange, initialHTML, onEmptyChange }, ref) {
     const elRef = useRef<HTMLDivElement>(null);
     const fileRef = useRef<HTMLInputElement>(null);
     const [hasImage, setHasImage] = useState(false);
@@ -36,6 +48,21 @@ const Editor = forwardRef<EditorHandle, { onUploadingChange?: (b: boolean) => vo
         if (initialHTML.includes("<img")) setHasImage(true);
       }
       // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // One observer covers every way the content can change, including the
+    // imperative ones (appendImage, execCommand) that fire no React event.
+    const emptyCb = useRef(onEmptyChange);
+    emptyCb.current = onEmptyChange;
+    useEffect(() => {
+      const el = elRef.current;
+      if (!el) return;
+      const report = () =>
+        emptyCb.current?.((el.textContent ?? "").trim().length === 0 && !el.querySelector("img"));
+      report();
+      const mo = new MutationObserver(report);
+      mo.observe(el, { childList: true, subtree: true, characterData: true });
+      return () => mo.disconnect();
     }, []);
 
     useImperativeHandle(ref, () => ({
