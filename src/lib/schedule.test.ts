@@ -299,3 +299,61 @@ describe("parseHeroCopy — timestamps must be storable", () => {
     });
   });
 });
+
+// --- Plates in the draft blob ----------------------------------------------
+// The plate rides inside HeroCopy like every other hero field, so the immediate
+// route and the cron drain parse it through the one parseHeroCopy.
+
+describe("parseHeroCopy: plates", () => {
+  it("carries both plates and the focus", () => {
+    expect(
+      parseHeroCopy({
+        plateUrl: "/api/img/72dcee08-9888-409c-a4eb-d0cd7e1b1b68",
+        plateMobileUrl: "/api/img/33350609-061e-4718-97c1-18e8fc2f2e9c",
+        plateFocus: 30,
+      }),
+    ).toEqual({
+      plateUrl: "/api/img/72dcee08-9888-409c-a4eb-d0cd7e1b1b68",
+      plateMobileUrl: "/api/img/33350609-061e-4718-97c1-18e8fc2f2e9c",
+      plateFocus: 30,
+    });
+  });
+
+  it("strips a host so a preview upload never pins a preview URL", () => {
+    expect(
+      parseHeroCopy({ plateUrl: "https://casa-x.vercel.app/api/img/72dcee08-9888-409c-a4eb-d0cd7e1b1b68" })?.plateUrl,
+    ).toBe("/api/img/72dcee08-9888-409c-a4eb-d0cd7e1b1b68");
+  });
+
+  it("drops an unusable plate rather than failing the insert", () => {
+    expect(parseHeroCopy({ plateUrl: "/images/HERO_BAR.jpg" })).toBeUndefined();
+    expect(parseHeroCopy({ title: "X", plateMobileUrl: 7 })).toEqual({ title: "X" });
+  });
+
+  it("keeps plate focus 0 and clamps the rest", () => {
+    expect(parseHeroCopy({ plateFocus: 0 })).toEqual({ plateFocus: 0 });
+    expect(parseHeroCopy({ plateFocus: "140" })).toEqual({ plateFocus: 100 });
+    expect(parseHeroCopy({ plateFocus: "abc" })).toBeUndefined();
+  });
+
+  it("survives the scheduled path through parseDraftConfig", () => {
+    const cfg = parseDraftConfig({
+      channels: ["hero"],
+      flyer: {
+        imageUrl: "/api/img/x",
+        caption: "Honky Tonk",
+        hero: { title: "DEL RANCHO AL HONKY TONK", plateUrl: "/api/img/72dcee08-9888-409c-a4eb-d0cd7e1b1b68", plateFocus: 40 },
+      },
+    });
+    expect(cfg.flyer.hero).toEqual({
+      title: "DEL RANCHO AL HONKY TONK",
+      plateUrl: "/api/img/72dcee08-9888-409c-a4eb-d0cd7e1b1b68",
+      plateFocus: 40,
+    });
+  });
+
+  it("leaves a draft saved before plates existed unchanged", () => {
+    const legacy = { title: "EL PALOMAZO", lang: "es" as const, focus: 38, bg: "#1a1008" };
+    expect(parseHeroCopy(legacy)).toEqual(legacy);
+  });
+});

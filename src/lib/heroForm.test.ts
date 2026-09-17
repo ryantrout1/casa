@@ -393,3 +393,44 @@ describe("motifColumnsFrom → heroMotif round-trip", () => {
     expect(planFor(d, "LOTERÍA")).toEqual({ motif: "none" });
   });
 });
+
+describe("heroPayloadFrom: plates", () => {
+  it("an untouched plate slot does not make the form count as touched", () => {
+    expect(heroPayloadFrom(form({ plateUrl: "", plateMobileUrl: "", plateFocus: "" }))).toBeUndefined();
+  });
+
+  it("a plate on its own is a real edit", () => {
+    const p = heroPayloadFrom(form({ plateUrl: "/api/img/72dcee08-9888-409c-a4eb-d0cd7e1b1b68" }));
+    expect(p?.plateUrl).toBe("/api/img/72dcee08-9888-409c-a4eb-d0cd7e1b1b68");
+    expect(p?.plateMobileUrl).toBeUndefined();
+  });
+
+  it("carries both plates and the focus, and keeps focus 0", () => {
+    const p = heroPayloadFrom(
+      form({ plateUrl: "/api/img/72dcee08-9888-409c-a4eb-d0cd7e1b1b68", plateMobileUrl: "/api/img/33350609-061e-4718-97c1-18e8fc2f2e9c", plateFocus: "0" }),
+    );
+    expect(p).toMatchObject({
+      plateUrl: "/api/img/72dcee08-9888-409c-a4eb-d0cd7e1b1b68",
+      plateMobileUrl: "/api/img/33350609-061e-4718-97c1-18e8fc2f2e9c",
+      plateFocus: 0,
+    });
+  });
+
+  it("drops an unusable plate instead of sending it", () => {
+    expect(heroPayloadFrom(form({ plateUrl: "nope" }))).toBeUndefined();
+  });
+
+  it("produces a payload parseHeroCopy accepts unchanged", () => {
+    const p = heroPayloadFrom(
+      form({
+        title: "DEL RANCHO AL HONKY TONK",
+        startLocal: "2026-09-19T20:00",
+        plateUrl: "https://casa-x.vercel.app/api/img/72dcee08-9888-409c-a4eb-d0cd7e1b1b68",
+        plateMobileUrl: "/api/img/33350609-061e-4718-97c1-18e8fc2f2e9c",
+        plateFocus: "62",
+      }),
+    );
+    expect(p?.plateUrl).toBe("/api/img/72dcee08-9888-409c-a4eb-d0cd7e1b1b68");
+    expect(parseHeroCopy(p)).toEqual(p);
+  });
+});

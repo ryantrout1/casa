@@ -202,6 +202,9 @@ describe("heroColumns", () => {
       hero_script_alt: null,
       hero_ribbon_alt: null,
       hero_sub_alt: null,
+      hero_plate_url: null,
+      hero_plate_mobile_url: null,
+      hero_plate_focus: null,
     });
   });
 
@@ -240,6 +243,26 @@ describe("heroColumns", () => {
     });
     expect(cols.hero_title_alt).toBe("EL PALOMAZO");
     expect(cols.hero_ribbon_alt).toBe("A NIGHT OF MEXICAN KARAOKE");
+  });
+
+  it("binds both plates and the plate focus", () => {
+    const cols = heroColumns({
+      plateUrl: "/api/img/72dcee08-9888-409c-a4eb-d0cd7e1b1b68",
+      plateMobileUrl: "/api/img/33350609-061e-4718-97c1-18e8fc2f2e9c",
+      plateFocus: 0,
+    });
+    expect(cols.hero_plate_url).toBe("/api/img/72dcee08-9888-409c-a4eb-d0cd7e1b1b68");
+    expect(cols.hero_plate_mobile_url).toBe("/api/img/33350609-061e-4718-97c1-18e8fc2f2e9c");
+    expect(cols.hero_plate_focus).toBe(0);
+  });
+
+  it("re-validates plates, so a value that would fail the DB CHECK binds as null", () => {
+    const cols = heroColumns({
+      plateUrl: "https://www.casadeleyva.com/api/img/72dcee08-9888-409c-a4eb-d0cd7e1b1b68",
+      plateMobileUrl: "/images/x.jpg",
+    });
+    expect(cols.hero_plate_url).toBe("/api/img/72dcee08-9888-409c-a4eb-d0cd7e1b1b68");
+    expect(cols.hero_plate_mobile_url).toBeNull();
   });
 
   it("keeps focus 0 rather than collapsing it to null", () => {
