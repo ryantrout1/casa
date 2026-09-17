@@ -11,7 +11,9 @@ import {
   PLATE_SHADE,
   PLATE_SHADE_MIN,
   heroTier,
+  plateColumnsFrom,
   plateFocusCss,
+  plateStatus,
   platePath,
   plateSources,
   plateStyleVars,
@@ -316,5 +318,92 @@ describe("heroTier", () => {
     const expected = hasTitle && hasDate ? "flyer" : "brand";
     expect(legacyTier(f)).toBe(expected);
     expect(heroTier(f, heroViews(f))).toBe(expected);
+  });
+});
+
+describe("plateColumnsFrom: what sethero writes", () => {
+  it("is null when the request carries no plate keys, so the stored plate is kept", () => {
+    expect(plateColumnsFrom({ heroTitle: "X", heroFocus: "10" })).toBeNull();
+  });
+
+  it("counts a key that is present but empty as a request to clear", () => {
+    expect(plateColumnsFrom({ heroPlateUrl: "" })).toEqual({
+      url: null,
+      mobileUrl: null,
+      focus: null,
+    });
+  });
+
+  it("stores paths, strips hosts, and parses the slider string", () => {
+    expect(
+      plateColumnsFrom({
+        heroPlateUrl: `https://casa-abc.vercel.app/api/img/${ID}`,
+        heroPlateMobileUrl: `/api/img/${ID2}`,
+        heroPlateFocus: "30",
+      }),
+    ).toEqual({ url: `/api/img/${ID}`, mobileUrl: `/api/img/${ID2}`, focus: 30 });
+  });
+
+  it("clears an unusable path rather than repairing it", () => {
+    expect(plateColumnsFrom({ heroPlateUrl: "/images/HERO_BAR.jpg" })?.url).toBeNull();
+  });
+
+  it.each([
+    ["", null],
+    ["  ", null],
+    [null, null],
+    ["abc", null],
+    ["0", 0],
+    [0, 0],
+    ["150", 100],
+    [-4, 0],
+    ["49.6", 50],
+  ])("focus %s -> %s", (raw, want) => {
+    expect(plateColumnsFrom({ heroPlateFocus: raw })?.focus).toBe(want);
+  });
+
+  it("ignores inherited keys", () => {
+    const proto = { heroPlateUrl: `/api/img/${ID}` };
+    const body = Object.create(proto) as Record<string, unknown>;
+    expect(plateColumnsFrom(body)).toBeNull();
+  });
+});
+
+describe("plateStatus: the admin badge", () => {
+  const good = `/api/img/${ID}`;
+  const base = { plateUrl: "", plateMobileUrl: "", hasTitle: true, hasDate: true };
+
+  it("none without any plate", () => {
+    expect(plateStatus(base)).toBe("none");
+    expect(plateStatus({ ...base, plateUrl: "  " })).toBe("none");
+  });
+
+  it("on with a usable desktop plate, a headline and a date", () => {
+    expect(plateStatus({ ...base, plateUrl: good })).toBe("on");
+    expect(plateStatus({ ...base, plateUrl: good, plateMobileUrl: `/api/img/${ID2}` })).toBe("on");
+  });
+
+  it("needs_desktop with only a mobile plate", () => {
+    expect(plateStatus({ ...base, plateMobileUrl: good })).toBe("needs_desktop");
+  });
+
+  it("bad_url when either plate cannot be stored", () => {
+    expect(plateStatus({ ...base, plateUrl: "/images/x.jpg" })).toBe("bad_url");
+    expect(plateStatus({ ...base, plateUrl: good, plateMobileUrl: "nope" })).toBe("bad_url");
+  });
+
+  it("needs_copy without a headline or a date", () => {
+    expect(plateStatus({ ...base, plateUrl: good, hasTitle: false })).toBe("needs_copy");
+    expect(plateStatus({ ...base, plateUrl: good, hasDate: false })).toBe("needs_copy");
+  });
+
+  it("agrees with the render tier on a usable plate", () => {
+    const f = row({
+      heroTitle: "DEL RANCHO AL HONKY TONK",
+      startsAt: "2026-09-20T03:00:00Z",
+      heroPlateUrl: good,
+    });
+    expect(heroTier(f, heroViews(f))).toBe("plate");
+    expect(plateStatus({ ...base, plateUrl: good })).toBe("on");
   });
 });

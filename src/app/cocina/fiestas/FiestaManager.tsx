@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useState } from "react";
+import { Fragment, useRef, useState } from "react";
 import { CHANNEL_LABEL, liveSurfaces, type ChannelId, type SurfaceFlags } from "@/lib/publish";
 import { heroWhen, toPhoenixFields } from "@/lib/heroDates";
 import { utcToPhoenixLocalInput } from "@/lib/schedule";
@@ -20,6 +20,7 @@ import {
   NEON_ICONS,
   heroMotif,
 } from "@/lib/heroMotif";
+import { platePath, plateFocusCss, plateStatus, type PlateStatus } from "@/lib/heroPlate";
 
 export type FiestaAdminRow = {
   id: string;
@@ -49,6 +50,9 @@ export type FiestaAdminRow = {
   hero_palette: unknown;
   hero_title_colors: unknown;
   hero_tokens: unknown;
+  hero_plate_url: string | null;
+  hero_plate_mobile_url: string | null;
+  hero_plate_focus: number | null;
 };
 
 // The editable hero fields, as the form holds them.
@@ -76,6 +80,11 @@ type HeroDraft = {
   motifIcons: string[];
   motifBandTop: string;
   motifBandHeight: string;
+  // Named to match the sethero body keys, because the draft is spread into the
+  // request as-is. Paths only; the server re-validates them.
+  heroPlateUrl: string;
+  heroPlateMobileUrl: string;
+  heroPlateFocus: string;
 };
 
 function draftOf(r: FiestaAdminRow): HeroDraft {
@@ -104,6 +113,9 @@ function draftOf(r: FiestaAdminRow): HeroDraft {
     motifIcons: tokenList(r.hero_tokens, "icons"),
     motifBandTop: tokenNum(r.hero_tokens, "bandTop"),
     motifBandHeight: tokenNum(r.hero_tokens, "bandHeight"),
+    heroPlateUrl: r.hero_plate_url ?? "",
+    heroPlateMobileUrl: r.hero_plate_mobile_url ?? "",
+    heroPlateFocus: r.hero_plate_focus === null ? "" : String(r.hero_plate_focus),
   };
 }
 
@@ -279,6 +291,167 @@ function MotifStatus({ draft }: { draft: HeroDraft }) {
   );
 }
 
+// Whether the plate takeover will draw, named while the admin edits. Same job
+// as RotationStatus and MotifStatus: the rules live in lib/heroPlate, and the
+// badge asks that module rather than restating them.
+const PLATE_STATUS_TEXT: Record<PlateStatus, string> = {
+  none: "",
+  on: "Will show the full-bleed plate",
+  needs_desktop: "Won't show: add a desktop plate (the mobile one alone does nothing)",
+  bad_url: "Can't use this image: re-upload it here (saving clears it)",
+  needs_copy: "Won't show yet: needs a headline and a start date",
+};
+
+function PlateStatusBadge({ draft }: { draft: HeroDraft }) {
+  const status = plateStatus({
+    plateUrl: draft.heroPlateUrl,
+    plateMobileUrl: draft.heroPlateMobileUrl,
+    hasTitle: draft.heroTitle.trim() !== "",
+    hasDate: draft.startDate.trim() !== "",
+  });
+  if (status === "none") return null;
+  const on = status === "on";
+  return (
+    <span
+      style={{
+        fontSize: 11,
+        letterSpacing: ".04em",
+        borderRadius: 999,
+        padding: "2px 9px",
+        background: on ? "#e6f7f4" : "#fdf0e6",
+        color: on ? "#0d6b60" : "#8a4b18",
+      }}
+    >
+      {PLATE_STATUS_TEXT[status]}
+    </span>
+  );
+}
+
+// One plate slot: a preview framed the way the homepage frames it, and
+// upload / replace / remove. The preview box has the live hero's shape
+// (wide band on desktop, square on a phone) so the crop slider means the same
+// thing here as on the site.
+function PlateSlot({
+  label,
+  hint,
+  value,
+  focus,
+  aspect,
+  disabled,
+  onChange,
+  onError,
+}: {
+  label: string;
+  hint: string;
+  value: string;
+  focus: string;
+  aspect: string;
+  disabled: boolean;
+  onChange: (path: string) => void;
+  onError: (msg: string) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const path = platePath(value);
+  const pos = plateFocusCss(focus.trim() === "" ? null : Number(focus));
+
+  async function upload(file: File) {
+    if (!file.type.startsWith("image/")) {
+      onError("The plate must be an image.");
+      return;
+    }
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        onError(d?.error ?? "Plate upload failed.");
+        return;
+      }
+      // Stored as a path, never a host. The server enforces this too; doing
+      // it here keeps the preview and the badge honest before saving.
+      const p = platePath(d?.url);
+      if (!p) {
+        onError("Upload returned an address that can't be used for a plate.");
+        return;
+      }
+      onChange(p);
+    } catch {
+      onError("Plate upload failed.");
+    } finally {
+      setUploading(false);
+      if (inputRef.current) inputRef.current.value = "";
+    }
+  }
+
+  return (
+    <div style={{ display: "grid", gap: 6, fontSize: 13, width: 240 }}>
+      <strong style={{ fontSize: 12 }}>{label}</strong>
+      <div
+        style={{
+          width: "100%",
+          aspectRatio: aspect,
+          borderRadius: 8,
+          border: "1px solid #dfe5ee",
+          background: "#140c06",
+          overflow: "hidden",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        {path ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={path}
+            alt=""
+            style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: pos }}
+          />
+        ) : (
+          <span style={{ color: "#8a8f99", fontSize: 12 }}>
+            {value.trim() ? "Unusable image" : "No plate"}
+          </span>
+        )}
+      </div>
+      <span className="muted" style={{ fontSize: 12 }}>
+        {hint}
+      </span>
+      <div style={{ display: "flex", gap: 6 }}>
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/*"
+          style={{ display: "none" }}
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) void upload(f);
+          }}
+        />
+        <button
+          type="button"
+          className="ghost"
+          disabled={disabled || uploading}
+          onClick={() => inputRef.current?.click()}
+        >
+          {uploading ? "Uploading…" : value.trim() ? "Replace" : "Upload"}
+        </button>
+        {value.trim() ? (
+          <button
+            type="button"
+            className="ghost"
+            disabled={disabled || uploading}
+            onClick={() => onChange("")}
+          >
+            Remove
+          </button>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 const SURFACES: ChannelId[] = ["hero", "grid", "fiestas_page"];
 const COL: Record<string, keyof FiestaAdminRow> = {
   hero: "is_hero",
@@ -372,6 +545,9 @@ export default function FiestaManager({ fiestas }: { fiestas: FiestaAdminRow[] }
                 hero_palette: d.heroPalette ?? null,
                 hero_title_colors: d.heroTitleColors ?? null,
                 hero_tokens: d.heroTokens ?? null,
+                hero_plate_url: d.heroPlateUrl ?? null,
+                hero_plate_mobile_url: d.heroPlateMobileUrl ?? null,
+                hero_plate_focus: d.heroPlateFocus ?? null,
               }
             : r,
         ),
@@ -802,6 +978,90 @@ export default function FiestaManager({ fiestas }: { fiestas: FiestaAdminRow[] }
                             derived from the background when blank, and always checked for
                             readability.
                           </p>
+
+                          <div
+                            style={{
+                              borderTop: "1px solid #e6e8ee",
+                              paddingTop: 14,
+                              display: "grid",
+                              gap: 10,
+                            }}
+                          >
+                            <div
+                              style={{
+                                display: "flex",
+                                gap: 10,
+                                alignItems: "center",
+                                flexWrap: "wrap",
+                              }}
+                            >
+                              <strong style={{ fontSize: 13 }}>Background plate</strong>
+                              <PlateStatusBadge draft={draft} />
+                            </div>
+                            <p className="muted" style={{ margin: 0, fontSize: 12 }}>
+                              A text-free image made from the flyer. When set, it fills the
+                              whole hero with the headline and buttons over it, and a View
+                              Flyer button opens the poster. It takes priority over the motif
+                              and the flyer crop. Remove both plates to go back.
+                            </p>
+                            <div style={{ display: "flex", gap: 18, flexWrap: "wrap" }}>
+                              <PlateSlot
+                                label="Desktop"
+                                hint="Wide (16:9). Required."
+                                value={draft.heroPlateUrl}
+                                focus={draft.heroPlateFocus}
+                                aspect="16 / 7"
+                                disabled={busyId === r.id}
+                                onChange={(v) => setField("heroPlateUrl", v)}
+                                onError={setErr}
+                              />
+                              <PlateSlot
+                                label="Phone"
+                                hint="Portrait (4:5). Optional: phones use the desktop plate without it."
+                                value={draft.heroPlateMobileUrl}
+                                focus={draft.heroPlateFocus}
+                                aspect="1 / 1"
+                                disabled={busyId === r.id}
+                                onChange={(v) => setField("heroPlateMobileUrl", v)}
+                                onError={setErr}
+                              />
+                            </div>
+                            {draft.heroPlateUrl || draft.heroPlateMobileUrl ? (
+                              <label
+                                style={{
+                                  display: "flex",
+                                  gap: 10,
+                                  alignItems: "center",
+                                  fontSize: 13,
+                                }}
+                              >
+                                Plate crop
+                                <input
+                                  type="range"
+                                  min={0}
+                                  max={100}
+                                  step={1}
+                                  value={
+                                    draft.heroPlateFocus === "" ? 50 : Number(draft.heroPlateFocus)
+                                  }
+                                  onChange={(e) => setField("heroPlateFocus", e.target.value)}
+                                  style={{ flex: 1, maxWidth: 220 }}
+                                />
+                                <span style={{ minWidth: 40 }}>
+                                  {draft.heroPlateFocus === "" ? "50" : draft.heroPlateFocus}%
+                                </span>
+                                {draft.heroPlateFocus !== "" ? (
+                                  <button
+                                    type="button"
+                                    className="ghost"
+                                    onClick={() => setField("heroPlateFocus", "")}
+                                  >
+                                    Reset
+                                  </button>
+                                ) : null}
+                              </label>
+                            ) : null}
+                          </div>
 
                           <div
                             style={{

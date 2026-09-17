@@ -5,6 +5,7 @@ import { OWNED_SURFACES, type ChannelId } from "@/lib/publish";
 import { fromPhoenixFields, phoenixDateOf } from "@/lib/heroDates";
 import { phoenixLocalToUtcISO } from "@/lib/schedule";
 import { motifColumnsFrom } from "@/lib/heroForm";
+import { plateColumnsFrom } from "@/lib/heroPlate";
 
 export const dynamic = "force-dynamic";
 
@@ -105,11 +106,17 @@ export async function POST(req: Request) {
         bandHeight: String(body.motifBandHeight ?? ""),
       });
 
+      // Plate columns: validated here, path-only. Null means the request did
+      // not carry them (an editor opened before plates existed), in which case
+      // the stored plate is kept rather than wiped by an unrelated save.
+      const plate = plateColumnsFrom(body as Record<string, unknown>);
+      const keepPlate = plate === null;
+
       // jsonb parameters are passed as JSON text and cast, so the driver
       // cannot hydrate an array into a Postgres array literal instead.
       const asJson = (v: unknown) => (v === null ? null : JSON.stringify(v));
 
-      await sql`
+      const stored = (await sql`
         update fiestas set
           starts_at    = ${startsAt},
           event_date   = coalesce(${eventDate}::date, event_date),
@@ -130,9 +137,20 @@ export async function POST(req: Request) {
           hero_motif        = ${motif.motif},
           hero_palette      = ${asJson(motif.palette)}::jsonb,
           hero_title_colors = ${asJson(motif.titleColors)}::jsonb,
-          hero_tokens       = ${asJson(motif.tokens)}::jsonb
+          hero_tokens       = ${asJson(motif.tokens)}::jsonb,
+          hero_plate_url        = case when ${keepPlate}::boolean then hero_plate_url
+                                       else ${plate?.url ?? null} end,
+          hero_plate_mobile_url = case when ${keepPlate}::boolean then hero_plate_mobile_url
+                                       else ${plate?.mobileUrl ?? null} end,
+          hero_plate_focus      = case when ${keepPlate}::boolean then hero_plate_focus
+                                       else ${plate?.focus ?? null}::smallint end
         where id = ${id}
-      `;
+        returning hero_plate_url, hero_plate_mobile_url, hero_plate_focus
+      `) as {
+        hero_plate_url: string | null;
+        hero_plate_mobile_url: string | null;
+        hero_plate_focus: number | null;
+      }[];
 
       revalidatePath("/");
       revalidatePath("/fiestas");
@@ -151,6 +169,11 @@ export async function POST(req: Request) {
         heroPalette: motif.palette,
         heroTitleColors: motif.titleColors,
         heroTokens: motif.tokens,
+        // Read back rather than echoed, because a kept plate is whatever was
+        // already in the row.
+        heroPlateUrl: stored[0]?.hero_plate_url ?? null,
+        heroPlateMobileUrl: stored[0]?.hero_plate_mobile_url ?? null,
+        heroPlateFocus: stored[0]?.hero_plate_focus ?? null,
       });
     }
 

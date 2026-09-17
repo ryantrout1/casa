@@ -181,3 +181,73 @@ export function heroTier(f: PlateSource & MotifSource, views: HeroView[]): HeroT
   if (heroMotif(f).motif !== "none") return "motif";
   return "flyer";
 }
+
+// ---------------------------------------------------------------------------
+// Admin: /cocina/fiestas plate block
+// ---------------------------------------------------------------------------
+
+/** The three plate columns as sethero writes them. */
+export type PlateColumns = {
+  url: string | null;
+  mobileUrl: string | null;
+  focus: number | null;
+};
+
+// A crop typed or slid in the admin. Blank means "use the centre"; a number or
+// numeric string is clamped and rounded rather than dropped, matching how the
+// flyer crop is handled, because the DB CHECK would otherwise fail the save.
+function focusValue(v: unknown): number | null {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string" && v.trim() === "") return null;
+  const n = typeof v === "number" ? v : typeof v === "string" ? Number(v) : Number.NaN;
+  if (!Number.isFinite(n)) return null;
+  return Math.min(100, Math.max(0, Math.round(n)));
+}
+
+const PLATE_KEYS = ["heroPlateUrl", "heroPlateMobileUrl", "heroPlateFocus"] as const;
+
+/**
+ * The plate columns a sethero request asks for, or null for "leave them alone".
+ *
+ * Null when the request carries none of the three keys. sethero rewrites every
+ * hero column on each save, so an admin tab opened before plates existed would
+ * otherwise wipe a plate the next time it saved the headline. That is the
+ * silent-drop shape; this is the guard against it.
+ *
+ * Present keys are validated here, on the server, not trusted from the client:
+ * an unusable path is stored as null, never repaired into something else.
+ */
+export function plateColumnsFrom(body: Record<string, unknown>): PlateColumns | null {
+  if (!PLATE_KEYS.some((k) => Object.prototype.hasOwnProperty.call(body, k))) return null;
+  return {
+    url: platePath(body.heroPlateUrl),
+    mobileUrl: platePath(body.heroPlateMobileUrl),
+    focus: focusValue(body.heroPlateFocus),
+  };
+}
+
+/**
+ * What the admin badge says about the plate being edited.
+ *
+ * - none: no plate; the hero uses the motif or flyer takeover
+ * - on: the homepage will draw the plate takeover
+ * - needs_desktop: only a mobile plate; nothing will change on the site
+ * - bad_url: a plate reference that cannot be stored (saving clears it)
+ * - needs_copy: a usable plate, but no headline or date, so the brand hero shows
+ */
+export type PlateStatus = "none" | "on" | "needs_desktop" | "bad_url" | "needs_copy";
+
+export function plateStatus(d: {
+  plateUrl: string;
+  plateMobileUrl: string;
+  hasTitle: boolean;
+  hasDate: boolean;
+}): PlateStatus {
+  const desk = d.plateUrl.trim();
+  const mob = d.plateMobileUrl.trim();
+  if (desk === "" && mob === "") return "none";
+  if ((desk !== "" && !platePath(desk)) || (mob !== "" && !platePath(mob))) return "bad_url";
+  if (desk === "") return "needs_desktop";
+  if (!d.hasTitle || !d.hasDate) return "needs_copy";
+  return "on";
+}
