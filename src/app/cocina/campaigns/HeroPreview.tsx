@@ -139,8 +139,8 @@ function PlatePreview({
         </div>
       </div>
       <p className="hint" style={{ marginTop: 6 }}>
-        Plate takeover at {PREVIEW_VIEWPORT}px desktop width. On a phone the plate sits above the
-        copy, using the phone plate when there is one.
+        Shown at {PREVIEW_VIEWPORT}px, a typical computer screen. On a phone the picture sits above
+        the words, using the phone picture when there is one.
       </p>
     </div>
   );

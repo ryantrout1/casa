@@ -97,7 +97,7 @@ describe("readiness: website", () => {
       readiness(input({ ...WEB_OK, selected: ["hero"], hero: { ...WEB_OK.hero, plateUrl: "/images/x.jpg" } })),
       "website",
     );
-    expect(bad.missing).toContain("a background picture that works (upload it again)");
+    expect(bad.missing).toContain("a hero background picture that works (upload it again)");
     const phoneOnly = ch(
       readiness(input({ ...WEB_OK, selected: ["hero"], hero: { ...WEB_OK.hero, plateMobileUrl: `/api/img/${ID}` } })),
       "website",

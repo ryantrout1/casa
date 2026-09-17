@@ -70,7 +70,7 @@ function website(i: ReadinessInput): Omit<ChannelReadiness, "key" | "label"> {
       hasTitle: true,
       hasDate: true,
     });
-    if (plate === "bad_url") missing.push("a background picture that works (upload it again)");
+    if (plate === "bad_url") missing.push("a hero background picture that works (upload it again)");
     if (plate === "needs_desktop") {
       missing.push("a computer background picture (the phone one alone does nothing)");
     }

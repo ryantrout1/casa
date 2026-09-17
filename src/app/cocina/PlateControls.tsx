@@ -9,9 +9,9 @@ import { imageIdOf } from "@/lib/platePrompt";
 // badge asks that module rather than restating them.
 const PLATE_STATUS_TEXT: Record<PlateStatus, string> = {
   none: "",
-  on: "Will show the full-bleed plate",
-  needs_desktop: "Won't show: add a desktop plate (the mobile one alone does nothing)",
-  bad_url: "Can't use this image: re-upload it here (saving clears it)",
+  on: "Will fill the whole hero",
+  needs_desktop: "Won't show: add a computer picture (the phone one alone does nothing)",
+  bad_url: "Can't use this picture: upload it again here (saving clears it)",
   needs_copy: "Won't show yet: needs a headline and a start date",
 };
 
@@ -75,7 +75,7 @@ export function PlateSlot({
 
   async function upload(file: File) {
     if (!file.type.startsWith("image/")) {
-      onError("The plate must be an image.");
+      onError("The background must be a picture file.");
       return;
     }
     setUploading(true);
@@ -85,19 +85,19 @@ export function PlateSlot({
       const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
       const d = await res.json().catch(() => ({}));
       if (!res.ok) {
-        onError(d?.error ?? "Plate upload failed.");
+        onError(d?.error ?? "Upload failed.");
         return;
       }
       // Stored as a path, never a host. The server enforces this too; doing
       // it here keeps the preview and the badge honest before saving.
       const p = platePath(d?.url);
       if (!p) {
-        onError("Upload returned an address that can't be used for a plate.");
+        onError("Upload returned an address this can't use. Try again.");
         return;
       }
       onChange(p);
     } catch {
-      onError("Plate upload failed.");
+      onError("Upload failed.");
     } finally {
       setUploading(false);
       if (inputRef.current) inputRef.current.value = "";
@@ -129,7 +129,7 @@ export function PlateSlot({
           />
         ) : (
           <span style={{ color: "#8a8f99", fontSize: 12 }}>
-            {value.trim() ? "Unusable image" : "No plate"}
+            {value.trim() ? "Unusable picture" : "No picture yet"}
           </span>
         )}
       </div>
@@ -217,7 +217,7 @@ function PromptHelper({ flyerUrl }: { flyerUrl: string }) {
   if (!imageId) {
     return (
       <p className="muted" style={{ margin: 0, fontSize: 12 }}>
-        Upload the flyer first to get a plate prompt.
+        Upload the flyer first to get the picture instructions.
       </p>
     );
   }
@@ -226,19 +226,19 @@ function PromptHelper({ flyerUrl }: { flyerUrl: string }) {
     <div style={{ display: "grid", gap: 8, fontSize: 13 }}>
       <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
         <button type="button" className="ghost" disabled={busy} onClick={write}>
-          {busy ? "Reading the flyer…" : prompts ? "Rewrite plate prompts" : "Write plate prompts"}
+          {busy ? "Reading the flyer…" : prompts ? "Write them again" : "Write the picture instructions"}
         </button>
         <span className="muted" style={{ fontSize: 12 }}>
-          Paste each into Google AI Studio with the matching aspect ratio set, then upload the
-          image above. Check the result for stray lettering before saving.
+          Paste each into Google AI Studio, set the shape it names, then upload the picture above.
+          Check it for stray lettering before saving.
         </span>
       </div>
       {note ? <span style={{ color: "#b42318", fontSize: 12 }}>{note}</span> : null}
       {prompts
         ? (
             [
-              ["desktop", "Desktop plate (set 16:9)"],
-              ["mobile", "Phone plate (set 4:5)"],
+              ["desktop", "Computer picture (set 16:9)"],
+              ["mobile", "Phone picture (set 4:5)"],
             ] as const
           ).map(([k, label]) => (
             <div key={k} style={{ display: "grid", gap: 4 }}>
@@ -294,7 +294,7 @@ export default function PlateControls({
   return (
     <div style={{ display: "grid", gap: 10 }}>
       <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-        <strong style={{ fontSize: 13 }}>Background plate</strong>
+        <strong style={{ fontSize: 13 }}>Hero background picture</strong>
         <PlateStatusBadge
           plateUrl={plateUrl}
           plateMobileUrl={plateMobileUrl}
@@ -303,9 +303,9 @@ export default function PlateControls({
         />
       </div>
       <p className="muted" style={{ margin: 0, fontSize: 12 }}>
-        A text-free image made from the flyer. When set, it fills the whole hero with the
-        headline and buttons over it, and a View Flyer button opens the poster. It takes
-        priority over the motif and the flyer crop. Remove both plates to go back.
+        A picture of the scene from the flyer, with no words in it. When set, it fills the whole
+        top of the homepage with the headline and buttons over it, and a View Flyer button opens
+        the poster. Remove both pictures to go back to showing the flyer itself.
       </p>
       <PromptHelper flyerUrl={flyerUrl} />
       <div style={{ display: "flex", gap: 18, flexWrap: "wrap" }}>
@@ -321,7 +321,7 @@ export default function PlateControls({
         />
         <PlateSlot
           label="Phone"
-          hint="Portrait (4:5). Optional: phones use the desktop plate without it."
+          hint="Tall (4:5). Optional: phones use the computer one without it."
           value={plateMobileUrl}
           focus={plateFocus}
           aspect="1 / 1"
@@ -332,7 +332,7 @@ export default function PlateControls({
       </div>
       {plateUrl || plateMobileUrl ? (
         <label style={{ display: "flex", gap: 10, alignItems: "center", fontSize: 13 }}>
-          Plate crop
+          Picture position
           <input
             type="range"
             min={0}
