@@ -9,7 +9,7 @@ import { plateColumnsFrom } from "@/lib/heroPlate";
 
 export const dynamic = "force-dynamic";
 
-// Manage existing fiestas from /cocina/fiestas: turn a surface on/off, or remove
+// Manage existing fiestas from /cocina/website: turn a surface on/off, or remove
 // the fiesta entirely. The reverse of the campaign Publish action. Auth is the
 // existing /api/admin/* middleware gate.
 export async function POST(req: Request) {

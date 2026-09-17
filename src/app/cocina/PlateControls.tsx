@@ -265,7 +265,7 @@ function PromptHelper({ flyerUrl }: { flyerUrl: string }) {
 export type PlatePatch = { plateUrl?: string; plateMobileUrl?: string; plateFocus?: string };
 
 /**
- * The whole Background plate section, shared by /cocina/fiestas and the
+ * The whole Background plate section, shared by /cocina/website and the
  * campaign composer so the two cannot drift. Holds no plate state of its own;
  * the parent owns the three strings.
  */

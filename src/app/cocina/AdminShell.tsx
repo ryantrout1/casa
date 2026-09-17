@@ -25,9 +25,8 @@ const NAV: Group[] = [
     group: "Marketing",
     items: [
       { label: "Campaigns", href: "/cocina/campaigns", icon: "mail" },
-      { label: "Fiestas", href: "/cocina/fiestas", icon: "flyer" },
-      { label: "Automations", icon: "bolt", soon: true },
-      { label: "Text (SMS)", icon: "sms", soon: true },
+      { label: "Website", href: "/cocina/website", icon: "flyer" },
+      { label: "Channels", href: "/cocina/channels", icon: "plug" },
     ],
   },
   { group: "Insights", items: [{ label: "Analytics", icon: "chart", soon: true }] },
@@ -73,6 +72,7 @@ function Icon({ name }: { name: string }) {
       </>
     ),
     bolt: <path d="M13 2 4 14h7l-1 8 9-12h-7z" />,
+    plug: <path d="M9 2v6M15 2v6M6 8h12v3a6 6 0 0 1-12 0zM12 17v5" />,
     flyer: (
       <>
         <rect x="3" y="4" width="18" height="16" rx="2" />

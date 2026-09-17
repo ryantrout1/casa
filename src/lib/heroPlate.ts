@@ -183,7 +183,7 @@ export function heroTier(f: PlateSource & MotifSource, views: HeroView[]): HeroT
 }
 
 // ---------------------------------------------------------------------------
-// Admin: /cocina/fiestas plate block
+// Admin: /cocina/website plate block
 // ---------------------------------------------------------------------------
 
 /** The three plate columns as sethero writes them. */

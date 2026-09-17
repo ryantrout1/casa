@@ -262,7 +262,7 @@ export async function POST(req: Request) {
       // Cascade removes email_sends → email_events and campaign_dispatches;
       // unsubscribes.campaign_id is set null so the unsubscribe itself is kept.
       // The fiesta this campaign announced (fiesta_id) is a separate object and
-      // is left in place — manage it from /cocina/fiestas.
+      // is left in place — manage it from /cocina/website.
       await sql`delete from campaigns where id = ${id}`;
       return NextResponse.json({ ok: true });
     }

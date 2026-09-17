@@ -21,6 +21,7 @@ import {
   heroMotif,
 } from "@/lib/heroMotif";
 import PlateControls from "../PlateControls";
+import { websiteNow } from "@/lib/websiteNow";
 
 export type FiestaAdminRow = {
   id: string;
@@ -53,6 +54,7 @@ export type FiestaAdminRow = {
   hero_plate_url: string | null;
   hero_plate_mobile_url: string | null;
   hero_plate_focus: number | null;
+  sort_key: number;
 };
 
 // The editable hero fields, as the form holds them.
@@ -292,6 +294,121 @@ function MotifStatus({ draft }: { draft: HeroDraft }) {
 }
 
 const SURFACES: ChannelId[] = ["hero", "grid", "fiestas_page"];
+
+// "Sat, Sep 19, 8 PM" in Arizona time.
+function fmtWhen(ms: number): string {
+  return new Date(ms).toLocaleString("en-US", {
+    timeZone: "America/Phoenix",
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+function rowName(r: FiestaAdminRow): string {
+  return r.caption || r.hero_title || "(no caption)";
+}
+
+// What the site is showing, above the full list. Every answer comes from
+// lib/websiteNow, which uses the homepage's own hero rule.
+function NowPanel({
+  rows,
+  today,
+  nowMs,
+  busy,
+  onRemovePast,
+}: {
+  rows: FiestaAdminRow[];
+  today: string;
+  nowMs: number;
+  busy: boolean;
+  onRemovePast: (ids: string[]) => void;
+}) {
+  const w = websiteNow(rows, today, nowMs);
+  return (
+    <div className="panel" style={{ display: "grid", gap: 14 }}>
+      <div style={{ display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
+        {w.live ? (
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={w.live.hero_plate_url ?? w.live.image_url}
+              alt=""
+              style={{ width: 120, height: 68, objectFit: "cover", borderRadius: 8, border: "1px solid #eee" }}
+            />
+            <div style={{ display: "grid", gap: 2 }}>
+              <span className="pill good" style={{ justifySelf: "start" }}>Homepage hero: showing now</span>
+              <strong>{rowName(w.live)}</strong>
+              <span className="muted" style={{ fontSize: 13 }}>
+                {w.liveUntilMs ? `Comes down ${fmtWhen(w.liveUntilMs)}` : "Stays up until you turn Hero off"}
+              </span>
+            </div>
+          </>
+        ) : (
+          <div style={{ display: "grid", gap: 2 }}>
+            <span className="pill" style={{ justifySelf: "start" }}>Homepage hero</span>
+            <strong>The standard &ldquo;Every day is a fiesta&rdquo; hero</strong>
+            <span className="muted" style={{ fontSize: 13 }}>No fiesta is taking over the homepage.</span>
+          </div>
+        )}
+      </div>
+
+      <div style={{ borderTop: "1px solid #eef0f3", paddingTop: 12, display: "grid", gap: 6 }}>
+        <strong style={{ fontSize: 13 }}>Up next</strong>
+        {w.queued.length === 0 ? (
+          <span className="muted" style={{ fontSize: 13 }}>
+            Nothing waiting. When the current hero ends, the site goes back to the standard hero.
+          </span>
+        ) : (
+          w.queued.map((q) => (
+            <span key={q.id} style={{ fontSize: 13 }}>
+              {rowName(q)}
+              <span className="muted">
+                {q.hero_live_at && Date.parse(q.hero_live_at) > nowMs
+                  ? ` · goes live ${fmtWhen(Date.parse(q.hero_live_at))}`
+                  : " · also marked Hero, shows if the one above is turned off"}
+              </span>
+            </span>
+          ))
+        )}
+      </div>
+
+      {w.pastInGrid.length > 0 ? (
+        <div
+          style={{
+            display: "flex",
+            gap: 12,
+            alignItems: "center",
+            flexWrap: "wrap",
+            background: "#fdf0e6",
+            color: "#8a4b18",
+            borderRadius: 8,
+            padding: "10px 12px",
+            fontSize: 13,
+          }}
+        >
+          <span>
+            {w.pastInGrid.length === 1
+              ? "1 event on the homepage grid has already happened"
+              : `${w.pastInGrid.length} events on the homepage grid have already happened`}
+            : {w.pastInGrid.map(rowName).join(", ")}.
+          </span>
+          <button
+            type="button"
+            className="pill warn"
+            disabled={busy}
+            onClick={() => onRemovePast(w.pastInGrid.map((r) => r.id))}
+            style={{ cursor: "pointer", border: "1px solid #e8b98c", minHeight: 32 }}
+          >
+            Remove past events from the grid
+          </button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
 const COL: Record<string, keyof FiestaAdminRow> = {
   hero: "is_hero",
   grid: "in_grid",
@@ -315,13 +432,23 @@ function fmtTime(startsAt: string): string {
   return heroWhen(startsAt, null, "en")?.time ?? "";
 }
 
-export default function FiestaManager({ fiestas }: { fiestas: FiestaAdminRow[] }) {
+export default function FiestaManager({
+  fiestas,
+  today,
+  nowMs,
+}: {
+  fiestas: FiestaAdminRow[];
+  /** Arizona date and clock, taken once on the server so both renders agree. */
+  today: string;
+  nowMs: number;
+}) {
   const [rows, setRows] = useState<FiestaAdminRow[]>(fiestas);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [err, setErr] = useState("");
   const [editId, setEditId] = useState<string | null>(null);
   const [draft, setDraft] = useState<HeroDraft | null>(null);
   const [saved, setSaved] = useState<string | null>(null);
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   function openEditor(row: FiestaAdminRow) {
     setErr("");
@@ -411,14 +538,10 @@ export default function FiestaManager({ fiestas }: { fiestas: FiestaAdminRow[] }
     setErr("");
     setBusyId(row.id);
     const prev = rows;
-    // Optimistic: flip the flag; turning a hero on demotes every other hero.
-    setRows((rs) =>
-      rs.map((r) => {
-        if (r.id === row.id) return { ...r, [col]: next };
-        if (surface === "hero" && next && r.is_hero) return { ...r, is_hero: false };
-        return r;
-      }),
-    );
+    // Optimistic: flip only this row's flag. The server never demotes other
+    // heroes (several can be queued), so the list must not pretend it did;
+    // the Now panel reads these rows to say what is live and what is next.
+    setRows((rs) => rs.map((r) => (r.id === row.id ? { ...r, [col]: next } : r)));
     try {
       const res = await fetch("/api/admin/fiestas", {
         method: "POST",
@@ -467,13 +590,42 @@ export default function FiestaManager({ fiestas }: { fiestas: FiestaAdminRow[] }
     }
   }
 
+  // Take every past event off the grid, one request per row. Each row is
+  // flipped only after its own request succeeds, so a failure part-way leaves
+  // the list showing exactly what the server holds.
+  async function removePast(ids: string[]) {
+    setErr("");
+    setBulkBusy(true);
+    let failed = 0;
+    for (const id of ids) {
+      try {
+        const res = await fetch("/api/admin/fiestas", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "toggle", id, surface: "grid", value: false }),
+        });
+        if (res.ok) {
+          setRows((rs) => rs.map((r) => (r.id === id ? { ...r, in_grid: false } : r)));
+        } else {
+          failed += 1;
+        }
+      } catch {
+        failed += 1;
+      }
+    }
+    if (failed > 0) setErr(`Couldn't remove ${failed} of ${ids.length}. Try again.`);
+    setBulkBusy(false);
+  }
+
   return (
     <>
-      <h1>Fiestas</h1>
-      <p className="lede">
-        Everything on the website right now. Toggle a surface to add or remove a flyer, or delete it
-        outright — changes go live immediately.
-      </p>
+      <NowPanel
+        rows={rows}
+        today={today}
+        nowMs={nowMs}
+        busy={bulkBusy}
+        onRemovePast={removePast}
+      />
 
       {err ? (
         <div className="panel" style={{ color: "#c0392b", borderColor: "#f3c9c4" }}>
