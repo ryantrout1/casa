@@ -8,6 +8,9 @@ export type EditorHandle = {
   // Whether the body already carries an image. Compose uses this to decide
   // whether an uploaded flyer needs seeding into the message.
   hasImage: () => boolean;
+  // Replace the whole message. Used when the flyer reader writes the email;
+  // the admin edits it from there like anything they typed.
+  setHTML: (html: string) => void;
   // Append an image to the end of the body. Used when a flyer upload should
   // also appear in the email; the toolbar's own "+ Image" path inserts at the
   // caret instead.
@@ -80,6 +83,9 @@ const Editor = forwardRef<
       // Read the DOM rather than the hasImage state: the admin can delete an
       // image with the keyboard, which never runs through setHasImage.
       hasImage: () => !!elRef.current?.querySelector("img"),
+      setHTML: (html: string) => {
+        if (elRef.current) elRef.current.innerHTML = html;
+      },
       appendImage,
       setImageAlt,
     }));

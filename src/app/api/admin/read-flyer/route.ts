@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { FLYER_SCHEMA, parseFlyerResponse } from "@/lib/flyerRead";
+import { EMAIL_PROMPT, EMAIL_SCHEMA, parseEmailDraft } from "@/lib/emailDraft";
 import {
   SCENE_PROMPT,
   SCENE_SCHEMA,
@@ -10,9 +11,9 @@ import {
 
 export const dynamic = "force-dynamic";
 
-// Reads an uploaded flyer and proposes hero field values, or, with
-// mode "scene", describes its artwork and returns the two background-plate
-// prompts built from that description.
+// Reads an uploaded flyer and proposes hero field values; with mode "scene",
+// describes its artwork and returns the two background-plate prompts; with
+// mode "email", writes the announcement and the day-of reminder.
 //
 // This lives on the server for one reason: the API key. Everything else about
 // the read — parsing, validation, date normalisation — is in lib/flyerRead,
@@ -34,7 +35,7 @@ const MODEL = "claude-sonnet-4-6";
 // Generous enough that the JSON can never be cut off. A truncated response
 // carries stop_reason "max_tokens" and parseFlyerResponse voids it, so a tight
 // budget would turn into silent read failures rather than saved tokens.
-const MAX_TOKENS = 2048;
+const MAX_TOKENS = 3000;
 
 // The API accepts 10MB base64; our upload route caps files at ~4MB, which is
 // ~5.4MB encoded. This guard catches anything that predates that cap.
@@ -103,9 +104,11 @@ export async function POST(req: Request) {
 
     const body = (await req.json().catch(() => ({}))) as { imageId?: unknown; mode?: unknown };
     const imageId = typeof body.imageId === "string" ? body.imageId : "";
-    // "scene" describes the artwork for a background-plate prompt; anything
-    // else is the original copy read, so existing callers are unchanged.
+    // "scene" describes the artwork for a background-plate prompt, "email"
+    // writes the two campaign emails; anything else is the original copy read,
+    // so existing callers are unchanged.
     const scene = body.mode === "scene";
+    const email = body.mode === "email";
     if (!imageId) return NextResponse.json({ ok: false, reason: "bad_request" });
 
     const sql = db();
@@ -147,7 +150,7 @@ export async function POST(req: Request) {
                   type: "image",
                   source: { type: "base64", media_type: content_type, data: data_base64 },
                 },
-                { type: "text", text: scene ? SCENE_PROMPT : PROMPT },
+                { type: "text", text: scene ? SCENE_PROMPT : email ? EMAIL_PROMPT : PROMPT },
               ],
             },
           ],
@@ -155,7 +158,10 @@ export async function POST(req: Request) {
           // JSON that needs retries; with it the shape is guaranteed except
           // for refusals and truncation, both of which the parser handles.
           output_config: {
-            format: { type: "json_schema", schema: scene ? SCENE_SCHEMA : FLYER_SCHEMA },
+            format: {
+              type: "json_schema",
+              schema: scene ? SCENE_SCHEMA : email ? EMAIL_SCHEMA : FLYER_SCHEMA,
+            },
           },
         }),
       });
@@ -168,6 +174,12 @@ export async function POST(req: Request) {
       apiBody = await res.json();
     } finally {
       clearTimeout(timer);
+    }
+
+    if (email) {
+      const drafts = parseEmailDraft(apiBody);
+      if (!drafts) return NextResponse.json({ ok: false, reason: "unreadable" });
+      return NextResponse.json({ ok: true, drafts });
     }
 
     if (scene) {

@@ -21,6 +21,8 @@ import { mergeSuggestions, type FlyerSuggestion } from "@/lib/flyerRead";
 import type { Palette } from "@/lib/palette";
 import HeroPanel from "./HeroPanel";
 import { readiness, type ReadyState } from "@/lib/readiness";
+import { buildAnnouncement, type EmailDraft } from "@/lib/emailTemplate";
+import { imageIdOf } from "@/lib/platePrompt";
 import { CHANNELS, channel } from "@/lib/channels";
 
 const READY_CLS: Record<ReadyState, string> = {
@@ -225,6 +227,11 @@ export default function Compose({
   // checklist says what is left.
   const [step, setStep] = useState<number>(initialDraft ? 4 : 1);
   const [tab, setTab] = useState<"website" | "email">("website");
+  // The day-of reminder, drafted alongside the announcement and sent as its
+  // own scheduled campaign.
+  const [reminderDraft, setReminderDraft] = useState<EmailDraft | null>(null);
+  const [writing, setWriting] = useState(false);
+  const [writeNote, setWriteNote] = useState("");
   const [results, setResults] = useState<PublishResults | null>(null);
   const [draftId, setDraftId] = useState<string | null>(initialDraft?.id ?? null);
 
@@ -304,6 +311,53 @@ export default function Compose({
       }
     }
     if (flyerFileRef.current) flyerFileRef.current.value = "";
+  }
+
+  // Read the flyer and write both emails. The announcement lands in the
+  // editor, where it is ordinary editable copy; the reminder is held for the
+  // day-of send. Nothing is sent, and a failed read leaves the form alone.
+  async function writeEmail() {
+    const imageId = imageIdOf(flyerUrl);
+    if (!imageId) {
+      setErr(true);
+      setMsg("Upload the flyer first, in step 1.");
+      return;
+    }
+    if (
+      !editorRef.current?.isEmpty() &&
+      !window.confirm("Replace the message you have written with one read from the flyer?")
+    ) {
+      return;
+    }
+    setWriting(true);
+    setWriteNote("");
+    try {
+      const res = await fetch("/api/admin/read-flyer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageId, mode: "email" }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!d?.ok || !d.drafts?.announcement) {
+        setWriteNote("Couldn't read the flyer. Write the email yourself, or try again.");
+        return;
+      }
+      const a = d.drafts.announcement as EmailDraft;
+      setSubject(a.subject);
+      editorRef.current?.setHTML(
+        buildAnnouncement(a, {
+          flyerUrl,
+          flyerAlt,
+          includeRewards: false,
+        }),
+      );
+      setReminderDraft((d.drafts.reminder as EmailDraft) ?? null);
+      setWriteNote("Written from the flyer. Read it through and change anything you like.");
+    } catch {
+      setWriteNote("Couldn't read the flyer. Write the email yourself, or try again.");
+    } finally {
+      setWriting(false);
+    }
   }
 
   async function saveDraft() {
@@ -793,6 +847,14 @@ export default function Compose({
           </div>
           {/* Always mounted: the editor holds the message in the DOM. */}
           <div hidden={!(emailOn && activeTab === "email")}>
+            <div className="field-c" style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+              <button type="button" className="ghost" disabled={writing || anyBusy} onClick={writeEmail}>
+                {writing ? "Reading the flyer…" : "Write the email from the flyer"}
+              </button>
+              <span className="hint" style={{ margin: 0 }}>
+                {writeNote || "Fills the subject and the message in Casa's voice. You can edit every word."}
+              </span>
+            </div>
             <div className="field-c">
               <label>Email message</label>
               <Editor
