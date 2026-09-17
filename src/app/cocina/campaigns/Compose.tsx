@@ -23,6 +23,8 @@ import HeroPanel from "./HeroPanel";
 import { readiness, type ReadyState } from "@/lib/readiness";
 import { buildAnnouncement, type EmailDraft } from "@/lib/emailTemplate";
 import { rewardsLine } from "@/lib/rewardsLine";
+import { buildReminder } from "@/lib/emailTemplate";
+import { REMINDER_MODES, reminderPlan, reminderWhen, type ReminderMode } from "@/lib/reminder";
 import { imageIdOf } from "@/lib/platePrompt";
 import { CHANNELS, channel } from "@/lib/channels";
 
@@ -236,6 +238,11 @@ export default function Compose({
   // One personalized line above the sign-off. On by default; off for a send
   // that is not about coming in (an event somewhere else, say).
   const [includeRewards, setIncludeRewards] = useState(true);
+  // The day-of reminder: its own email, sent as a scheduled campaign.
+  const [reminderOn, setReminderOn] = useState(true);
+  const [reminderMode, setReminderMode] = useState<ReminderMode>("morning");
+  const [reminderLocal, setReminderLocal] = useState("");
+  const [reminderSubject, setReminderSubject] = useState("");
   const [results, setResults] = useState<PublishResults | null>(null);
   const [draftId, setDraftId] = useState<string | null>(initialDraft?.id ?? null);
 
@@ -256,6 +263,19 @@ export default function Compose({
     return window.confirm(
       "Your email message has no image, but a flyer is attached for the website. Send the email without the flyer?",
     );
+  }
+
+  // What the reminder block is asking the server to create. The server runs
+  // the same reminderPlan again before it writes anything.
+  function reminderPayload() {
+    if (!reminderOn || !reminderDraft || !channels.email || emailSent) return undefined;
+    return {
+      on: true,
+      mode: reminderMode,
+      customLocal: reminderLocal,
+      subject: reminderSubject.trim() || reminderDraft.subject,
+      html: buildReminder(reminderDraft, { flyerUrl, flyerAlt, includeRewards: false }),
+    };
   }
 
   function flyerPayload() {
@@ -351,7 +371,9 @@ export default function Compose({
       editorRef.current?.setHTML(
         buildAnnouncement(a, { flyerUrl, flyerAlt, includeRewards }),
       );
-      setReminderDraft((d.drafts.reminder as EmailDraft) ?? null);
+      const rem = (d.drafts.reminder as EmailDraft) ?? null;
+      setReminderDraft(rem);
+      if (rem) setReminderSubject(rem.subject);
       setWriteNote("Written from the flyer. Read it through and change anything you like.");
     } catch {
       setWriteNote("Couldn't read the flyer. Write the email yourself, or try again.");
@@ -493,6 +515,7 @@ export default function Compose({
           flyer: flyerPayload(),
           channels: selected,
           draftId: draftId ?? undefined,
+          reminder: reminderPayload(),
         }),
       });
       const data = await res.json();
@@ -553,6 +576,7 @@ export default function Compose({
           flyer: flyerPayload(),
           channels: selected,
           scheduledFor: utc,
+          reminder: reminderPayload(),
         }),
       });
       const data = await res.json();
@@ -608,6 +632,20 @@ export default function Compose({
     : "";
 
   const anyBusy = busy || uploading || flyerUploading;
+
+  // The reminder's time, computed for the line the composer shows. The server
+  // computes the same thing again before it creates anything.
+  const heroStartsAt = hero.startLocal ? phoenixLocalToUtcISO(hero.startLocal) : null;
+  const scheduledAtMs = scheduleLocal
+    ? Date.parse(phoenixLocalToUtcISO(scheduleLocal) ?? "")
+    : Number.NaN;
+  const remPlan = reminderPlan({
+    startsAt: heroStartsAt,
+    mode: reminderMode,
+    customLocal: reminderLocal,
+    announcementAtMs: Number.isFinite(scheduledAtMs) ? scheduledAtMs : Date.now(),
+    nowMs: Date.now(),
+  });
 
   const check = readiness({
     selected: (Object.keys(channels) as ChannelId[]).filter((k) => channels[k]),
@@ -877,6 +915,89 @@ export default function Compose({
                 <em>{rewardsLine(4)}</em>
               </span>
             </label>
+
+            <div
+              className="field-c"
+              style={{ border: "1px solid #e6e8ec", borderRadius: 10, padding: 14 }}
+            >
+              <label style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 6 }}>
+                <input
+                  type="checkbox"
+                  checked={reminderOn}
+                  onChange={(e) => setReminderOn(e.target.checked)}
+                  style={{ width: 18, height: 18, accentColor: "#a3175f" }}
+                />
+                <strong style={{ color: "#1f2937", fontSize: "0.95rem" }}>
+                  Also send a reminder on the day
+                </strong>
+              </label>
+              {reminderOn ? (
+                <>
+                  <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                    <select
+                      value={reminderMode}
+                      onChange={(e) => setReminderMode(e.target.value as ReminderMode)}
+                      style={{ width: "auto" }}
+                    >
+                      {REMINDER_MODES.map((m) => (
+                        <option key={m.key} value={m.key}>
+                          {m.label}
+                        </option>
+                      ))}
+                    </select>
+                    {reminderMode === "custom" ? (
+                      <input
+                        type="datetime-local"
+                        value={reminderLocal}
+                        onChange={(e) => setReminderLocal(e.target.value)}
+                        style={{ width: "auto" }}
+                        aria-label="Reminder date and time, Arizona"
+                      />
+                    ) : null}
+                    <span className="hint" style={{ margin: 0 }}>
+                      {remPlan.ok && remPlan.at
+                        ? `Goes ${reminderWhen(remPlan.at)}, Arizona time.`
+                        : remPlan.note}
+                    </span>
+                  </div>
+                  {reminderDraft ? (
+                    <div style={{ marginTop: 10, display: "grid", gap: 6 }}>
+                      <input
+                        type="text"
+                        value={reminderSubject}
+                        onChange={(e) => setReminderSubject(e.target.value)}
+                        aria-label="Reminder subject"
+                      />
+                      <div
+                        style={{
+                          border: "1px solid #eef0f3",
+                          borderRadius: 8,
+                          padding: 12,
+                          background: "#fbfbfd",
+                          fontSize: "0.9rem",
+                        }}
+                        dangerouslySetInnerHTML={{
+                          __html: buildReminder(reminderDraft, {
+                            flyerUrl,
+                            flyerAlt,
+                            includeRewards: false,
+                          }),
+                        }}
+                      />
+                      <span className="hint" style={{ margin: 0 }}>
+                        Written from the flyer. It goes out as its own campaign, and you can cancel
+                        or edit it from the Campaigns list until it sends.
+                      </span>
+                    </div>
+                  ) : (
+                    <p className="hint" style={{ margin: "8px 0 0" }}>
+                      Use <strong>Write the email from the flyer</strong> above and the reminder is
+                      written at the same time.
+                    </p>
+                  )}
+                </>
+              ) : null}
+            </div>
 
             <div className="field-c test-row">
               <label htmlFor="cmp-test">Send a test to</label>

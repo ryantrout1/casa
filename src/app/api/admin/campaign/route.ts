@@ -11,6 +11,7 @@ import {
 } from "@/lib/publish";
 import { isDraftEmpty, parseHeroCopy } from "@/lib/schedule";
 import { applyRewards } from "@/lib/rewardsLine";
+import { reminderPlan, type ReminderMode } from "@/lib/reminder";
 
 // The punch count a test send pretends the reader has, so the rewards line in
 // a test reads the way most members will see it.
@@ -18,6 +19,70 @@ const SAMPLE_PROGRESS = 4;
 import { duplicateConfig, duplicateSubject } from "@/lib/duplicate";
 
 export const dynamic = "force-dynamic";
+
+// The day-of reminder a publish or schedule asks for. It is written by the
+// composer (or by the flyer reader) and sent as its own email-only campaign,
+// so the existing scheduled-send path does the work and the reminder stays
+// visible and cancellable until it goes.
+type ReminderRequest = { at: string; subject: string; html: string };
+
+function readReminder(
+  body: Record<string, unknown>,
+  startsAt: string | null,
+  announcementAtMs: number,
+): ReminderRequest | null {
+  const r = body.reminder;
+  if (!r || typeof r !== "object") return null;
+  const o = r as Record<string, unknown>;
+  if (o.on !== true) return null;
+
+  const subject = typeof o.subject === "string" ? o.subject.trim() : "";
+  const html = typeof o.html === "string" ? o.html : "";
+  if (!subject || html.replace(/<[^>]+>/g, "").trim() === "") return null;
+
+  // The composer computes the same plan for the line it shows; the server
+  // computes it again because the composer is never the validator.
+  const plan = reminderPlan({
+    startsAt,
+    mode: (["morning", "before4", "custom"] as ReminderMode[]).includes(o.mode as ReminderMode)
+      ? (o.mode as ReminderMode)
+      : "morning",
+    customLocal: typeof o.customLocal === "string" ? o.customLocal : "",
+    announcementAtMs,
+    nowMs: Date.now(),
+  });
+  if (!plan.ok || !plan.at) return null;
+  return { at: plan.at, subject, html };
+}
+
+async function createReminder(
+  sql: ReturnType<typeof db>,
+  parentId: string,
+  r: ReminderRequest,
+): Promise<string | null> {
+  try {
+    // Rescheduling an announcement rewrites its reminder rather than stacking
+    // a second one. Only an unsent reminder is replaced; one already sent is
+    // history and stays.
+    await sql`
+      delete from campaigns where reminder_of = ${parentId} and status = 'scheduled'
+    `;
+    const config = JSON.stringify({ channels: ["email"], flyer: {} });
+    const rows = (await sql`
+      insert into campaigns
+        (subject, body, audience_count, sent_count, status, sent_at, publish_config,
+         scheduled_for, reminder_of)
+      values (${r.subject}, ${r.html}, 0, 0, 'scheduled', null, ${config}::jsonb,
+              ${r.at}, ${parentId})
+      returning id
+    `) as { id: string }[];
+    return rows[0]?.id ?? null;
+  } catch {
+    // A reminder that cannot be created must never fail the publish that just
+    // went out. The result says so instead.
+    return null;
+  }
+}
 
 // Read the destinations + flyer a draft or publish carries.
 function readConfig(body: Record<string, unknown>): { channels: ChannelId[]; flyer: FlyerInput } {
@@ -164,7 +229,15 @@ export async function POST(req: Request) {
         await sql`delete from campaigns where id = ${draftId} and status in ('draft', 'scheduled')`;
       }
 
-      return NextResponse.json({ ok, results, fiestaId, campaignId });
+      // The reminder only makes sense once the announcement is out, and only
+      // when an email actually went with it.
+      let reminderAt: string | null = null;
+      if (emailSelected && results.email?.status === "ok") {
+        const r = readReminder(body as Record<string, unknown>, flyer.hero?.startsAt ?? null, Date.now());
+        if (r && (await createReminder(sql, campaignId, r))) reminderAt = r.at;
+      }
+
+      return NextResponse.json({ ok, results, fiestaId, campaignId, reminderAt });
     }
 
     if (action === "schedule") {
@@ -204,7 +277,22 @@ export async function POST(req: Request) {
             { status: 404 },
           );
         }
-        return NextResponse.json({ ok: true, id, scheduledFor: whenIso });
+        let rescheduledReminderAt: string | null = null;
+        if (channels.includes("email")) {
+          const r = readReminder(
+            body as Record<string, unknown>,
+            flyer.hero?.startsAt ?? null,
+            Date.parse(whenIso),
+          );
+          if (r && (await createReminder(sql, id, r))) rescheduledReminderAt = r.at;
+          else await sql`delete from campaigns where reminder_of = ${id} and status = 'scheduled'`;
+        }
+        return NextResponse.json({
+          ok: true,
+          id,
+          scheduledFor: whenIso,
+          reminderAt: rescheduledReminderAt,
+        });
       }
 
       const rows = (await sql`
@@ -213,12 +301,26 @@ export async function POST(req: Request) {
         values (${subject}, ${html}, 0, 0, 'scheduled', null, ${config}::jsonb, ${whenIso})
         returning id
       `) as { id: string }[];
-      return NextResponse.json({ ok: true, id: rows[0].id, scheduledFor: whenIso });
+      // A scheduled announcement gets its reminder now too, measured against
+      // the time the announcement will go out rather than against now.
+      let reminderAt: string | null = null;
+      if (channels.includes("email")) {
+        const r = readReminder(
+          body as Record<string, unknown>,
+          flyer.hero?.startsAt ?? null,
+          Date.parse(whenIso),
+        );
+        if (r && (await createReminder(sql, rows[0].id, r))) reminderAt = r.at;
+      }
+
+      return NextResponse.json({ ok: true, id: rows[0].id, scheduledFor: whenIso, reminderAt });
     }
 
     if (action === "cancel_schedule") {
       const id = String(body.id ?? "");
       if (!id) return NextResponse.json({ error: "Missing campaign id." }, { status: 400 });
+      // Cancelling an announcement cancels the reminder that rode with it.
+      await sql`delete from campaigns where reminder_of = ${id} and status = 'scheduled'`;
       const rows = (await sql`
         update campaigns set status = 'draft', scheduled_for = null
         where id = ${id} and status = 'scheduled'

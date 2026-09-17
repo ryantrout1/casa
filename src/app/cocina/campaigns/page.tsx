@@ -29,6 +29,7 @@ type Row = {
   opens: number;
   clicks: number;
   dispatches: { channel: string; status: string }[] | null;
+  reminder_of: string | null;
   image_url: string | null;
   f_id: string | null;
   f_is_hero: boolean | null;
@@ -99,7 +100,7 @@ export default async function CampaignsPage({
 
   const rows = (await sql`
     select c.id, c.subject, c.status, c.sent_count, c.sent_at, c.created_at,
-      c.scheduled_for, c.publish_config,
+      c.scheduled_for, c.publish_config, c.reminder_of,
       (select count(distinct s.id) from email_sends s join email_events e on e.send_id = s.id
         where s.campaign_id = c.id and e.event_type = 'email.opened')::int as opens,
       (select count(distinct s.id) from email_sends s join email_events e on e.send_id = s.id
@@ -272,7 +273,17 @@ export default async function CampaignsPage({
                         ) : (
                           <span style={{ width: 36, height: 44, borderRadius: 4, background: "#f1f3f7", flexShrink: 0 }} />
                         )}
-                        <Link href={href}>{r.subject || "(untitled)"}</Link>
+                        <span style={{ display: "grid", gap: 2 }}>
+                          <Link href={href}>{r.subject || "(untitled)"}</Link>
+                          {r.reminder_of ? (
+                            <span className="muted" style={{ fontSize: 12 }}>
+                              Day-of reminder for{" "}
+                              <Link href={`/cocina/campaigns/${r.reminder_of}`}>
+                                the campaign above
+                              </Link>
+                            </span>
+                          ) : null}
+                        </span>
                       </div>
                     </td>
                     <td>
