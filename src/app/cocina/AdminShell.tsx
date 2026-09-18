@@ -29,7 +29,6 @@ const NAV: Group[] = [
       { label: "Channels", href: "/cocina/channels", icon: "plug" },
     ],
   },
-  { group: "Insights", items: [{ label: "Analytics", icon: "chart", soon: true }] },
   { group: "Settings", items: [{ label: "Settings", icon: "gear", soon: true }] },
 ];
 
@@ -88,14 +87,6 @@ function Icon({ name }: { name: string }) {
       </>
     ),
     sms: <path d="M21 11.5a7.5 7.5 0 0 1-10.8 6.7L4 20l1.8-5.2A7.5 7.5 0 1 1 21 11.5z" />,
-    chart: (
-      <>
-        <path d="M4 20V11" />
-        <path d="M10 20V4" />
-        <path d="M16 20v-6" />
-        <path d="M3 20h18" />
-      </>
-    ),
     gear: (
       <>
         <circle cx="12" cy="12" r="3" />
