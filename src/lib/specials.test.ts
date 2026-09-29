@@ -59,3 +59,30 @@ describe("specials photos", () => {
     }
   });
 });
+
+describe("specials includes", () => {
+  it("every special lists 1 to 3 non-empty includes", () => {
+    for (const s of SPECIALS) {
+      expect(s.includes.length, s.id).toBeGreaterThanOrEqual(1);
+      expect(s.includes.length, s.id).toBeLessThanOrEqual(3);
+      for (const item of s.includes) expect(item.trim(), s.id).not.toBe("");
+    }
+  });
+});
+
+describe("specials pairings", () => {
+  it("every pairing has copy, alt text, and a photo that exists in public", () => {
+    for (const s of SPECIALS) {
+      if (!s.pair) continue;
+      expect(s.pair.text.trim(), s.id).not.toBe("");
+      expect(s.pair.alt.trim(), s.id).not.toBe("");
+      const p = join(process.cwd(), "public", s.pair.photo.replace(/^\//, ""));
+      expect(existsSync(p), `${s.id}: ${s.pair.photo}`).toBe(true);
+    }
+  });
+
+  it("Taco Tuesday pairs with the $5 margarita", () => {
+    const taco = SPECIALS.find((s) => s.id === "taco");
+    expect(taco?.pair?.text).toBe("Add a margarita for only $5");
+  });
+});
