@@ -1,6 +1,6 @@
 import { db } from "./db";
 import type { HeroLang } from "./publish";
-import { isCurrent, orderFiestas, selectHero } from "./fiestaSelect";
+import { eventTimeMs, isCurrent, orderFiestas, selectHero } from "./fiestaSelect";
 
 // A fiesta row as read from Neon. `sort_key` is derived at query time
 // (epoch of featured_at, falling back to created_at) so ordering is a plain
@@ -105,11 +105,13 @@ export type Flyer = {
   heroPlateFocus: number | null;
 };
 
-// The homepage grid shows at most this many fiestas.
-export const GRID_LIMIT = 6;
+// The homepage grid shows at most this many fiestas. Casa runs one or two
+// events a month, so a bigger grid only ever filled with stale flyers.
+export const GRID_LIMIT = 3;
 
 export {
   GRACE_MS,
+  eventTimeMs,
   isCurrent,
   orderFiestas,
   isHeroLive,
@@ -147,11 +149,32 @@ export function toFlyer(f: FiestaRow): Flyer {
   };
 }
 
-// Homepage grid: grid-flagged, still current, newest first, capped at 6.
-export function selectGrid(rows: FiestaRow[], today: string): FiestaRow[] {
-  return orderFiestas(
-    rows.filter((f) => f.in_grid && isCurrent(f, today)),
-  ).slice(0, GRID_LIMIT);
+// Homepage grid: "what's next at Casa".
+//
+// Upcoming events first, soonest first: grid-flagged, not recurring, with a
+// usable date, and not over yet (isCurrent, so a start time keeps its grace
+// window). Recurring flyers fill whatever slots are left, newest first, and
+// never push a dated event out.
+//
+// A grid flyer with no date that is not recurring never shows. isCurrent calls
+// an undated row current forever, which is right for the hero and the admin
+// status but is how finished World Cup flyers sat on the homepage for months.
+// The admin lists those rows so they do not vanish silently.
+export function selectGrid(
+  rows: FiestaRow[],
+  today: string,
+  nowMs: number = Date.now(),
+): FiestaRow[] {
+  const upcoming = rows
+    .map((f) => ({ f, at: eventTimeMs(f) }))
+    .filter(
+      (x): x is { f: FiestaRow; at: number } =>
+        x.f.in_grid && !x.f.is_evergreen && x.at !== null && isCurrent(x.f, today, nowMs),
+    )
+    .sort((a, b) => a.at - b.at || (a.f.id < b.f.id ? -1 : a.f.id > b.f.id ? 1 : 0))
+    .map((x) => x.f);
+  const recurring = orderFiestas(rows.filter((f) => f.in_grid && f.is_evergreen));
+  return [...upcoming, ...recurring].slice(0, GRID_LIMIT);
 }
 
 // Fiestas page: everything flagged for it, newest first, no date filter.

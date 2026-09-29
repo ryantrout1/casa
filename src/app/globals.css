@@ -524,7 +524,10 @@ a{text-decoration:none;color:inherit}ul{list-style:none}
 .v8 .events .head h2 .a{color:var(--mag)}
 .v8 .events .head h2 .b{color:var(--orng)}
 .v8 .events .head p{font-family:'Fredoka';color:#5a6b82;margin-top:4px;font-size:16px}
-.v8 .gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:30px}
+/* Up to three flyers, centred, so one or two upcoming fiestas sit in the
+   middle rather than hugging the left edge of an empty row. */
+.v8 .gallery{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,360px));justify-content:center;gap:18px;margin-top:30px}
+.v8 .events .empty{text-align:center;font-family:'Fredoka';font-weight:500;color:#42546e;font-size:17px;margin-top:26px}
 .v8 .gcard{border-radius:14px;overflow:hidden;border:5px solid #fff;
     box-shadow:0 16px 32px -22px rgba(31,58,99,.55);transition:.25s;background:#fff}
 .v8 .gcard:hover{transform:translateY(-5px) rotate(-1deg);box-shadow:0 24px 44px -22px rgba(31,58,99,.6)}

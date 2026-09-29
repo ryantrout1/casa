@@ -43,6 +43,22 @@ export function isCurrent(
   return f.event_date >= today;
 }
 
+// When the event happens, for ordering "what's next". `starts_at` when it
+// parses; otherwise the event date at midnight in Phoenix (Arizona has no DST,
+// so a fixed -07:00 is exact); otherwise null, meaning the row has no usable
+// date. A date-only row therefore sorts ahead of a timed event on the same day.
+export function eventTimeMs(f: Pick<CurrentRow, "starts_at" | "event_date">): number | null {
+  if (f.starts_at) {
+    const t = Date.parse(f.starts_at);
+    if (Number.isFinite(t)) return t;
+  }
+  if (f.event_date) {
+    const t = Date.parse(`${f.event_date}T00:00:00-07:00`);
+    if (Number.isFinite(t)) return t;
+  }
+  return null;
+}
+
 // Newest-announced first: higher sort_key leads. Pure, non-mutating.
 //
 // The id tiebreaker matters more than it looks. loadFiestas has no ORDER BY,

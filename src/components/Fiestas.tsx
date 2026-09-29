@@ -26,7 +26,13 @@ export default async function Fiestas() {
             so you never miss one.
           </p>
         </div>
-        <FiestaGallery variant="gallery" items={items} />
+        {items.length > 0 ? (
+          <FiestaGallery variant="gallery" items={items} />
+        ) : (
+          <p className="empty">
+            Nothing on the calendar yet. Follow @casadeleyva for the next one.
+          </p>
+        )}
         <div className="more">
           <a className="btn btn-p" href="/fiestas">
             See All Fiestas
