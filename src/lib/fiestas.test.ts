@@ -8,6 +8,7 @@ import {
   isCurrent,
   orderFiestas,
   selectGrid,
+  eventTimeMs,
   selectAll,
   selectHero,
   toFlyer,
@@ -75,8 +76,8 @@ const PALOMAZO_START = "2026-08-30T03:00:00Z";
 const phx = (iso: string) => Date.parse(iso);
 
 describe("GRID_LIMIT", () => {
-  it("is 6", () => {
-    expect(GRID_LIMIT).toBe(6);
+  it("is 3", () => {
+    expect(GRID_LIMIT).toBe(3);
   });
 });
 
@@ -116,35 +117,112 @@ describe("orderFiestas", () => {
   });
 });
 
+// Noon in Phoenix on TODAY. Passed explicitly so the grid tests never depend
+// on the real clock.
+const NOON = Date.parse("2026-07-01T19:00:00Z");
+
+describe("eventTimeMs", () => {
+  it("uses starts_at when it parses", () => {
+    expect(eventTimeMs(row({ starts_at: PALOMAZO_START, event_date: "2026-08-29" }))).toBe(
+      Date.parse(PALOMAZO_START),
+    );
+  });
+  it("falls back to event_date at midnight Phoenix time", () => {
+    expect(eventTimeMs(row({ event_date: "2026-08-29" }))).toBe(Date.parse("2026-08-29T07:00:00Z"));
+  });
+  it("falls back to event_date when starts_at does not parse", () => {
+    expect(eventTimeMs(row({ starts_at: "not a time", event_date: "2026-08-29" }))).toBe(
+      Date.parse("2026-08-29T07:00:00Z"),
+    );
+  });
+  it("is null when the row has no usable date", () => {
+    expect(eventTimeMs(row({}))).toBeNull();
+    expect(eventTimeMs(row({ starts_at: "nope" }))).toBeNull();
+  });
+});
+
 describe("selectGrid", () => {
-  it("returns at most GRID_LIMIT rows", () => {
-    const rows = Array.from({ length: 9 }, (_, i) =>
-      row({ id: "g" + i, sort_key: i }),
-    );
-    expect(selectGrid(rows, TODAY)).toHaveLength(GRID_LIMIT);
-  });
-  it("keeps the six newest and drops the oldest when a seventh is added", () => {
-    // seven grid-eligible rows, sort_key 0..6 — the sort_key=0 one must fall off
-    const rows = Array.from({ length: 7 }, (_, i) =>
-      row({ id: "g" + i, sort_key: i }),
-    );
-    const ids = selectGrid(rows, TODAY).map((f) => f.id);
-    expect(ids).toEqual(["g6", "g5", "g4", "g3", "g2", "g1"]);
-    expect(ids).not.toContain("g0");
-  });
-  it("excludes rows not flagged for the grid", () => {
+  it("orders upcoming events soonest first, not by when they were posted", () => {
     const rows = [
-      row({ id: "in", in_grid: true, sort_key: 2 }),
-      row({ id: "out", in_grid: false, sort_key: 3 }),
+      row({ id: "later", event_date: "2026-08-20", sort_key: 9 }),
+      row({ id: "soon", event_date: "2026-07-03", sort_key: 1 }),
+      row({ id: "mid", event_date: "2026-07-15", sort_key: 5 }),
     ];
-    expect(selectGrid(rows, TODAY).map((f) => f.id)).toEqual(["in"]);
+    expect(selectGrid(rows, TODAY, NOON).map((f) => f.id)).toEqual(["soon", "mid", "later"]);
+  });
+  it("orders by start time within the same day", () => {
+    const rows = [
+      row({ id: "eight", event_date: "2026-07-03", starts_at: "2026-07-04T03:00:00Z" }),
+      row({ id: "five", event_date: "2026-07-03", starts_at: "2026-07-04T00:00:00Z" }),
+    ];
+    expect(selectGrid(rows, TODAY, NOON).map((f) => f.id)).toEqual(["five", "eight"]);
+  });
+  it("puts a date-only row ahead of a timed event on the same day", () => {
+    const rows = [
+      row({ id: "timed", event_date: "2026-07-03", starts_at: "2026-07-04T00:00:00Z" }),
+      row({ id: "dateonly", event_date: "2026-07-03" }),
+    ];
+    expect(selectGrid(rows, TODAY, NOON).map((f) => f.id)).toEqual(["dateonly", "timed"]);
+  });
+  it("returns at most GRID_LIMIT rows, keeping the soonest", () => {
+    const rows = Array.from({ length: 6 }, (_, i) =>
+      row({ id: "g" + i, event_date: `2026-07-0${i + 2}`, sort_key: 10 - i }),
+    );
+    expect(selectGrid(rows, TODAY, NOON).map((f) => f.id)).toEqual(["g0", "g1", "g2"]);
   });
   it("excludes past dated events", () => {
     const rows = [
       row({ id: "past", event_date: "2026-06-01", sort_key: 5 }),
       row({ id: "future", event_date: "2026-08-01", sort_key: 1 }),
     ];
-    expect(selectGrid(rows, TODAY).map((f) => f.id)).toEqual(["future"]);
+    expect(selectGrid(rows, TODAY, NOON).map((f) => f.id)).toEqual(["future"]);
+  });
+  it("keeps an event through its grace window and drops it after", () => {
+    const ev = row({ id: "pal", event_date: "2026-08-29", starts_at: PALOMAZO_START });
+    expect(selectGrid([ev], "2026-08-29", phx("2026-08-30T06:00:00Z")).map((f) => f.id)).toEqual(["pal"]);
+    expect(selectGrid([ev], "2026-08-30", phx("2026-08-30T10:00:00Z"))).toEqual([]);
+  });
+  it("never shows an undated flyer that is not recurring", () => {
+    const rows = [
+      row({ id: "undated", sort_key: 99 }),
+      row({ id: "dated", event_date: "2026-07-10", sort_key: 1 }),
+    ];
+    expect(selectGrid(rows, TODAY, NOON).map((f) => f.id)).toEqual(["dated"]);
+  });
+  it("fills remaining slots with recurring flyers, newest first", () => {
+    const rows = [
+      row({ id: "rec-old", is_evergreen: true, sort_key: 1 }),
+      row({ id: "event", event_date: "2026-07-10", sort_key: 0 }),
+      row({ id: "rec-new", is_evergreen: true, sort_key: 7 }),
+    ];
+    expect(selectGrid(rows, TODAY, NOON).map((f) => f.id)).toEqual(["event", "rec-new", "rec-old"]);
+  });
+  it("never lets a recurring flyer push out an upcoming event", () => {
+    const rows = [
+      row({ id: "rec", is_evergreen: true, sort_key: 99 }),
+      row({ id: "e1", event_date: "2026-07-02" }),
+      row({ id: "e2", event_date: "2026-07-03" }),
+      row({ id: "e3", event_date: "2026-07-04" }),
+    ];
+    expect(selectGrid(rows, TODAY, NOON).map((f) => f.id)).toEqual(["e1", "e2", "e3"]);
+  });
+  it("treats a recurring flyer as recurring even if it carries an old date", () => {
+    const rows = [row({ id: "rec", is_evergreen: true, event_date: "2020-01-01" })];
+    expect(selectGrid(rows, TODAY, NOON).map((f) => f.id)).toEqual(["rec"]);
+  });
+  it("breaks a tie on event time by id, so the order never depends on the query", () => {
+    const rows = [
+      row({ id: "b", event_date: "2026-07-05" }),
+      row({ id: "a", event_date: "2026-07-05" }),
+    ];
+    expect(selectGrid(rows, TODAY, NOON).map((f) => f.id)).toEqual(["a", "b"]);
+  });
+  it("excludes rows not flagged for the grid", () => {
+    const rows = [
+      row({ id: "in", in_grid: true, event_date: "2026-07-05" }),
+      row({ id: "out", in_grid: false, event_date: "2026-07-04" }),
+    ];
+    expect(selectGrid(rows, TODAY, NOON).map((f) => f.id)).toEqual(["in"]);
   });
 });
 
