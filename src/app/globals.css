@@ -80,6 +80,46 @@ a{text-decoration:none;color:inherit}ul{list-style:none}
 .v8 .hero .photo .sticker{position:absolute;top:-18px;left:-18px;background:var(--yel);color:var(--navy);font-family:'Bangers';font-size:22px;
     width:92px;height:92px;border-radius:50%;display:grid;place-items:center;text-align:center;line-height:.9;transform:rotate(-12deg);box-shadow:0 10px 22px -10px rgba(0,0,0,.4);border:3px solid #fff}
 .v8 .hero .vidnote{position:absolute;bottom:14px;left:0;right:0;justify-content:center;color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.6)}
+/* Brand hero entrance (Hero.tsx BrandHero, class "in"). Plays once on load:
+   script writes on, headline words rise, FIESTA! stamps in last, the ribbon
+   opens and types, the tagline phrases fade in, the buttons rise. Timing comes
+   from lib/heroEntrance via --d (start) and --dur (length) on each piece.
+   Only transform, opacity and clip-path animate, so the section never changes
+   height. Afterwards only three things keep moving: the photo's slow zoom,
+   FIESTA!'s wiggle every 9s, and the sparkle on its "!". */
+.v8 .hero.in .scr{animation:heroWrite var(--dur,600ms) cubic-bezier(.3,.7,.3,1) var(--d,0ms) both}
+.v8 .hero.in h1 .w{display:inline-block;animation:heroRise var(--dur,450ms) cubic-bezier(.2,.8,.3,1.25) var(--d,0ms) both}
+.v8 .hero.in h1 .w.fiesta{position:relative;transform-origin:50% 80%;
+  animation:heroStamp var(--dur,500ms) cubic-bezier(.3,.7,.3,1) var(--d,0ms) both,heroFiestaWiggle 9s ease-in-out 3s infinite}
+.v8 .hero.in h1 .w.fiesta::after{content:"";position:absolute;right:-.14em;top:-.06em;width:.34em;height:.34em;background:var(--yel);
+  clip-path:polygon(50% 0,61% 39%,100% 50%,61% 61%,50% 100%,39% 61%,0 50%,39% 39%);opacity:0;pointer-events:none;
+  animation:heroSparkle 9s ease-in-out 3.4s infinite}
+.v8 .hero.in .tagblk{animation:heroUnfurl var(--dur,400ms) cubic-bezier(.3,.7,.3,1) var(--d,0ms) both}
+.v8 .hero.in .tagblk .ch{animation:heroType 60ms linear var(--d,0ms) both}
+.v8 .hero.in .beat > span{animation:heroFade var(--dur,300ms) ease-out var(--d,0ms) both}
+.v8 .hero.in .ctas{animation:heroRise var(--dur,350ms) cubic-bezier(.2,.8,.3,1.1) var(--d,0ms) both}
+.v8 .hero.in .photo{transition:transform .4s ease}
+.v8 .hero.in .photo:hover{transform:rotate(0deg)}
+.v8 .hero.in .photo img{transform-origin:50% 60%;animation:heroZoom 20s ease-in-out infinite alternate}
+@keyframes heroWrite{from{clip-path:inset(-30% 100% -30% -6%)}to{clip-path:inset(-30% -6% -30% -6%)}}
+@keyframes heroRise{from{opacity:0;transform:translateY(.4em) scale(.9)}to{opacity:1;transform:none}}
+@keyframes heroStamp{0%{opacity:0;transform:scale(1.7) rotate(-10deg)}55%{opacity:1;transform:scale(.92) rotate(3deg)}80%{transform:scale(1.04) rotate(-1deg)}100%{opacity:1;transform:none}}
+/* v5wiggle's shape, played in the first 6% of a 9s loop so it repeats with a
+   rest in between (an animation-delay only delays the first run). */
+@keyframes heroFiestaWiggle{0%,6%,100%{transform:none}1%{transform:rotate(-4deg)}2%{transform:rotate(4deg)}3%{transform:rotate(-3deg)}4%{transform:rotate(2deg)}5%{transform:rotate(-1deg)}}
+@keyframes heroSparkle{0%,9%,100%{opacity:0;transform:scale(0) rotate(0deg)}4%{opacity:1;transform:scale(1) rotate(45deg)}}
+@keyframes heroUnfurl{from{clip-path:inset(0 100% 0 0 round 8px)}to{clip-path:inset(0 0 0 0 round 8px)}}
+/* Appears at the first frame and holds. Not steps(1,end): Chrome can finish
+   that animation a hair short of 100% and hold the letter at opacity 0. */
+@keyframes heroType{0%{opacity:0}1%,100%{opacity:1}}
+@keyframes heroFade{from{opacity:0}to{opacity:1}}
+@keyframes heroZoom{from{transform:scale(1)}to{transform:scale(1.07)}}
+@media (prefers-reduced-motion: reduce){
+  .v8 .hero.in .scr,.v8 .hero.in h1 .w,.v8 .hero.in .tagblk,.v8 .hero.in .tagblk .ch,
+  .v8 .hero.in .beat > span,.v8 .hero.in .ctas,.v8 .hero.in .photo img{animation:none!important}
+  .v8 .hero.in h1 .w.fiesta::after{display:none}
+  .v8 .hero.in .photo{transition:none}
+}
 /* fiesta takeover hero — replaces the evergreen hero while a dated fiesta is live.
    The flyer now shows its OWN title block rather than being cropped below it,
    so the live copy carries only what the crop cuts off: the date line, the

@@ -7,6 +7,7 @@ import {
 import { heroViews, type HeroView } from "@/lib/heroViews";
 import { heroMotif } from "@/lib/heroMotif";
 import { heroTier, plateSources } from "@/lib/heroPlate";
+import { ENTRANCE, beatDelay, ms, typeDelay, wordDelay } from "@/lib/heroEntrance";
 import HeroRotator from "./HeroRotator";
 import MotifHero from "./hero/MotifHero";
 import PlateHero from "./hero/PlateHero";
@@ -47,33 +48,82 @@ function FiestaHero({ hero, views }: { hero: Flyer; views: HeroView[] }) {
   );
 }
 
-// The evergreen brand hero. Unchanged — this is what renders whenever no dated
-// fiesta with hero copy is live.
+// Custom properties the entrance CSS reads: --d is when a piece starts, --dur
+// how long it takes. The numbers come from lib/heroEntrance so they are tested.
+const at = (startMs: number, durMs?: number) =>
+  ({ "--d": ms(startMs), ...(durMs ? { "--dur": ms(durMs) } : {}) }) as React.CSSProperties;
+
+const HEADLINE = [
+  { word: "WHERE", color: "var(--mag)" },
+  { word: "EVERY", color: "var(--teal)" },
+  { word: "DAY", color: "var(--orng)" },
+  { word: "IS A", color: "var(--purp)" },
+];
+
+const RIBBON = "Authentic Mexican flavors in the heart of Buckeye";
+
+// The evergreen brand hero. This is what renders whenever no dated fiesta with
+// hero copy is live.
+//
+// `in` turns on the one-time entrance in globals.css. Every animated piece
+// carries its own --d, and nothing here changes after the first paint, so the
+// entrance cannot replay. Only transform, opacity and clip-path move, so the
+// section is the same height before, during and after. The ribbon is split
+// one span per character for the typing effect; its text content, and so its
+// accessible name, is unchanged.
 function BrandHero({ src, alt }: { src: string; alt: string }) {
+  const ribbon = [...RIBBON];
   return (
-    <section className="hero sec">
+    <section className="hero in sec">
       <div className="wrap">
         <div className="grid">
           <div>
-            <div className="scr">¡Bienvenidos a{"\u00A0"}Casa de Leyva!</div>
+            <div className="scr" style={at(ENTRANCE.script.startMs, ENTRANCE.script.durMs)}>
+              ¡Bienvenidos a{"\u00A0"}Casa de Leyva!
+            </div>
             <h1 className="pop">
-              <span style={{ color: "var(--mag)" }}>WHERE</span>{" "}
-              <span style={{ color: "var(--teal)" }}>EVERY</span>{" "}
-              <span style={{ color: "var(--orng)" }}>DAY</span>{" "}
-              <span style={{ color: "var(--purp)" }}>IS A</span>{" "}
-              <span style={{ color: "var(--mag)" }}>FIESTA!</span>
+              {HEADLINE.map((h, i) => (
+                <span key={h.word}>
+                  <span
+                    className="w"
+                    style={{ color: h.color, ...at(wordDelay(i), ENTRANCE.words.durMs) }}
+                  >
+                    {h.word}
+                  </span>{" "}
+                </span>
+              ))}
+              <span
+                className="w fiesta"
+                style={{ color: "var(--mag)", ...at(ENTRANCE.fiesta.startMs, ENTRANCE.fiesta.durMs) }}
+              >
+                FIESTA!
+              </span>
             </h1>
-            <div className="tagblk">
-              Authentic Mexican flavors in the heart of Buckeye
+            <div className="tagblk" style={at(ENTRANCE.ribbon.startMs, ENTRANCE.ribbon.durMs)}>
+              {ribbon.map((ch, i) => (
+                <span key={i} className="ch" style={at(typeDelay(i, ribbon.length))}>
+                  {ch}
+                </span>
+              ))}
             </div>
             <div className="beat">
-              <span className="a">GREAT FOOD</span>
-              {" · "}
-              <span className="b">COLD DRINKS</span>
-              {" · "}
-              <span className="c">GOOD VIBES</span>
+              <span className="a" style={at(beatDelay(0), ENTRANCE.beat.durMs)}>
+                GREAT FOOD
+              </span>
+              <span className="sep" style={at(beatDelay(1), ENTRANCE.beat.durMs)}>
+                {" · "}
+              </span>
+              <span className="b" style={at(beatDelay(1), ENTRANCE.beat.durMs)}>
+                COLD DRINKS
+              </span>
+              <span className="sep" style={at(beatDelay(2), ENTRANCE.beat.durMs)}>
+                {" · "}
+              </span>
+              <span className="c" style={at(beatDelay(2), ENTRANCE.beat.durMs)}>
+                GOOD VIBES
+              </span>
             </div>
-            <div className="ctas">
+            <div className="ctas" style={at(ENTRANCE.ctas.startMs, ENTRANCE.ctas.durMs)}>
               <a className="btn btn-p" href="/menu">
                 See the Menu
               </a>
