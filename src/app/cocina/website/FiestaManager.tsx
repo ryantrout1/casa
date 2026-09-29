@@ -406,6 +406,38 @@ function NowPanel({
           </button>
         </div>
       ) : null}
+
+      {w.undatedInGrid.length > 0 ? (
+        <div
+          style={{
+            display: "flex",
+            gap: 12,
+            alignItems: "center",
+            flexWrap: "wrap",
+            background: "#fdf6dc",
+            color: "#6b5310",
+            borderRadius: 8,
+            padding: "10px 12px",
+            fontSize: 13,
+          }}
+        >
+          <span>
+            {w.undatedInGrid.length === 1
+              ? "1 flyer on the homepage grid has no date, so it isn't showing"
+              : `${w.undatedInGrid.length} flyers on the homepage grid have no date, so they aren't showing`}
+            : {w.undatedInGrid.map(rowName).join(", ")}. Mark one Recurring if it runs every week.
+          </span>
+          <button
+            type="button"
+            className="pill warn"
+            disabled={busy}
+            onClick={() => onRemovePast(w.undatedInGrid.map((r) => r.id))}
+            style={{ cursor: "pointer", border: "1px solid #e0c46a", minHeight: 32 }}
+          >
+            Take them off the grid
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -416,7 +448,7 @@ const COL: Record<string, keyof FiestaAdminRow> = {
 };
 
 function fmtDate(d: string | null, evergreen: boolean): string {
-  if (evergreen) return "Evergreen";
+  if (evergreen) return "Recurring";
   if (!d) return "No date";
   const [y, m, day] = d.split("-").map(Number);
   if (!y || !m || !day) return d;
@@ -547,6 +579,32 @@ export default function FiestaManager({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "toggle", id: row.id, surface, value: next }),
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        setErr(d?.error ?? "Update failed.");
+        setRows(prev);
+      }
+    } catch {
+      setErr("Update failed.");
+      setRows(prev);
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  // Recurring vs one-off. Same optimistic pattern as the surface pills.
+  async function toggleRecurring(row: FiestaAdminRow) {
+    const next = !row.is_evergreen;
+    setErr("");
+    setBusyId(row.id);
+    const prev = rows;
+    setRows((rs) => rs.map((r) => (r.id === row.id ? { ...r, is_evergreen: next } : r)));
+    try {
+      const res = await fetch("/api/admin/fiestas", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "evergreen", id: row.id, value: next }),
       });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
@@ -711,6 +769,26 @@ export default function FiestaManager({
                             </button>
                           );
                         })}
+                        <button
+                          type="button"
+                          disabled={busyId === r.id}
+                          onClick={() => toggleRecurring(r)}
+                          className={`pill${r.is_evergreen ? " good" : ""}`}
+                          aria-pressed={r.is_evergreen}
+                          style={{
+                            cursor: "pointer",
+                            border: r.is_evergreen ? "none" : "1px dashed #cfd3da",
+                            opacity: r.is_evergreen ? 1 : 0.6,
+                          }}
+                          title={
+                            r.is_evergreen
+                              ? "Recurring: stays on the homepage grid with no date. Click to make it a one-off event."
+                              : "One-off event: leaves the grid after its date. Click if it runs every week."
+                          }
+                        >
+                          {r.is_evergreen ? "✓ " : ""}
+                          Recurring
+                        </button>
                       </div>
                     </td>
                     <td>

@@ -48,6 +48,9 @@ export type Readiness = {
 const SHOWN: ChannelKey[] = ["website", "email", "google"];
 
 const blank = (s: string) => s.trim() === "";
+
+/** What the checklist asks for when the homepage grid is on without a date. */
+export const GRID_DATE = "the event date (so it comes off the homepage once it's over)";
 const orNull = (s: string) => (blank(s) ? null : s.trim());
 
 function website(i: ReadinessInput): Omit<ChannelReadiness, "key" | "label"> {
@@ -59,7 +62,8 @@ function website(i: ReadinessInput): Omit<ChannelReadiness, "key" | "label"> {
   if (blank(i.flyerUrl)) missing.push("the flyer");
   if (blank(i.caption)) missing.push("a caption for the flyer");
 
-  if (i.selected.includes("hero")) {
+  const heroOn = i.selected.includes("hero");
+  if (heroOn) {
     const h = i.hero;
     if (blank(h.title)) missing.push("a headline for the hero");
     if (blank(h.startLocal) && blank(i.eventDate)) missing.push("the event date and time");
@@ -94,6 +98,15 @@ function website(i: ReadinessInput): Omit<ChannelReadiness, "key" | "label"> {
         notes.push(`The ${other} lines are not all filled in, so the hero will stay in ${stays}.`);
       }
     }
+  }
+
+  // The homepage grid shows only what is coming up, so an undated flyer there
+  // never appears (lib/fiestas selectGrid). Ask for the date here rather than
+  // let it publish and vanish. The hero's start time counts, and when the hero
+  // is already asking for the date the grid does not ask a second time.
+  if (i.selected.includes("grid")) {
+    const dated = !blank(i.eventDate) || (heroOn && !blank(i.hero.startLocal));
+    if (!dated && !missing.includes("the event date and time")) missing.push(GRID_DATE);
   }
 
   return { state: missing.length > 0 ? "needs" : "ready", missing, notes };

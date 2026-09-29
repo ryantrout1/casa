@@ -16,6 +16,12 @@ export type WebsiteNow<T> = {
   queued: T[];
   /** Grid rows whose event is over. They still show until someone removes them. */
   pastInGrid: T[];
+  /**
+   * Grid rows with no date that are not recurring. The homepage grid never
+   * shows these (selectGrid), so the admin lists them instead of letting them
+   * vanish silently.
+   */
+  undatedInGrid: T[];
 };
 
 /** Today's date in Arizona, 'YYYY-MM-DD'. Arizona has no DST. */
@@ -67,5 +73,11 @@ export function websiteNow<T extends WebsiteRow>(
     ),
   );
 
-  return { live, liveUntilMs, queued, pastInGrid };
+  const undatedInGrid = orderFiestas(
+    rows.filter(
+      (r) => r.in_grid && !r.is_evergreen && r.starts_at === null && r.event_date === null,
+    ),
+  );
+
+  return { live, liveUntilMs, queued, pastInGrid, undatedInGrid };
 }

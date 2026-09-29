@@ -66,7 +66,7 @@ describe("readiness: website", () => {
   it("needs the flyer and a caption for any surface", () => {
     const w = ch(readiness(input({ selected: ["grid"] })), "website");
     expect(w.state).toBe("needs");
-    expect(w.missing).toEqual(["the flyer", "a caption for the flyer"]);
+    expect(w.missing).toEqual(["the flyer", "a caption for the flyer", GRID_DATE]);
   });
 
   it("does not ask for hero copy when the hero is off", () => {

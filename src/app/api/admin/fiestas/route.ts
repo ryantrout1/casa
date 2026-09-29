@@ -43,6 +43,18 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true });
     }
 
+    if (action === "evergreen") {
+      // Recurring (a weekly special, say) vs a one-off event. The homepage grid
+      // lists dated events first and fills with recurring flyers, and a
+      // recurring flyer never expires, so this is what keeps a finished event
+      // from lingering or lets a weekly flyer stay up without a date.
+      const value = Boolean(body.value);
+      await sql`update fiestas set is_evergreen = ${value} where id = ${id}`;
+      revalidatePath("/");
+      revalidatePath("/fiestas");
+      return NextResponse.json({ ok: true });
+    }
+
     if (action === "delete") {
       // Detach any campaign that announced this fiesta (keep the send history),
       // then remove the fiesta from every surface.
