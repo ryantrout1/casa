@@ -170,17 +170,44 @@ describe("selectGrid", () => {
     );
     expect(selectGrid(rows, TODAY, NOON).map((f) => f.id)).toEqual(["g0", "g1", "g2"]);
   });
-  it("excludes past dated events", () => {
+  it("puts upcoming events ahead of past ones", () => {
     const rows = [
       row({ id: "past", event_date: "2026-06-01", sort_key: 5 }),
       row({ id: "future", event_date: "2026-08-01", sort_key: 1 }),
     ];
-    expect(selectGrid(rows, TODAY, NOON).map((f) => f.id)).toEqual(["future"]);
+    expect(selectGrid(rows, TODAY, NOON).map((f) => f.id)).toEqual(["future", "past"]);
   });
-  it("keeps an event through its grace window and drops it after", () => {
+  it("backfills with the most recent past events so it always shows three", () => {
+    const rows = [
+      row({ id: "old", event_date: "2026-05-01" }),
+      row({ id: "next", event_date: "2026-07-10" }),
+      row({ id: "recent", event_date: "2026-06-20" }),
+      row({ id: "older", event_date: "2026-06-01" }),
+    ];
+    expect(selectGrid(rows, TODAY, NOON).map((f) => f.id)).toEqual(["next", "recent", "older"]);
+  });
+  it("shows the three most recent past events when nothing is coming up", () => {
+    const rows = [
+      row({ id: "sep9", event_date: "2026-06-09" }),
+      row({ id: "sep19", event_date: "2026-06-19" }),
+      row({ id: "aug29", event_date: "2026-05-29" }),
+      row({ id: "sep12", event_date: "2026-06-12" }),
+    ];
+    expect(selectGrid(rows, TODAY, NOON).map((f) => f.id)).toEqual(["sep19", "sep12", "sep9"]);
+  });
+  it("uses recurring flyers only after past events run out", () => {
+    const rows = [
+      row({ id: "rec", is_evergreen: true, sort_key: 99 }),
+      row({ id: "past", event_date: "2026-06-01" }),
+      row({ id: "future", event_date: "2026-07-10" }),
+    ];
+    expect(selectGrid(rows, TODAY, NOON).map((f) => f.id)).toEqual(["future", "past", "rec"]);
+  });
+  it("moves an event from upcoming to past once its grace window ends", () => {
     const ev = row({ id: "pal", event_date: "2026-08-29", starts_at: PALOMAZO_START });
-    expect(selectGrid([ev], "2026-08-29", phx("2026-08-30T06:00:00Z")).map((f) => f.id)).toEqual(["pal"]);
-    expect(selectGrid([ev], "2026-08-30", phx("2026-08-30T10:00:00Z"))).toEqual([]);
+    const next = row({ id: "next", event_date: "2026-09-05" });
+    expect(selectGrid([ev, next], "2026-08-29", phx("2026-08-30T06:00:00Z")).map((f) => f.id)).toEqual(["pal", "next"]);
+    expect(selectGrid([ev, next], "2026-08-30", phx("2026-08-30T10:00:00Z")).map((f) => f.id)).toEqual(["next", "pal"]);
   });
   it("never shows an undated flyer that is not recurring", () => {
     const rows = [

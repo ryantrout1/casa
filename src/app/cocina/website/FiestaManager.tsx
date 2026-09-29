@@ -375,38 +375,9 @@ function NowPanel({
         )}
       </div>
 
-      {w.pastInGrid.length > 0 ? (
-        <div
-          style={{
-            display: "flex",
-            gap: 12,
-            alignItems: "center",
-            flexWrap: "wrap",
-            background: "#fdf0e6",
-            color: "#8a4b18",
-            borderRadius: 8,
-            padding: "10px 12px",
-            fontSize: 13,
-          }}
-        >
-          <span>
-            {w.pastInGrid.length === 1
-              ? "1 event on the homepage grid has already happened"
-              : `${w.pastInGrid.length} events on the homepage grid have already happened`}
-            : {w.pastInGrid.map(rowName).join(", ")}.
-          </span>
-          <button
-            type="button"
-            className="pill warn"
-            disabled={busy}
-            onClick={() => onRemovePast(w.pastInGrid.map((r) => r.id))}
-            style={{ cursor: "pointer", border: "1px solid #e8b98c", minHeight: 32 }}
-          >
-            Remove past events from the grid
-          </button>
-        </div>
-      ) : null}
-
+      {/* Past events on the grid are intentional now: the homepage backfills
+          with the most recent ones when fewer than three are coming up, so
+          there is no "remove past events" prompt here any more. */}
       {w.undatedInGrid.length > 0 ? (
         <div
           style={{

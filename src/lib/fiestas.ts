@@ -149,12 +149,13 @@ export function toFlyer(f: FiestaRow): Flyer {
   };
 }
 
-// Homepage grid: "what's next at Casa".
+// Homepage grid: always three fiestas, nearest to today first.
 //
-// Upcoming events first, soonest first: grid-flagged, not recurring, with a
-// usable date, and not over yet (isCurrent, so a start time keeps its grace
-// window). Recurring flyers fill whatever slots are left, newest first, and
-// never push a dated event out.
+// 1. Upcoming events, soonest first: grid-flagged, not recurring, with a usable
+//    date, and not over yet (isCurrent, so a start time keeps its grace window).
+// 2. If fewer than three are coming up, the most recent past events, newest
+//    first, so the grid never runs short between announcements.
+// 3. Recurring flyers only if dated events still leave a gap.
 //
 // A grid flyer with no date that is not recurring never shows. isCurrent calls
 // an undated row current forever, which is right for the hero and the admin
@@ -165,16 +166,21 @@ export function selectGrid(
   today: string,
   nowMs: number = Date.now(),
 ): FiestaRow[] {
-  const upcoming = rows
+  const byId = (a: FiestaRow, b: FiestaRow) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+  const dated = rows
+    .filter((f) => f.in_grid && !f.is_evergreen)
     .map((f) => ({ f, at: eventTimeMs(f) }))
-    .filter(
-      (x): x is { f: FiestaRow; at: number } =>
-        x.f.in_grid && !x.f.is_evergreen && x.at !== null && isCurrent(x.f, today, nowMs),
-    )
-    .sort((a, b) => a.at - b.at || (a.f.id < b.f.id ? -1 : a.f.id > b.f.id ? 1 : 0))
+    .filter((x): x is { f: FiestaRow; at: number } => x.at !== null);
+  const upcoming = dated
+    .filter((x) => isCurrent(x.f, today, nowMs))
+    .sort((a, b) => a.at - b.at || byId(a.f, b.f))
+    .map((x) => x.f);
+  const past = dated
+    .filter((x) => !isCurrent(x.f, today, nowMs))
+    .sort((a, b) => b.at - a.at || byId(a.f, b.f))
     .map((x) => x.f);
   const recurring = orderFiestas(rows.filter((f) => f.in_grid && f.is_evergreen));
-  return [...upcoming, ...recurring].slice(0, GRID_LIMIT);
+  return [...upcoming, ...past, ...recurring].slice(0, GRID_LIMIT);
 }
 
 // Fiestas page: everything flagged for it, newest first, no date filter.
