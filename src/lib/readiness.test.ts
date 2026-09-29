@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { EMPTY_HERO_FORM, type HeroFormState } from "./heroForm";
-import { readiness, type ReadinessInput } from "./readiness";
+import { GRID_DATE, readiness, type ReadinessInput } from "./readiness";
 
 // The campaign checklist. Publish is allowed only when every channel that is
 // switched on has what it needs, and the checklist says what is missing in
@@ -70,7 +70,37 @@ describe("readiness: website", () => {
   });
 
   it("does not ask for hero copy when the hero is off", () => {
-    const w = ch(readiness(input({ selected: ["grid"], flyerUrl: "x", caption: "c" })), "website");
+    const w = ch(
+      readiness(input({ selected: ["grid"], flyerUrl: "x", caption: "c", eventDate: "2026-10-03" })),
+      "website",
+    );
+    expect(w.state).toBe("ready");
+  });
+
+  it("needs the event date when the homepage grid is on", () => {
+    const r = readiness(input({ selected: ["grid"], flyerUrl: "x", caption: "c" }));
+    expect(ch(r, "website").missing).toEqual([GRID_DATE]);
+    expect(r.canPublish).toBe(false);
+  });
+
+  it("accepts the hero start time as the grid's date", () => {
+    const w = ch(
+      readiness(input({ selected: ["hero", "grid"], flyerUrl: "x", caption: "c", hero: hero({ title: "X", startLocal: "2026-10-03T20:00" }) })),
+      "website",
+    );
+    expect(w.state).toBe("ready");
+  });
+
+  it("asks for the date once when both the hero and the grid need it", () => {
+    const w = ch(
+      readiness(input({ selected: ["hero", "grid"], flyerUrl: "x", caption: "c", hero: hero({ title: "X" }) })),
+      "website",
+    );
+    expect(w.missing).toEqual(["the event date and time"]);
+  });
+
+  it("does not need a date for the Fiestas page alone", () => {
+    const w = ch(readiness(input({ selected: ["fiestas_page"], flyerUrl: "x", caption: "c" })), "website");
     expect(w.state).toBe("ready");
   });
 

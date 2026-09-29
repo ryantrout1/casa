@@ -101,3 +101,29 @@ describe("websiteNow: pastInGrid", () => {
     expect(websiteNow([tonight], TODAY, NOW).pastInGrid).toEqual([]);
   });
 });
+
+describe("websiteNow: undatedInGrid", () => {
+  it("lists grid flyers with no date that are not recurring, newest first", () => {
+    const older = row({ in_grid: true, sort_key: 1 });
+    const newer = row({ in_grid: true, sort_key: 9 });
+    const w = websiteNow([older, newer], TODAY, NOW);
+    expect(w.undatedInGrid.map((r) => r.id)).toEqual([newer.id, older.id]);
+  });
+
+  it("leaves out recurring flyers, dated flyers and rows not on the grid", () => {
+    const rows = [
+      row({ in_grid: true, is_evergreen: true }),
+      row({ in_grid: true, event_date: "2026-10-03" }),
+      row({ in_grid: true, starts_at: "2026-10-04T03:00:00Z" }),
+      row({ in_grid: false }),
+    ];
+    expect(websiteNow(rows, TODAY, NOW).undatedInGrid).toEqual([]);
+  });
+
+  it("never lists a row as both undated and past", () => {
+    const rows = [row({ in_grid: true }), row({ in_grid: true, event_date: "2026-09-01" })];
+    const w = websiteNow(rows, TODAY, NOW);
+    const both = w.undatedInGrid.filter((r) => w.pastInGrid.includes(r));
+    expect(both).toEqual([]);
+  });
+});
