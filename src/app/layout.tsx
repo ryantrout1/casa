@@ -7,6 +7,9 @@ export const metadata: Metadata = {
   title: "Casa de Leyva — Mexican Restaurant & Cantina | Buckeye, AZ",
   description:
     "Authentic Mexican flavors in the heart of Buckeye. Tacos, fajitas, margaritas, weekend brunch, and a fiesta every day at Casa de Leyva.",
+  verification: {
+    google: "yDIXr2ZTkwu7nfCq2Mv-NGbnavRyh0zMvkHzF06GpmQ",
+  },
 };
 
 export default function RootLayout({
