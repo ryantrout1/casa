@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import GoogleAnalytics from "@/components/GoogleAnalytics";
+import ClosureBanner from "@/components/ClosureBanner";
+import { bannerLines, noticeFor } from "@/lib/closures";
+import { phoenixToday } from "@/lib/websiteNow";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -16,6 +19,8 @@ export const metadata: Metadata = {
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const today = phoenixToday(Date.now());
+  const notice = noticeFor(today);
   return (
     <html lang="en">
       <head>
@@ -31,6 +36,7 @@ export default function RootLayout({
         />
       </head>
       <body>
+        <ClosureBanner initial={notice ? bannerLines(notice, today) : null} />
         {children}
         <Analytics />
         <GoogleAnalytics />

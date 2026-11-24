@@ -1,6 +1,8 @@
 import type { CSSProperties } from "react";
 import { phoenixWeekday } from "@/lib/specials";
 import { buildSpecialsView, toneStyle } from "@/lib/specialsView";
+import { closedOn } from "@/lib/closures";
+import { phoenixToday } from "@/lib/websiteNow";
 
 // "Every Day Is A Fiesta". Everything this section decides lives in
 // specialsView.ts (pure, tested); this component only renders it. The
@@ -24,7 +26,11 @@ function Garland() {
 }
 
 export default function WeeklySpecials() {
-  const { featured: f, rail } = buildSpecialsView(phoenixWeekday(new Date()));
+  const now = new Date();
+  const { featured: f, closed: c, rail } = buildSpecialsView(
+    phoenixWeekday(now),
+    closedOn(phoenixToday(now.getTime())),
+  );
 
   return (
     <section className="week sec" id="specials">
@@ -93,19 +99,24 @@ export default function WeeklySpecials() {
               </figure>
             )}
           </article>
-        ) : (
-          <article className="wk-card">
+        ) : c ? (
+          <article className={`wk-card t-${c.titleSize}${c.art ? " has-art" : ""}`}>
             <Garland />
             <div className="wk-copy">
               <div className="wk-when">
-                <span className="wk-day">Cerrado</span>
-                <span className="wk-today">Monday</span>
+                <span className="wk-day">{c.day}</span>
+                <span className="wk-today">{c.tag}</span>
               </div>
-              <h3 className="wk-title">Closed Mondays</h3>
-              <p className="wk-blurb">See you Tuesday at 4 PM for Taco Tuesday!</p>
+              <h3 className="wk-title">{c.title}</h3>
+              <p className="wk-blurb">{c.blurb}</p>
             </div>
+            {c.art && (
+              <div className="wk-closed-art">
+                <img src={c.art.src} alt={c.art.alt} />
+              </div>
+            )}
           </article>
-        )}
+        ) : null}
 
         <ul className="wk-rail">
           {rail.map((r) => (

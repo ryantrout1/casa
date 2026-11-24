@@ -1,4 +1,10 @@
+import { noticeFor } from "@/lib/closures";
+import { phoenixToday } from "@/lib/websiteNow";
+
 export default function FindUs() {
+  // A holiday closure gets its own row at the top of the hours while its
+  // notice is up (lib/closures), and drops off by itself afterwards.
+  const holiday = noticeFor(phoenixToday(Date.now()));
   return (
     <section className="find sec" id="find">
       <div className="wrap">
@@ -14,6 +20,15 @@ export default function FindUs() {
             <div className="addr">424 E Monroe Ave, Buckeye, AZ 85326</div>
             <div className="hrs">
               <h3>HOURS</h3>
+              {holiday && (
+                <div className="row closed holiday">
+                  <span className="d">
+                    {holiday.name}
+                    <span className="note">{holiday.shortDays}</span>
+                  </span>
+                  <span className="t">Closed</span>
+                </div>
+              )}
               <div className="row">
                 <span className="d">Tue &amp; Wed</span>
                 <span className="t">

@@ -8,6 +8,8 @@ import { heroViews, type HeroView } from "@/lib/heroViews";
 import { heroMotif } from "@/lib/heroMotif";
 import { heroTier, plateSources } from "@/lib/heroPlate";
 import { ENTRANCE, beatDelay, ms, typeDelay, wordDelay } from "@/lib/heroEntrance";
+import { noticeFor } from "@/lib/closures";
+import { phoenixToday } from "@/lib/websiteNow";
 import HeroRotator from "./HeroRotator";
 import MotifHero from "./hero/MotifHero";
 import PlateHero from "./hero/PlateHero";
@@ -172,6 +174,12 @@ export default async function Hero() {
   if (hero && tier === "flyer") {
     return <FiestaHero hero={hero} views={views} />;
   }
+
+  // A holiday closure's graphic (lib/closures) takes the brand hero's photo
+  // slot while its notice is up. Square, like the slot. A live fiesta
+  // takeover above still wins; the sitewide banner carries the closure there.
+  const art = noticeFor(phoenixToday(Date.now()))?.art;
+  if (art) return <BrandHero src={art.src} alt={art.alt} />;
 
   return (
     <BrandHero

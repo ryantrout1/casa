@@ -7,6 +7,7 @@
 // inside the component could not be tested at all.
 
 import { SPECIALS, specialForDay, type Accent, type Pairing, type Special } from "./specials";
+import type { Closure, ClosureArt } from "./closures";
 
 // Deep backgrounds for the featured card and rail tiles. The brand tokens
 // themselves are too light to carry white body text (teal measures ~3:1), so
@@ -55,10 +56,43 @@ export type RailView = {
   tone: Tone;
 };
 
+// The card shown in place of the featured special when Casa is closed: every
+// Monday, and the holiday closures in lib/closures.
+export type ClosedView = {
+  day: string; // Pacifico script line
+  tag: string; // the pill beside it
+  title: string;
+  titleSize: TitleSize;
+  blurb: string;
+  art?: ClosureArt;
+};
+
 export type SpecialsView = {
-  featured: FeaturedView | null; // null on Monday (closed)
+  featured: FeaturedView | null; // null whenever closed is set
+  closed: ClosedView | null;
   rail: RailView[];
 };
+
+const MONDAY: ClosedView = {
+  day: "Cerrado",
+  tag: "Monday",
+  title: "Closed Mondays",
+  titleSize: "l", // as it always rendered; the holiday titles are longer
+  blurb: "See you Tuesday at 4 PM for Taco Tuesday!",
+};
+
+function holidayClosed(c: Closure): ClosedView {
+  const title = `Closed for ${c.name}`;
+  const view: ClosedView = {
+    day: "Cerrado",
+    tag: "Today",
+    title,
+    titleSize: titleSize(title),
+    blurb: c.reopen,
+  };
+  if (c.art) view.art = c.art;
+  return view;
+}
 
 // Prices render in Fredoka. Bangers draws "1" with a flag that reads as "7"
 // at display sizes ($19.99 looked like $79.99), so no price uses Bangers.
@@ -120,10 +154,15 @@ function toRail(s: Special): RailView {
   };
 }
 
-export function buildSpecialsView(weekday: number): SpecialsView {
-  const today = specialForDay(weekday);
+// `holiday` is today's closure from lib/closures (closedOn), when there is
+// one. It wins over the day's special: a closed Thursday shows the closure,
+// not Enchilada Thursday, and the rail keeps the whole week.
+export function buildSpecialsView(weekday: number, holiday: Closure | null = null): SpecialsView {
+  const today = holiday ? null : specialForDay(weekday);
+  const closed = holiday ? holidayClosed(holiday) : today ? null : MONDAY;
   return {
     featured: today ? toFeatured(today) : null,
+    closed,
     rail: SPECIALS.filter((s) => s.id !== today?.id).map(toRail),
   };
 }
